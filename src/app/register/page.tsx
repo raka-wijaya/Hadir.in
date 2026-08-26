@@ -124,7 +124,7 @@ export default function RegisterPage() {
 
       setSuccessMsg(
         data.message ||
-          `Akun ${selectedRole} berhasil didaftarkan. Silakan masuk menggunakan akun baru Anda.`,
+          `Akun ${selectedRole} berhasil di daftarkan. Silakan masuk menggunakan akun baru Anda.`,
       );
     } catch (error) {
       console.error("Register request error:", error);
