@@ -76,7 +76,7 @@ export default function MagangDashboardPage() {
     let targetUserId = currentUserId;
     if (!targetUserId && typeof window !== "undefined") {
       try {
-        const saved = localStorage.getItem("sipresma_user");
+        const saved = localStorage.getItem("hadirin_user");
         if (saved) {
           const parsed = JSON.parse(saved);
           targetUserId = parsed.id || parsed.user_id || "";
@@ -303,7 +303,7 @@ export default function MagangDashboardPage() {
     let uid = user?.id || (user as any)?.user_id;
     if (!uid && typeof window !== "undefined") {
       try {
-        const saved = localStorage.getItem("sipresma_user");
+        const saved = localStorage.getItem("hadirin_user");
         if (saved) {
           const parsed = JSON.parse(saved);
           uid = parsed.id || parsed.user_id;
@@ -429,15 +429,11 @@ export default function MagangDashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-
         <div
           className={`grid grid-cols-2 sm:grid-cols-3 ${
-            pulangCepatCount > 0
-              ? "lg:grid-cols-5"
-              : "lg:grid-cols-4"
+            pulangCepatCount > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"
           } gap-3`}
         >
-
           {/* Hadir */}
           <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
             <div className="flex items-center justify-between">
@@ -539,10 +535,9 @@ export default function MagangDashboardPage() {
               </p>
             </div>
           )}
-
         </div>
 
-        {toastMsg && (
+        {/* {toastMsg && (
           <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 flex items-center justify-between gap-4">
 
             <div className="flex items-center gap-2.5 text-sm font-bold text-foreground">
@@ -562,17 +557,14 @@ export default function MagangDashboardPage() {
             </button>
 
           </div>
-        )}
+        )} */}
 
         <ServerClock />
 
         {showEarlyCheckoutForm && (
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card">
-
             <div className="flex items-start justify-between gap-4 mb-5">
-
               <div className="flex items-start gap-3">
-
                 <div className="w-10 h-10 rounded-xl bg-status-terlambat/10 flex items-center justify-center shrink-0">
                   <AlertTriangle className="w-5 h-5 text-status-terlambat" />
                 </div>
@@ -590,26 +582,20 @@ export default function MagangDashboardPage() {
                     .
                   </p>
                 </div>
-
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  setShowEarlyCheckoutForm(false)
-                }
+                onClick={() => setShowEarlyCheckoutForm(false)}
                 className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
-
             </div>
 
             <div className="space-y-4">
-
               {/* Alasan Pulang Cepat */}
               <div className="space-y-1.5">
-
                 <label className="text-xs font-bold text-foreground flex items-center gap-2">
                   <FileText className="w-3.5 h-3.5 text-primary" />
                   Alasan Pulang Cepat
@@ -617,21 +603,15 @@ export default function MagangDashboardPage() {
 
                 <textarea
                   value={alasanPulangCepat}
-                  onChange={(e) =>
-                    setAlasanPulangCepat(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setAlasanPulangCepat(e.target.value)}
                   placeholder="Contoh: Ada keperluan keluarga yang tidak dapat ditinggalkan..."
                   rows={3}
                   className="w-full rounded-xl border border-border bg-input px-3.5 py-3 text-xs font-medium outline-none resize-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
-
               </div>
 
               {/* Tugas */}
               <div className="space-y-1.5">
-
                 <label className="text-xs font-bold text-foreground flex items-center gap-2">
                   <ClipboardList className="w-3.5 h-3.5 text-primary" />
                   Tugas yang Dikerjakan
@@ -639,30 +619,23 @@ export default function MagangDashboardPage() {
 
                 <textarea
                   value={tugasDikerjakan}
-                  onChange={(e) =>
-                    setTugasDikerjakan(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setTugasDikerjakan(e.target.value)}
                   placeholder="Jelaskan tugas atau pekerjaan yang sudah kamu kerjakan hari ini..."
                   rows={4}
                   className="w-full rounded-xl border border-border bg-input px-3.5 py-3 text-xs font-medium outline-none resize-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
-
               </div>
 
               {/* Info */}
               <div className="rounded-xl bg-muted/50 border border-border p-3">
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Data alasan pulang cepat dan tugas yang
-                  dikerjakan akan dicatat bersama presensi
-                  hari ini.
+                  Data alasan pulang cepat dan tugas yang dikerjakan akan
+                  dicatat bersama presensi hari ini.
                 </p>
               </div>
 
               {/* Button */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
                 <button
                   type="button"
                   onClick={() => {
@@ -682,43 +655,28 @@ export default function MagangDashboardPage() {
                 >
                   Lanjut Absen Pulang
                 </button>
-
               </div>
-
             </div>
           </div>
         )}
 
         {activeTab === "CAPTURE_IN" ? (
-
           <div className="space-y-3">
-
             <button
               type="button"
-              onClick={() =>
-                setActiveTab("IDLE")
-              }
+              onClick={() => setActiveTab("IDLE")}
               className="text-xs font-bold text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
             >
               ← Batal & Kembali ke Dashboard
             </button>
 
-            <CameraCapture
-              title="Absen Masuk"
-              onCapture={handleCaptureIn}
-            />
-
+            <CameraCapture title="Absen Masuk" onCapture={handleCaptureIn} />
           </div>
-
         ) : activeTab === "CAPTURE_OUT" ? (
-
           <div className="space-y-3">
-
             <button
               type="button"
-              onClick={() =>
-                setActiveTab("IDLE")
-              }
+              onClick={() => setActiveTab("IDLE")}
               className="text-xs font-bold text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
             >
               ← Batal & Kembali ke Dashboard
@@ -732,18 +690,12 @@ export default function MagangDashboardPage() {
               }
               onCapture={handleCaptureOut}
             />
-
           </div>
-
         ) : (
-
           <section className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-5">
-
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border pb-3">
-
               <div className="flex items-center gap-2">
-
                 <CalendarCheck2 className="w-5 h-5 text-primary" />
 
                 <div>
@@ -755,33 +707,24 @@ export default function MagangDashboardPage() {
                     {formatDate(todayStr)}
                   </p>
                 </div>
-
               </div>
 
               <span
                 className={`rounded-full px-2.5 py-1 text-[10px] font-black border ${getStatusClass(
-                  todayRecord
+                  todayRecord,
                 )}`}
               >
                 {statusLabel}
               </span>
-
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
               <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
-
                 <div>
-
                   <div className="flex items-center gap-2 text-muted-foreground mb-2">
-
                     <LogIn className="w-4 h-4" />
 
-                    <span className="text-xs font-bold">
-                      Jam Masuk
-                    </span>
-
+                    <span className="text-xs font-bold">Jam Masuk</span>
                   </div>
 
                   <p className="text-2xl font-black text-foreground">
@@ -791,15 +734,17 @@ export default function MagangDashboardPage() {
                       "--:--"}
                   </p>
 
-                  {String(todayRecord?.status_masuk || todayRecord?.statusMasuk || "").toUpperCase() ===
-                    "TEPAT_WAKTU" && (
+                  {String(
+                    todayRecord?.status_masuk || todayRecord?.statusMasuk || "",
+                  ).toUpperCase() === "TEPAT_WAKTU" && (
                     <p className="text-[10px] font-bold text-status-hadir mt-1">
                       Tepat waktu
                     </p>
                   )}
 
-                  {String(todayRecord?.status_masuk || todayRecord?.statusMasuk || "").toUpperCase() ===
-                    "TERLAMBAT" && (
+                  {String(
+                    todayRecord?.status_masuk || todayRecord?.statusMasuk || "",
+                  ).toUpperCase() === "TERLAMBAT" && (
                     <p className="text-[10px] font-bold text-status-terlambat mt-1">
                       Terlambat{" "}
                       {todayRecord?.menit_terlambat ||
@@ -808,47 +753,33 @@ export default function MagangDashboardPage() {
                       menit
                     </p>
                   )}
-
                 </div>
 
                 {/* Button masuk di dalam card */}
                 {!todayRecord?.jam_masuk &&
                 !todayRecord?.jamMasuk &&
                 !todayRecord?.checkIn ? (
-
                   <button
                     type="button"
-                    onClick={() =>
-                      setActiveTab("CAPTURE_IN")
-                    }
+                    onClick={() => setActiveTab("CAPTURE_IN")}
                     className="w-full rounded-xl bg-primary text-primary-foreground px-4 py-3 text-sm font-extrabold flex items-center justify-center gap-2 hover:opacity-90 transition cursor-pointer"
                   >
                     <Camera className="w-4 h-4" />
                     Absen Masuk
                   </button>
-
                 ) : (
-
                   <div className="rounded-xl bg-muted border border-border p-3 text-center text-xs font-bold text-muted-foreground">
                     Absen masuk sudah dilakukan
                   </div>
-
                 )}
-
               </div>
 
               <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
-
                 <div>
-
                   <div className="flex items-center gap-2 text-muted-foreground mb-2">
-
                     <LogOut className="w-4 h-4" />
 
-                    <span className="text-xs font-bold">
-                      Jam Pulang
-                    </span>
-
+                    <span className="text-xs font-bold">Jam Pulang</span>
                   </div>
 
                   <p className="text-2xl font-black text-foreground">
@@ -863,8 +794,12 @@ export default function MagangDashboardPage() {
                   {(todayRecord?.jam_keluar ||
                     todayRecord?.jam_pulang ||
                     todayRecord?.jamKeluar ||
-                    todayRecord?.checkOut) && (
-                    String(todayRecord?.status_pulang || todayRecord?.statusPulang || "").toUpperCase() === "PULANG_CEPAT" ? (
+                    todayRecord?.checkOut) &&
+                    (String(
+                      todayRecord?.status_pulang ||
+                        todayRecord?.statusPulang ||
+                        "",
+                    ).toUpperCase() === "PULANG_CEPAT" ? (
                       <p className="text-[10px] font-bold text-status-terlambat mt-1">
                         Pulang cepat
                       </p>
@@ -872,9 +807,7 @@ export default function MagangDashboardPage() {
                       <p className="text-[10px] font-bold text-status-hadir mt-1">
                         Pulang normal
                       </p>
-                    )
-                  )}
-
+                    ))}
                 </div>
 
                 {/* Button pulang di dalam card */}
@@ -886,7 +819,6 @@ export default function MagangDashboardPage() {
                 !todayRecord?.jam_pulang &&
                 !todayRecord?.jamKeluar &&
                 !todayRecord?.checkOut ? (
-
                   <button
                     type="button"
                     onClick={handleStartCheckout}
@@ -901,29 +833,25 @@ export default function MagangDashboardPage() {
                         ? "Absen Pulang Cepat"
                         : "Absen Pulang"}
                   </button>
-
-                ) : (todayRecord?.jam_keluar ||
-                    todayRecord?.jam_pulang ||
-                    todayRecord?.jamKeluar ||
-                    todayRecord?.checkOut) ? (
-
+                ) : todayRecord?.jam_keluar ||
+                  todayRecord?.jam_pulang ||
+                  todayRecord?.jamKeluar ||
+                  todayRecord?.checkOut ? (
                   <div className="rounded-xl bg-muted border border-border p-3 text-center text-xs font-bold text-muted-foreground">
-                    {String(todayRecord?.status_pulang || todayRecord?.statusPulang || "").toUpperCase() ===
-                    "PULANG_CEPAT"
+                    {String(
+                      todayRecord?.status_pulang ||
+                        todayRecord?.statusPulang ||
+                        "",
+                    ).toUpperCase() === "PULANG_CEPAT"
                       ? "Pulang cepat sudah dicatat"
                       : "Absen pulang sudah dilakukan"}
                   </div>
-
                 ) : (
-
                   <div className="rounded-xl bg-muted border border-border p-3 text-center text-xs font-bold text-muted-foreground">
                     Absen masuk terlebih dahulu
                   </div>
-
                 )}
-
               </div>
-
             </div>
 
             {/* =================================================
@@ -933,19 +861,15 @@ export default function MagangDashboardPage() {
             {String(todayRecord?.status_pulang || "").toUpperCase() ===
               "PULANG_CEPAT" && (
               <div className="rounded-xl border border-status-terlambat/30 bg-status-terlambat/5 p-4 space-y-3">
-
                 <div className="flex items-center gap-2">
-
                   <AlertTriangle className="w-4 h-4 text-status-terlambat" />
 
                   <h4 className="text-xs font-extrabold text-foreground">
                     Detail Pulang Cepat
                   </h4>
-
                 </div>
 
                 <div className="space-y-2 text-xs">
-
                   <div>
                     <span className="font-bold text-muted-foreground">
                       Alasan:
@@ -967,21 +891,15 @@ export default function MagangDashboardPage() {
                         "Tidak ada data tugas"}
                     </p>
                   </div>
-
                 </div>
-
               </div>
             )}
-
           </section>
         )}
 
         <section className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
-
           <div className="p-5 flex items-center justify-between gap-4 border-b border-border">
-
             <div>
-
               <p className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">
                 Informasi
               </p>
@@ -989,7 +907,6 @@ export default function MagangDashboardPage() {
               <h2 className="font-extrabold text-foreground mt-1 text-[15px] md:text-lg">
                 Riwayat Logbook & Tugas Terbaru
               </h2>
-
             </div>
 
             <Link
@@ -999,93 +916,70 @@ export default function MagangDashboardPage() {
               Lihat Semua
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
-
           </div>
 
           {userAttendances.length === 0 ? (
-
             <div className="p-8 text-center text-sm text-muted-foreground">
               Belum ada riwayat presensi.
             </div>
-
           ) : (
-
             <div className="divide-y divide-border">
-
               {userAttendances
                 .slice()
                 .sort((a, b) =>
-                  String(b.tanggal).localeCompare(
-                    String(a.tanggal)
-                  )
+                  String(b.tanggal).localeCompare(String(a.tanggal)),
                 )
                 .slice(0, 5)
                 .map((record, index) => (
-
                   <div
-                    key={
-                      record.id ||
-                      `${record.tanggal}-${index}`
-                    }
+                    key={record.id || `${record.tanggal}-${index}`}
                     className="p-4 flex items-center justify-between gap-4 hover:bg-muted/50 transition-colors"
                   >
-
                     <div className="min-w-0">
-
                       <p className="text-sm font-extrabold text-foreground">
                         {formatDate(record.tanggal)}
                       </p>
 
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
-
                         <span>
-                          Masuk:{" "}
-                          {record.jam_masuk ||
-                            record.checkIn ||
-                            "--:--"}
+                          Masuk: {record.jam_masuk || record.checkIn || "--:--"}
                         </span>
 
                         <span>
                           Pulang:{" "}
-                          {record.jam_pulang ||
-                            record.checkOut ||
-                            "--:--"}
+                          {record.jam_pulang || record.checkOut || "--:--"}
                         </span>
-
                       </div>
-
                     </div>
 
                     <span
                       className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold border ${getStatusClass(
-                        record.status
+                        record.status,
                       )}`}
                     >
-                      {String(record.status_pulang || record.status || "").toUpperCase() ===
-                        "PULANG_CEPAT"
+                      {String(
+                        record.status_pulang || record.status || "",
+                      ).toUpperCase() === "PULANG_CEPAT"
                         ? "Pulang Cepat"
                         : record.status}
                     </span>
-
                   </div>
-
                 ))}
-
             </div>
-
           )}
-
         </section>
 
         {previewRecord && (
           <PhotoModal
             isOpen={Boolean(previewRecord)}
-            onClose={() =>
-              setPreviewRecord(null)
-            }
+            onClose={() => setPreviewRecord(null)}
             title={
               previewType === "PULANG"
-                ? String(previewRecord.status_pulang || previewRecord.statusPulang || "").toUpperCase() === "PULANG_CEPAT"
+                ? String(
+                    previewRecord.status_pulang ||
+                      previewRecord.statusPulang ||
+                      "",
+                  ).toUpperCase() === "PULANG_CEPAT"
                   ? "Bukti Presensi Swafoto Pulang Cepat"
                   : "Bukti Presensi Swafoto Pulang"
                 : "Bukti Presensi Swafoto Masuk"
@@ -1150,9 +1044,7 @@ export default function MagangDashboardPage() {
               "ANAK_MAGANG"
             }
             attendanceDate={
-              previewRecord.tanggal ||
-              previewRecord.attendanceDate ||
-              todayStr
+              previewRecord.tanggal || previewRecord.attendanceDate || todayStr
             }
             time={
               previewType === "PULANG"
@@ -1169,7 +1061,11 @@ export default function MagangDashboardPage() {
             }
             status={
               previewType === "PULANG"
-                ? String(previewRecord.status_pulang || previewRecord.statusPulang || "").toUpperCase() === "PULANG_CEPAT"
+                ? String(
+                    previewRecord.status_pulang ||
+                      previewRecord.statusPulang ||
+                      "",
+                  ).toUpperCase() === "PULANG_CEPAT"
                   ? "PULANG_CEPAT"
                   : "TEPAT_WAKTU"
                 : previewRecord.status_masuk ||
@@ -1179,12 +1075,13 @@ export default function MagangDashboardPage() {
             }
             lateMinutes={
               previewType === "MASUK"
-                ? previewRecord.menit_terlambat || previewRecord.lateMinutes || 0
+                ? previewRecord.menit_terlambat ||
+                  previewRecord.lateMinutes ||
+                  0
                 : 0
             }
           />
         )}
-
       </div>
     </DashboardLayout>
   );
