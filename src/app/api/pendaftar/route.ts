@@ -57,24 +57,28 @@ function formatSqlDateTime(date: Date = new Date()): string {
 }
 
 // ============================================================
-// AUTO-MIGRATION: Pastikan kolom portfolio_file ada di tabel pendaftaran
+// AUTO-MIGRATION / VALIDASI SKEMA TABEL PENDAFTARAN
 // ============================================================
-let isTableAltered = false;
-async function ensurePortfolioColumn() {
-  if (isTableAltered) return;
+let isTableChecked = false;
+async function ensurePendaftaranSchema() {
+  if (isTableChecked) return;
   try {
-    const [cols]: any = await mysqlPool.query(
-      `SHOW COLUMNS FROM pendaftaran LIKE 'portfolio_file'`
-    );
-    if (!cols || cols.length === 0) {
+    const [cols]: any = await mysqlPool.query(`SHOW COLUMNS FROM pendaftaran`);
+    const existing = new Set(cols.map((c: any) => c.Field.toLowerCase()));
+
+    if (!existing.has("portfolio_file")) {
       await mysqlPool.query(
         `ALTER TABLE pendaftaran ADD COLUMN portfolio_file VARCHAR(500) NULL AFTER file_cv`
       );
-      console.log("Berhasil menambahkan kolom portfolio_file ke tabel pendaftaran");
     }
-    isTableAltered = true;
+    if (!existing.has("peserta_magang_id")) {
+      await mysqlPool.query(
+        `ALTER TABLE pendaftaran ADD COLUMN peserta_magang_id BIGINT(20) UNSIGNED NULL AFTER kode_pendaftaran`
+      );
+    }
+    isTableChecked = true;
   } catch (err) {
-    console.warn("Auto-migration check portfolio_file:", err);
+    console.warn("Auto-migration check pendaftaran schema:", err);
   }
 }
 
@@ -90,7 +94,8 @@ function transformRow(row: any) {
         ? Number(row.pengaturan_id)
         : null,
     kode_pendaftaran: row.kode_pendaftaran || "",
-    user_id: row.user_id ? String(row.user_id) : null,
+    peserta_magang_id: row.peserta_magang_id ? String(row.peserta_magang_id) : null,
+    pesertaMagangId: row.peserta_magang_id ? String(row.peserta_magang_id) : null,
     nama: row.nama || "",
     email: row.email || "",
     no_hp: row.no_hp || "",
@@ -108,11 +113,11 @@ function transformRow(row: any) {
     created_at: formatDateTime(row.created_at),
     updated_at: formatDateTime(row.updated_at),
 
-    // Relasi user (jika ada)
-    user_email: row.user_email || null,
-    user_name: row.user_name || null,
+    // Relasi peserta_magang jika ada
+    peserta_email: row.peserta_email || null,
+    peserta_name: row.peserta_name || null,
 
-    // Aliases untuk kompatibilitas frontend lama
+    // Aliases untuk kompatibilitas frontend
     name: row.nama || "",
     institution: row.sekolah_kampus || "",
     studyProgram: row.study_program || "",
@@ -123,12 +128,15 @@ function transformRow(row: any) {
   };
 }
 
-// Helper query field list (Kolom Database + Join User)
+// Kolom tabel pendaftaran sesuai skema:
+// id, pengaturan_id, kode_pendaftaran, peserta_magang_id, nama, email, no_hp,
+// sekolah_kampus, study_program, bagian, alamat, periode_mulai, periode_selesai,
+// file_cv, portfolio_file, status, catatan_admin, tanggal_daftar, created_at, updated_at
 const SELECT_COLUMNS = `
   p.id,
   p.pengaturan_id,
   p.kode_pendaftaran,
-  p.user_id,
+  p.peserta_magang_id,
   p.nama,
   p.email,
   p.no_hp,
@@ -145,8 +153,8 @@ const SELECT_COLUMNS = `
   p.tanggal_daftar,
   p.created_at,
   p.updated_at,
-  u.email as user_email,
-  u.name as user_name
+  pm.email as peserta_email,
+  pm.name as peserta_name
 `;
 
 // Helper untuk generate kode pendaftaran unik
@@ -155,7 +163,7 @@ async function generateUniqueKode(customCode?: string): Promise<string> {
     const clean = customCode.trim().toUpperCase();
     const [existing]: any = await mysqlPool.query(
       `SELECT id FROM pendaftaran WHERE LOWER(kode_pendaftaran) = LOWER(?) LIMIT 1`,
-      [clean],
+      [clean]
     );
     if (existing && existing.length > 0) {
       throw new Error("Kode pendaftaran tersebut sudah terdaftar di sistem.");
@@ -168,10 +176,9 @@ async function generateUniqueKode(customCode?: string): Promise<string> {
   const yearStr = now.getFullYear().toString().slice(-2);
   const prefix = `REG-${monthStr}${yearStr}`;
 
-  // Hitung jumlah pendaftar bulan ini untuk sequential number
   const [countRows]: any = await mysqlPool.query(
     `SELECT COUNT(*) as total FROM pendaftaran WHERE kode_pendaftaran LIKE ?`,
-    [`${prefix}-%`],
+    [`${prefix}-%`]
   );
   let nextSeq = (Number(countRows?.[0]?.total) || 0) + 1;
 
@@ -182,7 +189,7 @@ async function generateUniqueKode(customCode?: string): Promise<string> {
   while (!isUnique && attempts < 10) {
     const [chk]: any = await mysqlPool.query(
       `SELECT id FROM pendaftaran WHERE kode_pendaftaran = ? LIMIT 1`,
-      [codeCandidate],
+      [codeCandidate]
     );
     if (!chk || chk.length === 0) {
       isUnique = true;
@@ -198,72 +205,44 @@ async function generateUniqueKode(customCode?: string): Promise<string> {
 }
 
 // ============================================================
-// GET: Ambil Data Pendaftar (Kode Pendaftaran, ID, Search, List)
+// GET: Mengambil Data Pendaftar (Filter, Search, Pagination, Detail)
 // ============================================================
 export async function GET(req: Request) {
   try {
-    await ensurePortfolioColumn();
+    await ensurePendaftaranSchema();
     const { searchParams } = new URL(req.url);
-    const kode = searchParams.get("kode_pendaftaran")?.trim();
-    const id = searchParams.get("id")?.trim();
-    const email = searchParams.get("email")?.trim();
-    const noHp = searchParams.get("no_hp")?.trim();
-    const statusParam = searchParams.get("status")?.trim();
-    const q = searchParams.get("q")?.trim();
 
-    // 1. Pencarian SPESIFIK berdasarkan kode_pendaftaran
-    if (kode) {
-      const cleanKode = kode.toLowerCase();
-      const [rows]: any = await mysqlPool.query(
-        `
-          SELECT ${SELECT_COLUMNS}
-          FROM pendaftaran p
-          LEFT JOIN users u ON u.id = p.user_id
-          WHERE LOWER(TRIM(p.kode_pendaftaran)) = ?
-          LIMIT 1
-        `,
-        [cleanKode],
-      );
+    const id = searchParams.get("id");
+    const kodePendaftaran =
+      searchParams.get("kode_pendaftaran") ||
+      searchParams.get("kodePendaftaran") ||
+      searchParams.get("kode");
+    const email = searchParams.get("email");
+    const status = searchParams.get("status");
+    const bagian = searchParams.get("bagian");
+    const q = searchParams.get("q") || searchParams.get("search");
+    const pesertaMagangId = searchParams.get("peserta_magang_id") || searchParams.get("pesertaMagangId");
+    const limit = Math.min(Number(searchParams.get("limit") || 100), 500);
+    const page = Math.max(Number(searchParams.get("page") || 1), 1);
+    const offset = (page - 1) * limit;
 
-      if (!rows || rows.length === 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Kode pendaftaran tidak ditemukan.",
-            data: null,
-          },
-          { status: 404 },
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "Data pendaftaran ditemukan.",
-        data: transformRow(rows[0]),
-      });
-    }
-
-    // 2. Pencarian berdasarkan ID pendaftaran
+    // 1. Detail berdasarkan ID
     if (id) {
       const [rows]: any = await mysqlPool.query(
         `
           SELECT ${SELECT_COLUMNS}
           FROM pendaftaran p
-          LEFT JOIN users u ON u.id = p.user_id
+          LEFT JOIN peserta_magang pm ON pm.id = p.peserta_magang_id
           WHERE p.id = ?
           LIMIT 1
         `,
-        [id],
+        [id]
       );
 
       if (!rows || rows.length === 0) {
         return NextResponse.json(
-          {
-            success: false,
-            message: "Data pendaftaran tidak ditemukan.",
-            data: null,
-          },
-          { status: 404 },
+          { success: false, message: "Data pendaftar tidak ditemukan." },
+          { status: 404 }
         );
       }
 
@@ -273,187 +252,218 @@ export async function GET(req: Request) {
       });
     }
 
-    // 3. Pencarian SPESIFIK berdasarkan Email saja
-    if (email && !q) {
-      const cleanEmail = email.toLowerCase();
+    // 2. Detail berdasarkan Kode Pendaftaran
+    if (kodePendaftaran) {
       const [rows]: any = await mysqlPool.query(
         `
           SELECT ${SELECT_COLUMNS}
           FROM pendaftaran p
-          LEFT JOIN users u ON u.id = p.user_id
-          WHERE LOWER(TRIM(p.email)) = ?
-          ORDER BY p.tanggal_daftar DESC
+          LEFT JOIN peserta_magang pm ON pm.id = p.peserta_magang_id
+          WHERE LOWER(p.kode_pendaftaran) = LOWER(?)
+          LIMIT 1
         `,
-        [cleanEmail],
+        [kodePendaftaran.trim()]
       );
 
-      const transformed = (rows || []).map(transformRow);
+      if (!rows || rows.length === 0) {
+        return NextResponse.json(
+          { success: false, message: "Kode pendaftaran tidak ditemukan." },
+          { status: 404 }
+        );
+      }
+
       return NextResponse.json({
         success: true,
-        data: transformed[0] || null,
-        list: transformed,
+        data: transformRow(rows[0]),
       });
     }
 
-    // 4. Pencarian SPESIFIK berdasarkan Nomor HP saja
-    if (noHp && !q) {
+    // 3. Detail / Filter berdasarkan Email
+    if (email) {
       const [rows]: any = await mysqlPool.query(
         `
           SELECT ${SELECT_COLUMNS}
           FROM pendaftaran p
-          LEFT JOIN users u ON u.id = p.user_id
-          WHERE TRIM(p.no_hp) = ?
-          ORDER BY p.tanggal_daftar DESC
+          LEFT JOIN peserta_magang pm ON pm.id = p.peserta_magang_id
+          WHERE LOWER(p.email) = LOWER(?)
+          ORDER BY p.tanggal_daftar DESC, p.created_at DESC
         `,
-        [noHp],
+        [email.trim()]
       );
 
-      const transformed = (rows || []).map(transformRow);
       return NextResponse.json({
         success: true,
-        data: transformed[0] || null,
-        list: transformed,
+        data: rows.map(transformRow),
+        total: rows.length,
       });
     }
 
-    // 5. Pencarian Publik / Umum (q: kode, email, no_hp, atau nama)
-    if (q) {
-      const cleanQ = q.toLowerCase();
+    // 4. Detail / Filter berdasarkan Peserta Magang ID
+    if (pesertaMagangId) {
       const [rows]: any = await mysqlPool.query(
         `
           SELECT ${SELECT_COLUMNS}
           FROM pendaftaran p
-          LEFT JOIN users u ON u.id = p.user_id
-          WHERE LOWER(TRIM(p.kode_pendaftaran)) = ?
-             OR LOWER(TRIM(p.email)) = ?
-             OR TRIM(p.no_hp) = ?
-             OR LOWER(p.nama) LIKE ?
-             OR LOWER(p.sekolah_kampus) LIKE ?
-          ORDER BY p.tanggal_daftar DESC
+          LEFT JOIN peserta_magang pm ON pm.id = p.peserta_magang_id
+          WHERE p.peserta_magang_id = ?
+          LIMIT 1
         `,
-        [cleanQ, cleanQ, q, `%${cleanQ}%`, `%${cleanQ}%`],
+        [pesertaMagangId]
       );
 
-      const transformed = (rows || []).map(transformRow);
+      if (!rows || rows.length === 0) {
+        return NextResponse.json(
+          { success: false, message: "Data pendaftaran untuk peserta ini tidak ditemukan." },
+          { status: 404 }
+        );
+      }
+
       return NextResponse.json({
         success: true,
-        data: transformed[0] || null,
-        list: transformed,
+        data: transformRow(rows[0]),
       });
     }
 
-    // 6. Ambil Semua Data / Filter berdasarkan Status (Untuk Admin)
-    let querySql = `
-      SELECT ${SELECT_COLUMNS}
-      FROM pendaftaran p
-      LEFT JOIN users u ON u.id = p.user_id
-    `;
-    const queryParams: any[] = [];
+    // 5. Query List dengan Filter, Search, Pagination
+    const conditions: string[] = [];
+    const params: any[] = [];
 
-    if (statusParam) {
-      const normStatus = normalizeStatus(statusParam);
-      querySql += ` WHERE p.status = ? `;
-      queryParams.push(normStatus);
+    if (status && status !== "ALL" && status !== "SEMUA") {
+      conditions.push("p.status = ?");
+      params.push(normalizeStatus(status));
     }
 
-    querySql += ` ORDER BY p.tanggal_daftar DESC, p.id DESC `;
+    if (bagian && bagian !== "ALL" && bagian !== "SEMUA") {
+      conditions.push("p.bagian = ?");
+      params.push(bagian.trim());
+    }
 
-    const [rows]: any = await mysqlPool.query(querySql, queryParams);
-    const data = (rows || []).map(transformRow);
+    if (q && q.trim()) {
+      const searchPattern = `%${q.trim()}%`;
+      conditions.push(
+        `(p.nama LIKE ? OR p.email LIKE ? OR p.kode_pendaftaran LIKE ? OR p.sekolah_kampus LIKE ? OR p.study_program LIKE ? OR p.bagian LIKE ?)`
+      );
+      params.push(
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern
+      );
+    }
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    // Hitung total data
+    const [countResult]: any = await mysqlPool.query(
+      `SELECT COUNT(*) as total FROM pendaftaran p ${whereClause}`,
+      params
+    );
+    const total = Number(countResult?.[0]?.total || 0);
+
+    // Ambil data halaman aktif
+    const [rows]: any = await mysqlPool.query(
+      `
+        SELECT ${SELECT_COLUMNS}
+        FROM pendaftaran p
+        LEFT JOIN peserta_magang pm ON pm.id = p.peserta_magang_id
+        ${whereClause}
+        ORDER BY p.tanggal_daftar DESC, p.created_at DESC
+        LIMIT ? OFFSET ?
+      `,
+      [...params, limit, offset]
+    );
 
     return NextResponse.json({
       success: true,
-      total: data.length,
-      data,
+      data: rows.map(transformRow),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error: any) {
     console.error("GET /api/pendaftar error:", error);
     return NextResponse.json(
       {
         success: false,
-        message: error?.message || "Gagal mengambil data pendaftaran.",
+        message: error?.message || "Gagal mengambil data pendaftar.",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 // ============================================================
-// POST: Input Pendaftaran Baru (FormData atau JSON)
+// POST: Pendaftaran Baru (Form Publik / Admin)
 // ============================================================
 export async function POST(req: Request) {
   try {
-    await ensurePortfolioColumn();
+    await ensurePendaftaranSchema();
+    const body = await req.json();
 
-    // Deteksi content-type: FormData vs JSON
-    const contentType = req.headers.get("content-type") || "";
-    let body: Record<string, any> = {};
-    let cvFileRaw: File | null = null;
-    let portfolioFileRaw: File | null = null;
+    const nama = String(body.nama || body.name || "").trim().slice(0, 150);
+    const email = String(body.email || "").trim().toLowerCase().slice(0, 150);
+    const noHp = String(body.no_hp || body.phone || body.noHp || "").trim().slice(0, 20);
+    const sekolahKampus = String(
+      body.sekolah_kampus ||
+        body.sekolahKampus ||
+        body.institution ||
+        body.universitas ||
+        ""
+    ).trim().slice(0, 200);
+    const studyProgram = String(
+      body.study_program ||
+        body.studyProgram ||
+        body.jurusan ||
+        body.program_studi ||
+        body.programStudi ||
+        ""
+    ).trim().slice(0, 150);
+    const bagian = String(body.bagian || body.divisi || "").trim().slice(0, 100);
+    const alamat = String(body.alamat || body.address || "").trim();
 
-    if (contentType.includes("multipart/form-data")) {
-      const fd = await req.formData();
-      for (const [key, val] of fd.entries()) {
-        if (key === "file_cv" && val instanceof File) {
-          cvFileRaw = val;
-        } else if (key === "portfolio_file" && val instanceof File) {
-          portfolioFileRaw = val;
-        } else {
-          body[key] = val as string;
-        }
-      }
-    } else {
-      body = await req.json();
-    }
+    const periodeMulai = body.periode_mulai || body.periodeMulai || body.periodStart || null;
+    const periodeSelesai = body.periode_selesai || body.periodeSelesai || body.periodEnd || null;
 
-    // 18 Kolom Database
     const pengaturanId =
       body.pengaturan_id !== undefined && body.pengaturan_id !== null
         ? Number(body.pengaturan_id)
+        : 1;
+
+    const pesertaMagangId =
+      body.peserta_magang_id !== undefined && body.peserta_magang_id !== null
+        ? String(body.peserta_magang_id).trim()
         : null;
-    const rawKode = body.kode_pendaftaran
-      ? String(body.kode_pendaftaran).trim()
-      : undefined;
-    const userId = body.user_id ? String(body.user_id).trim() : null;
-    const nama = String(body.nama || body.name || "")
-      .trim()
-      .slice(0, 150);
-    const email = String(body.email || "")
-      .trim()
-      .toLowerCase()
-      .slice(0, 150);
-    const noHp = String(body.no_hp || body.phone || "")
-      .trim()
-      .slice(0, 20);
-    const sekolahKampus = String(body.sekolah_kampus || body.institution || "")
-      .trim()
-      .slice(0, 200);
-    const studyProgram = String(
-      body.study_program || body.studyProgram || body.jurusan || body.program_studi || "",
-    )
-      .trim()
-      .slice(0, 150);
-    const bagian = String(body.bagian || body.divisi || "")
-      .trim()
-      .slice(0, 100);
-    const alamat = String(body.alamat || "").trim();
-    const periodeMulai = body.periode_mulai || body.start_date || null;
-    const periodeSelesai = body.periode_selesai || body.end_date || null;
 
-    // Simpan file — gunakan File object jika dari FormData, fallback ke base64 string jika dari JSON
-    const fileCv = cvFileRaw
-      ? await saveBase64File(cvFileRaw, "pendaftar", "cv", nama)
-      : await saveBase64File(body.file_cv ? String(body.file_cv).trim() : null, "pendaftar", "cv", nama);
+    const rawKode = body.kode_pendaftaran || body.kodePendaftaran || null;
 
-    const portfolioFile = portfolioFileRaw
-      ? await saveBase64File(portfolioFileRaw, "pendaftar", "portfolio", nama)
+    // Handle upload file CV (max 500 chars URL/path)
+    const fileCv = body.file_cv?.startsWith?.("/uploads")
+      ? body.file_cv.slice(0, 500)
+      : await saveBase64File(
+          body.file_cv || body.cv
+            ? String(body.file_cv || body.cv).trim()
+            : null,
+          "pendaftar",
+          "cv",
+          nama
+        );
+
+    // Handle upload file Portfolio (max 500 chars URL/path)
+    const portfolioFile = body.portfolio_file?.startsWith?.("/uploads")
+      ? body.portfolio_file.slice(0, 500)
       : await saveBase64File(
           body.portfolio_file || body.portfolio
             ? String(body.portfolio_file || body.portfolio).trim()
             : null,
           "pendaftar",
           "portfolio",
-          nama,
+          nama
         );
 
     const status = normalizeStatus(body.status);
@@ -468,43 +478,43 @@ export async function POST(req: Request) {
     if (!nama) {
       return NextResponse.json(
         { success: false, message: "Nama lengkap wajib diisi." },
-        { status: 400 },
+        { status: 400 }
       );
     }
     if (!email) {
       return NextResponse.json(
         { success: false, message: "Email wajib diisi." },
-        { status: 400 },
+        { status: 400 }
       );
     }
     if (!noHp) {
       return NextResponse.json(
         { success: false, message: "Nomor handphone/WhatsApp wajib diisi." },
-        { status: 400 },
+        { status: 400 }
       );
     }
     if (!sekolahKampus) {
       return NextResponse.json(
         { success: false, message: "Sekolah atau Universitas wajib diisi." },
-        { status: 400 },
+        { status: 400 }
       );
     }
     if (!studyProgram) {
       return NextResponse.json(
         { success: false, message: "Jurusan / Program Studi wajib diisi." },
-        { status: 400 },
+        { status: 400 }
       );
     }
     if (!bagian) {
       return NextResponse.json(
         { success: false, message: "Divisi / Bagian pilihan wajib diisi." },
-        { status: 400 },
+        { status: 400 }
       );
     }
     if (!alamat) {
       return NextResponse.json(
         { success: false, message: "Alamat domisili lengkap wajib diisi." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -515,7 +525,7 @@ export async function POST(req: Request) {
       if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
         return NextResponse.json(
           { success: false, message: "Format tanggal periode tidak valid." },
-          { status: 400 },
+          { status: 400 }
         );
       }
       if (end < start) {
@@ -524,21 +534,21 @@ export async function POST(req: Request) {
             success: false,
             message: "Periode selesai tidak boleh mendahului periode mulai.",
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
 
-    // Validasi User ID jika disediakan
-    if (userId) {
-      const [userChk]: any = await mysqlPool.query(
-        `SELECT id FROM users WHERE id = ? LIMIT 1`,
-        [userId],
+    // Validasi Peserta Magang ID jika disediakan
+    if (pesertaMagangId) {
+      const [pmChk]: any = await mysqlPool.query(
+        `SELECT id FROM peserta_magang WHERE id = ? LIMIT 1`,
+        [pesertaMagangId]
       );
-      if (!userChk || userChk.length === 0) {
+      if (!pmChk || pmChk.length === 0) {
         return NextResponse.json(
-          { success: false, message: "User akun terkait tidak ditemukan." },
-          { status: 404 },
+          { success: false, message: "Peserta magang terkait tidak ditemukan." },
+          { status: 404 }
         );
       }
     }
@@ -546,13 +556,13 @@ export async function POST(req: Request) {
     // Generate kode pendaftaran unik
     const finalKodePendaftaran = await generateUniqueKode(rawKode);
 
-    // Insert 18 Kolom ke database
+    // Insert 18 Kolom ke database sesuai tabel pendaftaran
     const [insertResult]: any = await mysqlPool.query(
       `
         INSERT INTO pendaftaran (
           pengaturan_id,
           kode_pendaftaran,
-          user_id,
+          peserta_magang_id,
           nama,
           email,
           no_hp,
@@ -573,7 +583,7 @@ export async function POST(req: Request) {
       [
         pengaturanId,
         finalKodePendaftaran,
-        userId,
+        pesertaMagangId,
         nama,
         email,
         noHp,
@@ -583,12 +593,12 @@ export async function POST(req: Request) {
         alamat,
         periodeMulai ? formatDate(periodeMulai) : null,
         periodeSelesai ? formatDate(periodeSelesai) : null,
-        fileCv,
-        portfolioFile,
+        fileCv ? fileCv.slice(0, 500) : null,
+        portfolioFile ? portfolioFile.slice(0, 500) : null,
         status,
         catatanAdmin,
         tanggalDaftar,
-      ],
+      ]
     );
 
     // Ambil data yang baru saja disimpan
@@ -596,11 +606,11 @@ export async function POST(req: Request) {
       `
         SELECT ${SELECT_COLUMNS}
         FROM pendaftaran p
-        LEFT JOIN users u ON u.id = p.user_id
+        LEFT JOIN peserta_magang pm ON pm.id = p.peserta_magang_id
         WHERE p.id = ?
         LIMIT 1
       `,
-      [insertResult.insertId],
+      [insertResult.insertId]
     );
 
     return NextResponse.json(
@@ -609,7 +619,7 @@ export async function POST(req: Request) {
         message: "Pendaftaran berhasil disimpan.",
         data: transformRow(newRows[0]),
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error: any) {
     console.error("POST /api/pendaftar error:", error);
@@ -620,7 +630,7 @@ export async function POST(req: Request) {
           success: false,
           message: "Kode pendaftaran atau data sudah terdaftar.",
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -629,7 +639,7 @@ export async function POST(req: Request) {
         success: false,
         message: error?.message || "Gagal menyimpan pendaftaran.",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -639,13 +649,14 @@ export async function POST(req: Request) {
 // ============================================================
 export async function PATCH(req: Request) {
   try {
+    await ensurePendaftaranSchema();
     const body = await req.json();
     const { id } = body || {};
 
     if (!id) {
       return NextResponse.json(
         { success: false, message: "ID pendaftaran wajib disertakan." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -660,19 +671,20 @@ export async function PATCH(req: Request) {
     if (body.catatan_admin !== undefined) {
       updates.push("catatan_admin = ?");
       values.push(
-        body.catatan_admin ? String(body.catatan_admin).trim() : null,
+        body.catatan_admin ? String(body.catatan_admin).trim() : null
       );
     }
 
-    if (body.user_id !== undefined) {
-      updates.push("user_id = ?");
-      values.push(body.user_id ? String(body.user_id).trim() : null);
+    if (body.peserta_magang_id !== undefined || body.pesertaMagangId !== undefined) {
+      const pmId = body.peserta_magang_id || body.pesertaMagangId;
+      updates.push("peserta_magang_id = ?");
+      values.push(pmId ? String(pmId).trim() : null);
     }
 
     if (body.pengaturan_id !== undefined) {
       updates.push("pengaturan_id = ?");
       values.push(
-        body.pengaturan_id !== null ? Number(body.pengaturan_id) : null,
+        body.pengaturan_id !== null ? Number(body.pengaturan_id) : null
       );
     }
 
@@ -729,30 +741,35 @@ export async function PATCH(req: Request) {
     if (body.periode_selesai !== undefined) {
       updates.push("periode_selesai = ?");
       values.push(
-        body.periode_selesai ? formatDate(body.periode_selesai) : null,
+        body.periode_selesai ? formatDate(body.periode_selesai) : null
       );
     }
 
     if (body.file_cv !== undefined) {
-      const fileCv = await saveBase64File(
-        body.file_cv,
-        "pendaftar",
-        "cv",
-        body.nama || "cv",
-      );
+      const fileCv = body.file_cv?.startsWith?.("/uploads")
+        ? body.file_cv.slice(0, 500)
+        : await saveBase64File(
+            body.file_cv,
+            "pendaftar",
+            "cv",
+            body.nama || "cv"
+          );
       updates.push("file_cv = ?");
-      values.push(fileCv);
+      values.push(fileCv ? fileCv.slice(0, 500) : null);
     }
 
     if (body.portfolio_file !== undefined || body.portfolio !== undefined) {
-      const filePorto = await saveBase64File(
-        body.portfolio_file ?? body.portfolio,
-        "pendaftar",
-        "portfolio",
-        body.nama || "portfolio",
-      );
+      const pRaw = body.portfolio_file ?? body.portfolio;
+      const filePorto = pRaw?.startsWith?.("/uploads")
+        ? pRaw.slice(0, 500)
+        : await saveBase64File(
+            pRaw,
+            "pendaftar",
+            "portfolio",
+            body.nama || "portfolio"
+          );
       updates.push("portfolio_file = ?");
-      values.push(filePorto);
+      values.push(filePorto ? filePorto.slice(0, 500) : null);
     }
 
     if (body.tanggal_daftar !== undefined) {
@@ -760,14 +777,14 @@ export async function PATCH(req: Request) {
       values.push(
         body.tanggal_daftar
           ? formatSqlDateTime(new Date(body.tanggal_daftar))
-          : formatSqlDateTime(new Date()),
+          : formatSqlDateTime(new Date())
       );
     }
 
     if (updates.length === 0) {
       return NextResponse.json(
         { success: false, message: "Tidak ada field data yang diubah." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -779,41 +796,43 @@ export async function PATCH(req: Request) {
         SET ${updates.join(", ")}
         WHERE id = ?
       `,
-      values,
+      values
     );
 
     if (updateResult.affectedRows === 0) {
       return NextResponse.json(
-        { success: false, message: "Data pendaftaran tidak ditemukan." },
-        { status: 404 },
+        {
+          success: false,
+          message: "Data pendaftar tidak ditemukan atau tidak ada perubahan.",
+        },
+        { status: 404 }
       );
     }
 
-    // Ambil data yang telah diperbarui
-    const [rows]: any = await mysqlPool.query(
+    const [updatedRows]: any = await mysqlPool.query(
       `
         SELECT ${SELECT_COLUMNS}
         FROM pendaftaran p
-        LEFT JOIN users u ON u.id = p.user_id
+        LEFT JOIN peserta_magang pm ON pm.id = p.peserta_magang_id
         WHERE p.id = ?
         LIMIT 1
       `,
-      [id],
+      [id]
     );
 
     return NextResponse.json({
       success: true,
-      message: "Data pendaftaran berhasil diperbarui.",
-      data: transformRow(rows[0]),
+      message: "Data pendaftar berhasil diperbarui.",
+      data: transformRow(updatedRows[0]),
     });
   } catch (error: any) {
     console.error("PATCH /api/pendaftar error:", error);
     return NextResponse.json(
       {
         success: false,
-        message: error?.message || "Gagal memperbarui data pendaftaran.",
+        message: error?.message || "Gagal memperbarui data pendaftar.",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -823,49 +842,41 @@ export async function PATCH(req: Request) {
 // ============================================================
 export async function DELETE(req: Request) {
   try {
-    let id: string | null = null;
-
-    try {
-      const body = await req.json();
-      id = body?.id;
-    } catch {
-      // jika tidak ada body JSON
-    }
-
-    if (!id) {
-      const { searchParams } = new URL(req.url);
-      id = searchParams.get("id");
-    }
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
 
     if (!id) {
       return NextResponse.json(
-        { success: false, message: "ID pendaftaran wajib disertakan." },
-        { status: 400 },
+        { success: false, message: "ID pendaftar wajib disertakan." },
+        { status: 400 }
       );
     }
 
-    const [delResult]: any = await mysqlPool.query(
+    const [result]: any = await mysqlPool.query(
       `DELETE FROM pendaftaran WHERE id = ?`,
-      [id],
+      [id]
     );
 
-    if (delResult.affectedRows === 0) {
+    if (result.affectedRows === 0) {
       return NextResponse.json(
-        { success: false, message: "Data pendaftaran tidak ditemukan." },
-        { status: 404 },
+        {
+          success: false,
+          message: "Data pendaftar tidak ditemukan atau sudah dihapus.",
+        },
+        { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Data pendaftaran berhasil dihapus.",
+      message: "Data pendaftar berhasil dihapus.",
     });
   } catch (error: any) {
     console.error("DELETE /api/pendaftar error:", error);
     return NextResponse.json(
       {
         success: false,
-        message: error?.message || "Gagal menghapus data pendaftaran.",
+        message: error?.message || "Gagal menghapus data pendaftar.",
       },
       { status: 500 }
     );

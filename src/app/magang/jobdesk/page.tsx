@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { useAuth } from "@/lib/auth/context";
 import { TugasItem, LOGBOOK_CATEGORY_LABELS, LogBookCategory } from "@/types";
 import {
   Briefcase,
@@ -62,14 +63,19 @@ function formatTanggalIndo(dateStr?: string | null): string {
 }
 
 export default function JobdeskPage() {
+  const { user } = useAuth();
   const [tugasList, setTugasList] = useState<TugasItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [kategoriFilter, setKategoriFilter] = useState<string>("ALL");
 
-  const fetchTugas = async () => {
+  const fetchTugas = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("/api/jobdesk", { cache: "no-store" });
+      const params = new URLSearchParams();
+      if (user?.id) {
+        params.append("peserta_magang_id", String(user.id));
+      }
+      const res = await fetch(`/api/tugas?${params.toString()}`, { cache: "no-store" });
       const json = await res.json();
       if (res.ok && json.success && Array.isArray(json.data)) {
         setTugasList(json.data);
@@ -82,11 +88,11 @@ export default function JobdeskPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
 
   useEffect(() => {
     fetchTugas();
-  }, []);
+  }, [fetchTugas]);
 
   const filteredList = tugasList.filter((item) => {
     if (kategoriFilter === "ALL") return true;

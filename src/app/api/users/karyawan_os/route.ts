@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { mysqlPool } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
-import { saveBase64File } from "@/lib/storage";
 
 function normalizeStatus(statusInput?: string | null): "ACTIVE" | "INACTIVE" {
   if (!statusInput) return "ACTIVE";
   const s = statusInput.toUpperCase().trim();
-  if (s === "INACTIVE" || s === "NONAKTIF") return "INACTIVE";
+  if (s === "INACTIVE" || s === "NONAKTIF" || s === "NON_AKTIF" || s === "OFF")
+    return "INACTIVE";
   return "ACTIVE";
 }
 
@@ -17,9 +17,17 @@ export async function GET(req: Request) {
     const search = searchParams.get("q");
 
     let sql = `
-      SELECT id, email, name, phone, identity_number,
-             institution, study_program, avatar, status,
-             last_login_at, created_at, updated_at
+      SELECT
+        id,
+        email,
+        name,
+        phone,
+        identity_number,
+        avatar,
+        status,
+        last_login_at,
+        created_at,
+        updated_at
       FROM users
       WHERE role = 'KARYAWAN_OS'
     `;
@@ -31,15 +39,74 @@ export async function GET(req: Request) {
     }
 
     if (search) {
-      sql += " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR identity_number LIKE ? OR institution LIKE ? OR study_program LIKE ?)";
-      const q = "%" + search + "%";
-      params.push(q, q, q, q, q, q);
+      sql +=
+        " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR identity_number LIKE ?)";
+      const q = `%${search.trim()}%`;
+      params.push(q, q, q, q);
     }
 
     sql += " ORDER BY created_at DESC";
 
-    const [rows]: any = await mysqlPool.query(sql, params);
-    return NextResponse.json({ success: true, data: rows });
+    let rows: any;
+    try {
+      [rows] = await mysqlPool.query(sql, params);
+    } catch (queryErr: any) {
+      if (
+        queryErr?.code === "ER_BAD_FIELD_ERROR" &&
+        queryErr?.message?.includes("role")
+      ) {
+        let fallbackSql = `
+          SELECT
+            id,
+            email,
+            name,
+            phone,
+            identity_number,
+            avatar,
+            status,
+            last_login_at,
+            created_at,
+            updated_at
+          FROM users
+          WHERE 1=1
+        `;
+        const fallbackParams: any[] = [];
+        if (statusParam && statusParam !== "ALL") {
+          fallbackSql += " AND status = ?";
+          fallbackParams.push(normalizeStatus(statusParam));
+        }
+        if (search) {
+          fallbackSql +=
+            " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR identity_number LIKE ?)";
+          const q = `%${search.trim()}%`;
+          fallbackParams.push(q, q, q, q);
+        }
+        fallbackSql += " ORDER BY created_at DESC";
+        [rows] = await mysqlPool.query(fallbackSql, fallbackParams);
+      } else {
+        throw queryErr;
+      }
+    }
+
+    const safeRows = (rows || []).map((row: any) => ({
+      id: String(row.id),
+      email: row.email,
+      role: "KARYAWAN_OS",
+      name: row.name,
+      phone: row.phone || null,
+      identity_number: row.identity_number || null,
+      avatar: row.avatar || null,
+      status: row.status,
+      last_login_at: row.last_login_at || null,
+      created_at: row.created_at || null,
+      updated_at: row.updated_at || null,
+      nama: row.name,
+      no_hp: row.phone || null,
+      identityNumber: row.identity_number || null,
+      nip: row.identity_number || null,
+    }));
+
+    return NextResponse.json({ success: true, data: safeRows });
   } catch (err: any) {
     console.error("GET /api/users/karyawan_os error:", err);
     return NextResponse.json(
@@ -53,36 +120,40 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const name = body.name || body.nama;
-    const email = body.email;
+    const rawName = body.name || body.nama;
+    const rawEmail = body.email;
     const rawPassword = body.password || "karyawan123";
     const status = normalizeStatus(body.status);
-    const phone = body.phone || body.no_hp || null;
-    const identityNumber = body.identity_number || body.identityNumber || body.nip || null;
-    const institution = body.institution || body.vendor || body.sekolah_kampus || null;
-    const studyProgram = body.study_program || body.studyProgram || body.divisi || body.unit_kerja || null;
+    const rawPhone = body.phone || body.no_hp;
+    const rawIdentityNumber =
+      body.identity_number || body.identityNumber || body.nip;
 
-    if (!name || !email) {
+    if (!rawName || !rawEmail) {
       return NextResponse.json(
         { success: false, message: "Nama dan email wajib diisi." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const rawAvatar =
-      body.avatar ||
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f59e0b&color=000000&bold=true`;
-    const avatar =
-      (await saveBase64File(rawAvatar, "avatars", "avatar", email)) || rawAvatar;
+    const name = String(rawName).trim().slice(0, 150);
+    const email = String(rawEmail).trim().toLowerCase().slice(0, 150);
+    const phone = rawPhone ? String(rawPhone).trim().slice(0, 20) : null;
+    const identityNumber = rawIdentityNumber
+      ? String(rawIdentityNumber).trim().slice(0, 50)
+      : null;
+
+    const avatar = body.avatar
+      ? String(body.avatar).trim().slice(0, 500)
+      : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f59e0b&color=000000&bold=true`;
 
     const hashedPassword = await hashPassword(rawPassword);
 
     let newId: any;
     try {
       const [insertRes]: any = await mysqlPool.query(
-        `INSERT INTO users (name, email, password, role, status, phone, identity_number, institution, study_program, avatar)
-         VALUES (?, ?, ?, 'KARYAWAN_OS', ?, ?, ?, ?, ?, ?)`,
-        [name, email, hashedPassword, status, phone, identityNumber, institution, studyProgram, avatar]
+        `INSERT INTO users (name, email, password, role, status, phone, identity_number, avatar)
+         VALUES (?, ?, ?, 'KARYAWAN_OS', ?, ?, ?, ?)`,
+        [name, email, hashedPassword, status, phone, identityNumber, avatar],
       );
       newId = insertRes.insertId;
     } catch (insertErr: any) {
@@ -91,11 +162,30 @@ export async function POST(req: Request) {
         insertErr?.message?.includes("username")
       ) {
         const [res2]: any = await mysqlPool.query(
-          `INSERT INTO users (username, name, email, password, role, status, phone, identity_number, institution, study_program, avatar)
-           VALUES (?, ?, ?, ?, 'KARYAWAN_OS', ?, ?, ?, ?, ?, ?)`,
-          [email, name, email, hashedPassword, status, phone, identityNumber, institution, studyProgram, avatar]
+          `INSERT INTO users (username, name, email, password, role, status, phone, identity_number, avatar)
+           VALUES (?, ?, ?, ?, 'KARYAWAN_OS', ?, ?, ?, ?)`,
+          [
+            email,
+            name,
+            email,
+            hashedPassword,
+            status,
+            phone,
+            identityNumber,
+            avatar,
+          ],
         );
         newId = res2.insertId;
+      } else if (
+        insertErr?.code === "ER_BAD_FIELD_ERROR" &&
+        insertErr?.message?.includes("role")
+      ) {
+        const [res3]: any = await mysqlPool.query(
+          `INSERT INTO users (name, email, password, status, phone, identity_number, avatar)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [name, email, hashedPassword, status, phone, identityNumber, avatar],
+        );
+        newId = res3.insertId;
       } else {
         throw insertErr;
       }
@@ -105,9 +195,18 @@ export async function POST(req: Request) {
       {
         success: true,
         message: "Karyawan OS berhasil ditambahkan.",
-        data: { id: newId, name, email, role: "KARYAWAN_OS", status },
+        data: {
+          id: String(newId),
+          email,
+          role: "KARYAWAN_OS",
+          name,
+          phone,
+          identity_number: identityNumber,
+          avatar,
+          status,
+        },
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (err: any) {
     console.error("POST /api/users/karyawan_os error:", err);
@@ -138,13 +237,6 @@ export async function PATCH(req: Request) {
       identity_number,
       identityNumber,
       nip,
-      institution,
-      vendor,
-      sekolah_kampus,
-      study_program,
-      studyProgram,
-      divisi,
-      unit_kerja,
       avatar,
       status,
     } = body;
@@ -157,8 +249,8 @@ export async function PATCH(req: Request) {
     }
 
     const [existingRows]: any = await mysqlPool.query(
-      "SELECT id FROM users WHERE id = ? AND role = 'KARYAWAN_OS'",
-      [id]
+      "SELECT id FROM users WHERE id = ?",
+      [id],
     );
     if (!existingRows || existingRows.length === 0) {
       return NextResponse.json(
@@ -170,14 +262,23 @@ export async function PATCH(req: Request) {
     const fields: string[] = [];
     const params: any[] = [];
 
-    const finalName = name || nama;
-    const finalPhone = phone || no_hp;
-    const finalIdentity = identity_number || identityNumber || nip;
-    const finalInstitution = institution || vendor || sekolah_kampus;
-    const finalStudyProgram = study_program || studyProgram || divisi || unit_kerja;
+    const finalName = name !== undefined ? name : nama;
+    const finalPhone = phone !== undefined ? phone : no_hp;
+    const finalIdentity =
+      identity_number !== undefined
+        ? identity_number
+        : identityNumber !== undefined
+          ? identityNumber
+          : nip;
 
-    if (finalName !== undefined) { fields.push("name = ?"); params.push(finalName); }
-    if (email !== undefined) { fields.push("email = ?"); params.push(email); }
+    if (finalName !== undefined) {
+      fields.push("name = ?");
+      params.push(String(finalName).trim().slice(0, 150));
+    }
+    if (email !== undefined) {
+      fields.push("email = ?");
+      params.push(String(email).trim().toLowerCase().slice(0, 150));
+    }
     if (password !== undefined && password !== "") {
       const hashed = await hashPassword(password);
       fields.push("password = ?");
@@ -187,14 +288,19 @@ export async function PATCH(req: Request) {
       fields.push("status = ?");
       params.push(normalizeStatus(status));
     }
-    if (finalPhone !== undefined) { fields.push("phone = ?"); params.push(finalPhone); }
-    if (finalIdentity !== undefined) { fields.push("identity_number = ?"); params.push(finalIdentity); }
-    if (finalInstitution !== undefined) { fields.push("institution = ?"); params.push(finalInstitution); }
-    if (finalStudyProgram !== undefined) { fields.push("study_program = ?"); params.push(finalStudyProgram); }
+    if (finalPhone !== undefined) {
+      fields.push("phone = ?");
+      params.push(finalPhone ? String(finalPhone).trim().slice(0, 20) : null);
+    }
+    if (finalIdentity !== undefined) {
+      fields.push("identity_number = ?");
+      params.push(
+        finalIdentity ? String(finalIdentity).trim().slice(0, 50) : null,
+      );
+    }
     if (avatar !== undefined) {
-      const savedAvatar = await saveBase64File(avatar, "avatars", "avatar", id);
       fields.push("avatar = ?");
-      params.push(savedAvatar || avatar);
+      params.push(avatar ? String(avatar).trim().slice(0, 500) : null);
     }
 
     if (fields.length === 0) {
@@ -224,8 +330,8 @@ export async function PATCH(req: Request) {
     console.error("PATCH /api/users/karyawan_os error:", err);
     if (err?.code === "ER_DUP_ENTRY") {
       return NextResponse.json(
-        { success: false, message: "Email sudah digunakan." },
-        { status: 409 }
+        { success: false, message: "Email sudah digunakan oleh akun lain." },
+        { status: 409 },
       );
     }
     return NextResponse.json(
@@ -235,6 +341,7 @@ export async function PATCH(req: Request) {
   }
 }
 
+// DELETE: Hapus karyawan OS
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -257,8 +364,8 @@ export async function DELETE(req: Request) {
     }
 
     const [existingRows]: any = await mysqlPool.query(
-      "SELECT id FROM users WHERE id = ? AND role = 'KARYAWAN_OS'",
-      [id]
+      "SELECT id FROM users WHERE id = ?",
+      [id],
     );
     if (!existingRows || existingRows.length === 0) {
       return NextResponse.json(
@@ -268,8 +375,8 @@ export async function DELETE(req: Request) {
     }
 
     const [result]: any = await mysqlPool.query(
-      "DELETE FROM users WHERE id = ? AND role = 'KARYAWAN_OS'",
-      [id]
+      "DELETE FROM users WHERE id = ?",
+      [id],
     );
 
     if (result.affectedRows === 0) {

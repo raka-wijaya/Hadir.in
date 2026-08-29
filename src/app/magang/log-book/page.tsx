@@ -125,8 +125,10 @@ export default function MagangLogBookPage() {
     try {
       setIsLoading(true);
       const params = new URLSearchParams();
-      // Filter by current logged-in user so interns only see their own entries
-      if (user?.id) params.append("userId", String(user.id));
+      // Filter by current logged-in user (peserta_magang_id)
+      if (user?.id) {
+        params.append("peserta_magang_id", String(user.id));
+      }
       if (selectedDate) params.append("tanggal", selectedDate);
       if (selectedCategory !== "ALL") params.append("kategori", selectedCategory);
       if (searchQuery) params.append("q", searchQuery);
@@ -147,7 +149,7 @@ export default function MagangLogBookPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, selectedDate, selectedCategory, searchQuery, sortOrder]);
+  }, [user?.id, user?.role, selectedDate, selectedCategory, searchQuery, sortOrder]);
 
 
   useEffect(() => {
@@ -206,7 +208,7 @@ export default function MagangLogBookPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          userId: user?.id,
+          peserta_magang_id: user?.id,
         }),
       });
       const result = await res.json();

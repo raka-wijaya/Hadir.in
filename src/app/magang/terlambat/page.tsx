@@ -28,7 +28,7 @@ export default function TerlambatPage() {
     try {
       setIsLoading(true);
       const [absRes, setRes] = await Promise.all([
-        fetch(`/api/absensi?userId=${user.id}`, { cache: "no-store" }),
+        fetch(`/api/absensi?peserta_magang_id=${user.id}`, { cache: "no-store" }),
         fetch("/api/settings", { cache: "no-store" }),
       ]);
 

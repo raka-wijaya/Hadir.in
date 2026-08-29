@@ -113,7 +113,7 @@ export default function PegawaiOsDashboardPage() {
     if (!user?.id) return;
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/absensi?userId=${user.id}`, {
+      const res = await fetch(`/api/absensi?karyawan_os_id=${user.id}`, {
         cache: "no-store",
       });
       const data = await res.json();
@@ -162,7 +162,7 @@ export default function PegawaiOsDashboardPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: user?.id,
+          karyawan_os_id: user?.id,
           photo: photoDataUrl,
         }),
       });
@@ -189,7 +189,7 @@ export default function PegawaiOsDashboardPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: user?.id,
+          karyawan_os_id: user?.id,
           photo: photoDataUrl,
         }),
       });

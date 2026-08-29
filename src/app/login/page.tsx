@@ -17,6 +17,7 @@ import {
   UserPlus,
   Clock,
   AlertCircle,
+  User,
 } from "lucide-react";
 
 function LoginForm() {
@@ -25,7 +26,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -44,9 +45,7 @@ function LoginForm() {
     e.preventDefault();
 
     if (!captchaVerified) {
-      setErrorMsg(
-        "Silakan masukkan CAPTCHA dengan benar terlebih dahulu."
-      );
+      setErrorMsg("Silakan masukkan CAPTCHA dengan benar terlebih dahulu.");
       return;
     }
 
@@ -54,20 +53,20 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
+      const cleanTarget = identifier.trim();
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: email.trim(),
+          identifier: cleanTarget,
+          email: cleanTarget,
           password,
         }),
       });
 
-      const contentType =
-        res.headers.get("content-type") || "";
-
+      const contentType = res.headers.get("content-type") || "";
       const data = contentType.includes("application/json")
         ? await res.json()
         : null;
@@ -77,25 +76,18 @@ function LoginForm() {
           data?.message ||
             (res.status === 404
               ? "Layanan login tidak tersedia. Mulai ulang server aplikasi lalu coba lagi."
-              : "Email atau password salah.")
+              : "Email / No. Identitas atau password salah.")
         );
-
         return;
       }
 
       login(data.user);
 
-      const targetPath = getDefaultDashboardForRole(
-        data.user.role
-      );
-
+      const targetPath = getDefaultDashboardForRole(data.user.role);
       router.push(targetPath);
     } catch (error) {
       console.error("Login request error:", error);
-
-      setErrorMsg(
-        "Tidak dapat terhubung ke server. Silakan coba lagi."
-      );
+      setErrorMsg("Tidak dapat terhubung ke server. Silakan coba lagi.");
     } finally {
       setIsLoading(false);
     }
@@ -142,18 +134,19 @@ function LoginForm() {
             </div>
           )}
 
-          {/* EMAIL */}
+          {/* IDENTIFIER (EMAIL / NIP / NIM / NO. HP) */}
           <div className="space-y-1">
-            <label className="text-[11px] font-extrabold font-sans text-card-foreground">
-              Email
+            <label className="text-[11px] font-extrabold font-sans text-card-foreground flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-primary" />
+              Email / Nomor Identitas (NIP / NIM)
             </label>
 
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Masukkan alamat email"
-              autoComplete="email"
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="Masukkan email, NIP, atau NIM"
+              autoComplete="username"
               required
               className="
                 w-full
@@ -180,7 +173,8 @@ function LoginForm() {
           {/* PASSWORD */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-extrabold font-sans text-card-foreground">
+              <label className="text-[11px] font-extrabold font-sans text-card-foreground flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-primary" />
                 Password
               </label>
 

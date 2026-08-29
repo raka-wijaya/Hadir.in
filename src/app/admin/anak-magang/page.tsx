@@ -117,7 +117,7 @@ export default function AdminAnakMagangPage() {
       setIsLoading(true);
 
       const res = await fetch(
-        "/api/users?role=ANAK_MAGANG"
+        "/api/users/peserta_magang"
       );
 
       const data = await res.json();
@@ -208,7 +208,7 @@ export default function AdminAnakMagangPage() {
         : "ACTIVE";
 
     try {
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/peserta_magang", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -269,7 +269,7 @@ export default function AdminAnakMagangPage() {
     try {
       setIsSaving(true);
 
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/peserta_magang", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -404,7 +404,7 @@ export default function AdminAnakMagangPage() {
     try {
       setIsUpdating(true);
 
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/peserta_magang", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -499,7 +499,7 @@ export default function AdminAnakMagangPage() {
       "data ini";
 
     try {
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/peserta_magang", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

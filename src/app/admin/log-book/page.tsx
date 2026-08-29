@@ -132,7 +132,7 @@ export default function AdminLogBookPage() {
   useEffect(() => {
     async function fetchInterns() {
       try {
-        const res = await fetch("/api/users?role=ANAK_MAGANG", { cache: "no-store" });
+        const res = await fetch("/api/users/peserta_magang", { cache: "no-store" });
         const data = await res.json();
         if (res.ok && data.success && Array.isArray(data.data)) {
           setInterns(data.data);
@@ -148,7 +148,7 @@ export default function AdminLogBookPage() {
     try {
       setIsLoading(true);
       const params = new URLSearchParams();
-      if (selectedInternId !== "ALL") params.append("userId", selectedInternId);
+      if (selectedInternId !== "ALL") params.append("peserta_magang_id", selectedInternId);
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
       if (selectedCategory !== "ALL") params.append("kategori", selectedCategory);

@@ -88,32 +88,29 @@ model User {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  attendances    Attendance[]
   leaveRequests  LeaveRequest[]
-  jobDesks       JobDesk[]
 
   @@map("users")
 }
 
 model Attendance {
-  id              String           @id @default(uuid())
-  userId          String           @map("user_id")
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tanggal         String           @map("attendance_date") // YYYY-MM-DD
-  jamMasuk        String?          @map("check_in")        // HH:mm:ss
-  jamPulang       String?          @map("check_out")       // HH:mm:ss
-  fotoMasuk       String?          @map("check_in_photo")  @db.LongText
-  fotoPulang      String?          @map("check_out_photo") @db.LongText
-  statusMasuk     StatusMasuk?     @map("status_masuk")
-  statusPulang    StatusPulang?    @map("status_pulang")
-  status          AttendanceStatus @default(HADIR)
-  menitTerlambat  Int              @default(0) @map("late_minutes")
-  keteranganIzin  String?          @map("notes")           @db.Text
-  dokumenIzin     String?          @map("attachment")
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id                BigInt           @id @default(autoincrement())
+  karyawanOsId      BigInt?          @map("karyawan_os_id")
+  pesertaMagangId   BigInt?          @map("peserta_magang_id")
+  pengaturanSistemId Int?            @map("pengaturan_sistem_id")
+  tanggal           DateTime         @db.Date
+  jamMasuk          DateTime?        @map("jam_masuk") @db.Time(0)
+  jamKeluar         DateTime?        @map("jam_keluar") @db.Time(0)
+  status            AttendanceStatus @default(HADIR)
+  statusMasuk       StatusMasuk?     @map("status_masuk")
+  statusPulang      StatusPulang?    @map("status_pulang")
+  fotoMasuk         String?          @map("foto_masuk") @db.VarChar(500)
+  fotoKeluar        String?          @map("foto_keluar") @db.VarChar(500)
+  fotoPulangCepat   String?          @map("foto_pulang_cepat") @db.VarChar(500)
+  keterangan        String?          @db.Text
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
 
-  @@unique([userId, tanggal], name: "user_daily_attendance")
   @@map("absensi")
 }
 
@@ -152,39 +149,40 @@ model Izin {
 }
 
 model Pendaftar {
-  id              String          @id @default(uuid())
-  kodePendaftaran String          @unique @map("kode_pendaftaran")
-  nama            String
-  email           String
-  noHp            String          @map("no_hp")
-  sekolahKampus   String          @map("sekolah_kampus")
-  jurusan         String
+  id              BigInt          @id @default(autoincrement())
+  pengaturanId    Int?            @map("pengaturan_id")
+  kodePendaftaran String          @unique @map("kode_pendaftaran") @db.VarChar(30)
+  pesertaMagangId BigInt?         @map("peserta_magang_id")
+  nama            String          @db.VarChar(150)
+  email           String          @db.VarChar(150)
+  noHp            String          @map("no_hp") @db.VarChar(20)
+  sekolahKampus   String          @map("sekolah_kampus") @db.VarChar(200)
+  studyProgram    String          @map("study_program") @db.VarChar(150)
+  bagian          String          @db.VarChar(100)
   alamat          String          @db.Text
-  bagian          String
-  periodeMulai    String?         @map("periode_mulai")
-  periodeSelesai  String?         @map("periode_selesai")
+  periodeMulai    DateTime?       @map("periode_mulai") @db.Date
+  periodeSelesai  DateTime?       @map("periode_selesai") @db.Date
+  fileCv          String?         @map("file_cv") @db.VarChar(500)
+  portfolioFile   String?         @map("portfolio_file") @db.VarChar(500)
   status          PendaftarStatus @default(pending)
   catatanAdmin    String?         @map("catatan_admin") @db.Text
-  fileCv          String?         @map("file_cv")
-  portfolioFile   String?         @map("portfolio_file")
   tanggalDaftar   DateTime        @default(now()) @map("tanggal_daftar")
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
-  @@map("pendaftar")
+  @@map("pendaftaran")
 }
 
-model JobDesk {
-  id          String        @id @default(uuid())
-  internId    String
-  intern      User          @relation(fields: [internId], references: [id], onDelete: Cascade)
-  title       String
-  description String        @db.Text
-  status      JobdeskStatus @default(Belum_Mulai)
-  dueDate     String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+model Tugas {
+  id              Int      @id @default(autoincrement())
+  pesertaMagangId BigInt?  @map("peserta_magang_id")
+  logBookId       Int?     @map("log_book_id")
+  judulTugas      String   @map("judul_tugas") @db.VarChar(255)
+  deskripsi       String   @db.Text
+  kategori        String   @default("Umum") @db.VarChar(50)
+  createdAt       DateTime @default(now()) @map("created_at")
 
-  @@map("job_desks")
+  @@map("tugas")
 }
 
 model SystemSetting {
@@ -204,14 +202,14 @@ model SystemSetting {
 }
 
 model LogBook {
-  id           Int      @id @default(autoincrement())
-  userId       BigInt?  @map("user_id")
-  tanggal      DateTime @db.Date
-  waktuMulai   DateTime @map("waktu_mulai") @db.Time(0)
-  waktuSelesai DateTime @map("waktu_selesai") @db.Time(0)
-  kategori     String   @db.VarChar(50)
-  aktivitas    String   @db.Text
-  createdAt    DateTime @default(now()) @map("created_at")
+  id              Int      @id @default(autoincrement())
+  pesertaMagangId BigInt?  @map("peserta_magang_id")
+  tanggal         DateTime @db.Date
+  waktuMulai      DateTime @map("waktu_mulai") @db.Time(0)
+  waktuSelesai    DateTime @map("waktu_selesai") @db.Time(0)
+  kategori        String   @db.VarChar(50)
+  aktivitas       String   @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
 
   @@map("log_book")
 }

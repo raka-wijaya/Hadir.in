@@ -28,7 +28,7 @@ export default function MagangRiwayatPage() {
     if (!user?.id) return;
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/absensi?userId=${user.id}`, {
+      const res = await fetch(`/api/absensi?peserta_magang_id=${user.id}`, {
         cache: "no-store",
       });
       const data = await res.json();

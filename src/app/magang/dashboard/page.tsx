@@ -70,7 +70,7 @@ export default function MagangDashboardPage() {
     year: "numeric",
   }).format(new Date()).replace(/\//g, "-");
 
-  const currentUserId = user?.id || (user as any)?.user_id || "";
+  const currentUserId = user?.id || "";
 
   const fetchAttendance = useCallback(async () => {
     let targetUserId = currentUserId;
@@ -79,7 +79,7 @@ export default function MagangDashboardPage() {
         const saved = localStorage.getItem("hadirin_user");
         if (saved) {
           const parsed = JSON.parse(saved);
-          targetUserId = parsed.id || parsed.user_id || "";
+          targetUserId = parsed.id || "";
         }
       } catch (e) {
         console.error("Error reading saved user:", e);
@@ -93,16 +93,16 @@ export default function MagangDashboardPage() {
 
     try {
       setIsLoading(true);
-      const absRes = await fetch(`/api/absensi?userId=${encodeURIComponent(targetUserId)}`, {
+      const absRes = await fetch(`/api/absensi?peserta_magang_id=${encodeURIComponent(targetUserId)}`, {
         cache: "no-store",
       });
 
       if (absRes.ok) {
         const absData = await absRes.json();
         if (absData.success && Array.isArray(absData.data)) {
-          // Pastikan hanya data yang user_id-nya sesuai dengan ID user yang sedang login
+          // Pastikan hanya data yang peserta_magang_id-nya sesuai dengan ID user yang sedang login
           const myAttendances = absData.data.filter(
-            (a: any) => String(a.user_id || a.userId) === String(targetUserId)
+            (a: any) => String(a.peserta_magang_id || a.pesertaMagangId) === String(targetUserId)
           );
           setUserAttendances(myAttendances);
         } else {
@@ -300,13 +300,13 @@ export default function MagangDashboardPage() {
   };
 
   const getEffectiveUserId = () => {
-    let uid = user?.id || (user as any)?.user_id;
+    let uid = user?.id;
     if (!uid && typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem("hadirin_user");
         if (saved) {
           const parsed = JSON.parse(saved);
-          uid = parsed.id || parsed.user_id;
+          uid = parsed.id;
         }
       } catch (e) {}
     }
@@ -326,7 +326,7 @@ export default function MagangDashboardPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            userId: uid,
+            peserta_magang_id: uid,
             photo: photoDataUrl,
           }),
         }
@@ -372,7 +372,7 @@ export default function MagangDashboardPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            userId: uid,
+            peserta_magang_id: uid,
             photo: photoDataUrl,
 
             // Data pulang cepat

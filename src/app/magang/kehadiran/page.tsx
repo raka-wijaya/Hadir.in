@@ -34,7 +34,7 @@ export default function KehadiranPage() {
       setIsLoading(true);
 
       const absRes = await fetch(
-        `/api/absensi?user_id=${encodeURIComponent(user.id)}`,
+        `/api/absensi?peserta_magang_id=${encodeURIComponent(user.id)}`,
         {
           cache: "no-store",
         }

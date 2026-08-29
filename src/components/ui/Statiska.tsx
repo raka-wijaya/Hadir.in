@@ -15,8 +15,8 @@ import { BarChart3 } from "lucide-react";
 
 interface Absensi {
   id: string;
-  user_id: string;
-  userId: string;
+  peserta_magang_id?: string | null;
+  karyawan_os_id?: string | null;
   tanggal: string;
   attendanceDate: string;
 
@@ -55,7 +55,8 @@ interface Absensi {
 
 interface LeaveRequest {
   id: string;
-  userId: string;
+  peserta_magang_id?: string | null;
+  karyawan_os_id?: string | null;
   userRole: string;
   tanggalMulai: string;
   tanggalSelesai: string;
@@ -230,17 +231,36 @@ export function Statiska({
         absUrl.searchParams.set("startDate", tanggalMulai);
         absUrl.searchParams.set("endDate", tanggalSelesai);
 
-        const [absResponse, usersResponse] = await Promise.all([
+        const roleUpper = role.toUpperCase();
+        const fetchMagang =
+          roleUpper === "SUPER_ADMIN" ||
+          roleUpper === "SUPERADMIN" ||
+          roleUpper === "ADMIN_MAGANG";
+        const fetchOS =
+          roleUpper === "SUPER_ADMIN" ||
+          roleUpper === "SUPERADMIN" ||
+          roleUpper === "ADMIN_OS";
+
+        const [absResponse, magangResponse, osResponse] = await Promise.all([
           fetch(absUrl.toString(), {
             method: "GET",
             cache: "no-store",
             signal: controller.signal,
           }),
-          fetch("/api/users", {
-            method: "GET",
-            cache: "no-store",
-            signal: controller.signal,
-          }),
+          fetchMagang
+            ? fetch("/api/users/peserta_magang", {
+                method: "GET",
+                cache: "no-store",
+                signal: controller.signal,
+              })
+            : Promise.resolve(null),
+          fetchOS
+            ? fetch("/api/users/karyawan_os", {
+                method: "GET",
+                cache: "no-store",
+                signal: controller.signal,
+              })
+            : Promise.resolve(null),
         ]);
 
         const result = await absResponse.json().catch(() => ({}));
@@ -254,7 +274,6 @@ export function Statiska({
         const absensi: Absensi[] = result.data ?? [];
 
         // Filter absensi sesuai role
-        const roleUpper = role.toUpperCase();
         const filteredAbsensi = absensi.filter((item) => {
           const ur = (item.user_role || item.userRole || "").toUpperCase();
           if (roleUpper === "SUPER_ADMIN" || roleUpper === "SUPERADMIN") {
@@ -269,28 +288,22 @@ export function Statiska({
           return true;
         });
 
-
         // Hitung total user aktif sesuai role (untuk kalkulasi Alpa)
         let totalActiveUsers = 0;
-        if (usersResponse.ok) {
-          const usersResult = await usersResponse.json();
-          if (usersResult.success && Array.isArray(usersResult.data)) {
-            const activeList = usersResult.data.filter(
+        if (magangResponse && magangResponse.ok) {
+          const mResult = await magangResponse.json().catch(() => ({}));
+          if (mResult.success && Array.isArray(mResult.data)) {
+            totalActiveUsers += mResult.data.filter(
               (u: any) => !u.status || u.status === "ACTIVE"
-            );
-            const filteredUsers = activeList.filter((u: any) => {
-              const uRole = String(u.role || "").toUpperCase();
-              if (roleUpper === "SUPER_ADMIN" || roleUpper === "SUPERADMIN") {
-                return (
-                  uRole === "ANAK_MAGANG" ||
-                  uRole === "KARYAWAN_OS"
-                );
-              }
-              if (roleUpper === "ADMIN_MAGANG") return uRole === "ANAK_MAGANG";
-              if (roleUpper === "ADMIN_OS") return uRole === "KARYAWAN_OS";
-              return true;
-            });
-            totalActiveUsers = filteredUsers.length;
+            ).length;
+          }
+        }
+        if (osResponse && osResponse.ok) {
+          const osResult = await osResponse.json().catch(() => ({}));
+          if (osResult.success && Array.isArray(osResult.data)) {
+            totalActiveUsers += osResult.data.filter(
+              (u: any) => !u.status || u.status === "ACTIVE"
+            ).length;
           }
         }
 
@@ -333,7 +346,8 @@ export function Statiska({
 
           const uniqueUsers = new Map<string, Absensi>();
           dataHariIni.forEach((item) => {
-            uniqueUsers.set(String(item.user_id), item);
+            const uid = String(item.peserta_magang_id || item.karyawan_os_id || item.id);
+            uniqueUsers.set(uid, item);
           });
 
           const records = Array.from(uniqueUsers.values());
@@ -344,7 +358,7 @@ export function Statiska({
           let alpa = 0;
 
           const absenUserIds = new Set(
-            records.map((r) => String(r.user_id))
+            records.map((r) => String(r.peserta_magang_id || r.karyawan_os_id || r.id))
           );
 
           records.forEach((item) => {

@@ -30,7 +30,10 @@ import {
 
 interface Izin {
   id: string;
-  userId: string;
+  peserta_magang_id?: string | null;
+  karyawan_os_id?: string | null;
+  pesertaMagangId?: string | null;
+  karyawanOsId?: string | null;
   absensiId?: string;
 
   userName: string;
@@ -128,8 +131,11 @@ export default function AdminIzinPage() {
   const [adminNote, setAdminNote] = useState("");
 
   // Form State for Create & Edit
+  // selectedUserId: gabungan "peserta_magang_id" atau "karyawan_os_id" dari userOptions
+  // selectedUserRole: role user yang dipilih untuk menentukan kolom FK
   const [formData, setFormData] = useState({
-    userId: "",
+    selectedUserId: "",
+    selectedUserRole: "",
     jenis: "Sakit",
     tanggalMulai: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Jakarta" }).format(new Date()),
     tanggalSelesai: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Jakarta" }).format(new Date()),
@@ -203,20 +209,34 @@ export default function AdminIzinPage() {
   // Load Users for dropdown
   const loadUsers = useCallback(async () => {
     try {
-      const res = await fetch("/api/users", { cache: "no-store" });
-      const data = await readJsonResponse(res);
-      if (res.ok && data.success && Array.isArray(data.data)) {
-        setUserOptions(
-          data.data.map((u: any) => ({
-            id: String(u.id),
-            name: u.name || u.nama || "User",
-            email: u.email,
-            role: u.role,
-            institution: u.institution,
-            study_program: u.study_program,
-          }))
-        );
-      }
+      const [magangRes, osRes, adminRes] = await Promise.all([
+        fetch("/api/users/peserta_magang", { cache: "no-store" }),
+        fetch("/api/users/karyawan_os", { cache: "no-store" }),
+        fetch("/api/users/admin", { cache: "no-store" }),
+      ]);
+
+      const [magangData, osData, adminData] = await Promise.all([
+        readJsonResponse(magangRes),
+        readJsonResponse(osRes),
+        readJsonResponse(adminRes),
+      ]);
+
+      const allUsers = [
+        ...(Array.isArray(magangData?.data) ? magangData.data.map((u: any) => ({ ...u, role: "ANAK_MAGANG" })) : []),
+        ...(Array.isArray(osData?.data) ? osData.data.map((u: any) => ({ ...u, role: "KARYAWAN_OS" })) : []),
+        ...(Array.isArray(adminData?.data) ? adminData.data : []),
+      ];
+
+      setUserOptions(
+        allUsers.map((u: any) => ({
+          id: String(u.id),
+          name: u.name || u.nama || "User",
+          email: u.email,
+          role: u.role,
+          institution: u.institution,
+          study_program: u.study_program,
+        }))
+      );
     } catch (err) {
       console.warn("Gagal memuat daftar user untuk dropdown izin:", err);
     }
@@ -237,8 +257,10 @@ export default function AdminIzinPage() {
   // Reset form
   const resetForm = () => {
     const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Jakarta" }).format(new Date());
+    const firstUser = userOptions[0];
     setFormData({
-      userId: userOptions[0]?.id || "",
+      selectedUserId: firstUser?.id || "",
+      selectedUserRole: firstUser?.role || "",
       jenis: "Sakit",
       tanggalMulai: today,
       tanggalSelesai: today,
@@ -256,8 +278,11 @@ export default function AdminIzinPage() {
   // Open Edit Modal
   const handleOpenEdit = (item: Izin) => {
     setSelectedIzin(item);
+    const itemId = item.peserta_magang_id || item.karyawan_os_id || "";
+    const itemRole = item.userRole || (item.peserta_magang_id ? "ANAK_MAGANG" : "KARYAWAN_OS");
     setFormData({
-      userId: item.userId,
+      selectedUserId: itemId,
+      selectedUserRole: itemRole,
       jenis: item.jenis,
       tanggalMulai: item.tanggalMulai,
       tanggalSelesai: item.tanggalSelesai,
@@ -283,7 +308,7 @@ export default function AdminIzinPage() {
   // Submit Create (POST)
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.userId) {
+    if (!formData.selectedUserId) {
       showAlert("Silakan pilih peserta / user terlebih dahulu.", "Validasi Form", "red");
       return;
     }
@@ -294,10 +319,19 @@ export default function AdminIzinPage() {
 
     try {
       setIsSaving(true);
+      const isKaryawanOs = formData.selectedUserRole === "KARYAWAN_OS";
       const res = await fetch("/api/izin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...(isKaryawanOs
+            ? { karyawan_os_id: formData.selectedUserId }
+            : { peserta_magang_id: formData.selectedUserId }),
+          jenis: formData.jenis,
+          tanggalMulai: formData.tanggalMulai,
+          tanggalSelesai: formData.tanggalSelesai,
+          alasan: formData.alasan,
+        }),
       });
 
       const data = await readJsonResponse(res);
@@ -883,13 +917,15 @@ export default function AdminIzinPage() {
                       Pilih Peserta / User *
                     </label>
                     <select
-                      value={formData.userId}
-                      onChange={(e) =>
+                      value={formData.selectedUserId}
+                      onChange={(e) => {
+                        const selected = userOptions.find(u => u.id === e.target.value);
                         setFormData({
                           ...formData,
-                          userId: e.target.value,
-                        })
-                      }
+                          selectedUserId: e.target.value,
+                          selectedUserRole: selected?.role || "",
+                        });
+                      }}
                       required
                       className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
                     >

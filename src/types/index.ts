@@ -290,13 +290,9 @@ export interface Absensi {
 
   id: string;
 
-
-  // ----------------------------------------------------------
-  // User relation
-  // ----------------------------------------------------------
-
-  user_id: string;
-
+  karyawan_os_id?: string | null;
+  peserta_magang_id?: string | null;
+  pengaturan_sistem_id?: number | null;
 
   // ----------------------------------------------------------
   // Attendance date
@@ -393,7 +389,10 @@ export interface Absensi {
   // LEGACY COMPATIBILITY PROPERTIES
   // ==========================================================
 
-  userId?: string;
+  // FK ke peserta_magang atau karyawan_os (sebagai alias frontend)
+  pesertaMagangId?: string;
+
+  karyawanOsId?: string;
 
   userName?: string;
 
@@ -457,7 +456,7 @@ export interface Absensi {
 
   attachment?: string | null;
 
-  pengaturan_sistem_id?: number;
+  pengaturanSistemId?: number | null;
 
   updated_at?: string;
 }
@@ -485,7 +484,9 @@ export interface Pendaftar {
 
   kode_pendaftaran: string;
 
-  user_id?: string | null;
+  peserta_magang_id?: string | null;
+
+  pesertaMagangId?: string | null;
 
   // ----------------------------------------------------------
   // Identity
@@ -709,11 +710,12 @@ export type SystemSettings = {
 
 export interface Izin {
   // ----------------------------------------------------------
-  // Schema Database (10 Kolom)
+  // Schema Database (11 Kolom)
   // ----------------------------------------------------------
   id: string;
   absensi_id?: string | null;
-  user_id: string;
+  peserta_magang_id?: string | null;
+  karyawan_os_id?: string | null;
   jenis: string;
   tanggal_mulai: string;
   tanggal_selesai: string;
@@ -726,12 +728,15 @@ export interface Izin {
   // Joined & Frontend Compatibility Aliases
   // ----------------------------------------------------------
   absensiId?: string | null;
-  userId?: string;
+  pesertaMagangId?: string | null;
+  karyawanOsId?: string | null;
   tanggalMulai?: string;
   tanggalSelesai?: string;
   catatanAdmin?: string;
   userName?: string;
   user_nama?: string;
+  userEmail?: string;
+  user_email?: string;
   userRole?: UserRole;
   user_role?: UserRole;
   userAvatar?: string | null;
@@ -760,7 +765,13 @@ export interface LeaveRequest {
   // User
   // ----------------------------------------------------------
 
-  userId: string;
+  peserta_magang_id?: string | null;
+
+  karyawan_os_id?: string | null;
+
+  pesertaMagangId?: string | null;
+
+  karyawanOsId?: string | null;
 
   userName: string;
 
@@ -828,16 +839,16 @@ export interface LeaveRequest {
 
 // ============================================================
 // TUGAS / JOBDESK ITEM
-// Sesuai tabel MySQL: `tugas`
-// Kolom: id, user_id, log_book_id, judul_tugas, deskripsi, kategori, created_at
+// Sesuai tabel MySQL: `tugas` (7 Kolom)
+// Kolom: id, peserta_magang_id, log_book_id, judul_tugas, deskripsi, kategori, created_at
 // ============================================================
 
 export interface TugasItem {
   id: number | string;
 
-  // FK ke users
-  user_id?: number | string | null;
-  userId?: number | string | null;
+  // FK ke peserta_magang
+  peserta_magang_id?: number | string | null;
+  pesertaMagangId?: number | string | null;
 
   // FK ke log_book
   log_book_id?: number | string | null;
@@ -854,7 +865,7 @@ export interface TugasItem {
   created_at: string;
   createdAt?: string;
 
-  // Join dari users (opsional, diisi saat query WITH JOIN)
+  // Join dari peserta_magang / karyawan_os (opsional, diisi saat query WITH JOIN)
   user_nama?: string | null;
   userName?: string | null;
   user_avatar?: string | null;
@@ -944,8 +955,8 @@ export const LOGBOOK_CATEGORY_LABELS: Record<LogBookCategory, string> = {
 
 export interface LogBook {
   id: number;
-  user_id?: string | number | null;
-  userId?: string | number | null;
+  peserta_magang_id?: string | number | null;
+  pesertaMagangId?: string | number | null;
   user_nama?: string;
   userName?: string;
   user_role?: UserRole | string;
@@ -971,8 +982,8 @@ export interface LogBook {
 }
 
 export interface LogBookInput {
-  user_id?: string | number | null;
-  userId?: string | number | null;
+  peserta_magang_id?: string | number | null;
+  pesertaMagangId?: string | number | null;
   tanggal?: string;
   waktu_mulai: string;
   waktu_selesai: string;

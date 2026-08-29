@@ -87,6 +87,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       `
       SELECT
         id,
+        peserta_magang_id,
         tanggal,
         waktu_mulai,
         waktu_selesai,
@@ -116,6 +117,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     const data = {
       id: Number(row.id),
+      peserta_magang_id: row.peserta_magang_id ? String(row.peserta_magang_id) : null,
+      pesertaMagangId: row.peserta_magang_id ? String(row.peserta_magang_id) : null,
       tanggal,
       waktu_mulai: waktuMulai,
       waktu_selesai: waktuSelesai,
@@ -194,6 +197,12 @@ async function handleParamUpdate(req: NextRequest, { params }: RouteParams) {
     const updates: string[] = [];
     const queryParams: any[] = [];
 
+    if (body.peserta_magang_id !== undefined || body.pesertaMagangId !== undefined) {
+      const pmId = body.peserta_magang_id ?? body.pesertaMagangId;
+      updates.push("peserta_magang_id = ?");
+      queryParams.push(pmId ? Number(pmId) : null);
+    }
+
     if (body.tanggal !== undefined) {
       updates.push("tanggal = ?");
       queryParams.push(formatDateYMD(body.tanggal));
@@ -250,6 +259,8 @@ async function handleParamUpdate(req: NextRequest, { params }: RouteParams) {
 
     const formattedUpdated = {
       id: Number(updated.id),
+      peserta_magang_id: updated.peserta_magang_id ? String(updated.peserta_magang_id) : null,
+      pesertaMagangId: updated.peserta_magang_id ? String(updated.peserta_magang_id) : null,
       tanggal,
       waktu_mulai: waktuMulai,
       waktu_selesai: waktuSelesai,

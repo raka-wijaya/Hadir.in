@@ -35,7 +35,10 @@ import {
 
 interface Izin {
   id: string;
-  userId: string;
+  peserta_magang_id?: string | null;
+  pesertaMagangId?: string | null;
+  karyawan_os_id?: string | null;
+  karyawanOsId?: string | null;
   absensiId: string;
 
   userName: string;
@@ -192,8 +195,10 @@ export default function MagangIzinPage() {
       try {
         setIsLoading(true);
 
+        // user.id adalah peserta_magang_id (karena login dari tabel peserta_magang)
+        const paramKey = user.role === "KARYAWAN_OS" ? "karyawan_os_id" : "peserta_magang_id";
         const res = await fetch(
-          `/api/izin?userId=${encodeURIComponent(
+          `/api/izin?${paramKey}=${encodeURIComponent(
             String(user.id)
           )}`,
           {
@@ -391,8 +396,10 @@ export default function MagangIzinPage() {
       const formData =
         new FormData();
 
+      // Kirim peserta_magang_id atau karyawan_os_id sesuai role
+      const idKey = user.role === "KARYAWAN_OS" ? "karyawan_os_id" : "peserta_magang_id";
       formData.append(
-        "userId",
+        idKey,
         String(user.id)
       );
 

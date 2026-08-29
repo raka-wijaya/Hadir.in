@@ -56,7 +56,7 @@ function timeToSeconds(time: string): number {
 function getLateMinutes(
   actualTime: string,
   targetTime: string,
-  toleransiMenit: number = 1
+  toleransiMenit: number = 15
 ): number {
   const actual = timeToSeconds(actualTime);
   const target = timeToSeconds(targetTime);
@@ -68,7 +68,7 @@ function getLateMinutes(
 function getStatusMasuk(
   jamMasuk: string,
   jamMasukSetting: string,
-  toleransiMenit: number = 1
+  toleransiMenit: number = 15
 ): "TEPAT_WAKTU" | "TERLAMBAT" {
   const actual = timeToSeconds(jamMasuk);
   const target = timeToSeconds(jamMasukSetting);
@@ -126,21 +126,86 @@ async function getActiveSetting() {
 }
 
 /**
+ * Helper: Mencari tipe user dan tabel asalnya (peserta_magang vs karyawan_os vs users)
+ */
+async function resolveUserTarget(userId: string | number, explicitRole?: string | null) {
+  const cleanId = String(userId);
+  const roleUpper = (explicitRole || "").toUpperCase();
+
+  if (roleUpper === "ANAK_MAGANG") {
+    const [rows]: any = await mysqlPool.query(
+      "SELECT id, name, email, phone, identity_number, institution, study_program, avatar, 'ANAK_MAGANG' as role FROM peserta_magang WHERE id = ? LIMIT 1",
+      [cleanId]
+    );
+    if (rows && rows.length > 0) {
+      return { type: "peserta_magang" as const, id: rows[0].id, data: rows[0] };
+    }
+  }
+
+  if (roleUpper === "KARYAWAN_OS") {
+    const [rows]: any = await mysqlPool.query(
+      "SELECT id, name, email, phone, identity_number, avatar, 'KARYAWAN_OS' as role FROM karyawan_os WHERE id = ? LIMIT 1",
+      [cleanId]
+    );
+    if (rows && rows.length > 0) {
+      return { type: "karyawan_os" as const, id: rows[0].id, data: rows[0] };
+    }
+  }
+
+  // Coba cari di peserta_magang
+  const [magangRows]: any = await mysqlPool.query(
+    "SELECT id, name, email, phone, identity_number, institution, study_program, avatar, 'ANAK_MAGANG' as role FROM peserta_magang WHERE id = ? LIMIT 1",
+    [cleanId]
+  );
+  if (magangRows && magangRows.length > 0) {
+    return { type: "peserta_magang" as const, id: magangRows[0].id, data: magangRows[0] };
+  }
+
+  // Coba cari di karyawan_os
+  const [osRows]: any = await mysqlPool.query(
+    "SELECT id, name, email, phone, identity_number, avatar, 'KARYAWAN_OS' as role FROM karyawan_os WHERE id = ? LIMIT 1",
+    [cleanId]
+  );
+  if (osRows && osRows.length > 0) {
+    return { type: "karyawan_os" as const, id: osRows[0].id, data: osRows[0] };
+  }
+
+  // Fallback ke users jika ada
+  try {
+    const [userRows]: any = await mysqlPool.query(
+      "SELECT id, name, role, email, phone, identity_number, institution, study_program, avatar FROM users WHERE id = ? LIMIT 1",
+      [cleanId]
+    );
+    if (userRows && userRows.length > 0) {
+      const u = userRows[0];
+      if (u.role === "KARYAWAN_OS") {
+        return { type: "karyawan_os" as const, id: u.id, data: u };
+      }
+      return { type: "peserta_magang" as const, id: u.id, data: u };
+    }
+  } catch {
+    // Abaikan jika tabel users tidak ada
+  }
+
+  return { type: "peserta_magang" as const, id: cleanId, data: null };
+}
+
+/**
  * GET: Mengambil data absensi
- * Kolom tabel absensi:
- *   id (bigint), user_id (bigint), pengaturan_sistem_id (int),
- *   tanggal (date), jam_masuk (time), jam_keluar (time),
- *   status enum(HADIR|IZIN|SAKIT|ALPA),
- *   status_masuk enum(TEPAT_WAKTU|TERLAMBAT),
- *   status_pulang enum(TEPAT_WAKTU|PULANG_CEPAT),
- *   foto_masuk varchar(500), foto_keluar varchar(500),
- *   foto_pulang_cepat varchar(500), keterangan text,
- *   created_at timestamp, updated_at timestamp
+ * Sesuai skema tabel absensi:
+ *   id (bigint unsigned), karyawan_os_id (bigint unsigned), peserta_magang_id (bigint unsigned),
+ *   pengaturan_sistem_id (int unsigned), tanggal (date), jam_masuk (time), jam_keluar (time),
+ *   status enum('HADIR','IZIN','SAKIT','ALPA'),
+ *   status_masuk enum('TEPAT_WAKTU','TERLAMBAT'),
+ *   status_pulang enum('TEPAT_WAKTU','PULANG_CEPAT'),
+ *   foto_masuk varchar(500), foto_keluar varchar(500), foto_pulang_cepat varchar(500),
+ *   keterangan text, created_at timestamp, updated_at timestamp
  */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId") || searchParams.get("user_id");
+    const karyawanOsId = searchParams.get("karyawan_os_id") || searchParams.get("karyawanOsId");
+    const pesertaMagangId = searchParams.get("peserta_magang_id") || searchParams.get("pesertaMagangId");
     const role = searchParams.get("role");
     const startDate = searchParams.get("startDate") || searchParams.get("start_date");
     const endDate = searchParams.get("endDate") || searchParams.get("end_date");
@@ -157,20 +222,23 @@ export async function GET(req: NextRequest) {
       conditions.push("a.id = ?");
       params.push(idParam);
     }
-    if (userId) {
-      conditions.push("a.user_id = ?");
-      params.push(userId);
+
+    if (karyawanOsId) {
+      conditions.push("a.karyawan_os_id = ?");
+      params.push(karyawanOsId);
+    } else if (pesertaMagangId) {
+      conditions.push("a.peserta_magang_id = ?");
+      params.push(pesertaMagangId);
     }
+
     if (role && role !== "ALL" && role !== "SUPERADMIN" && role !== "SUPER_ADMIN") {
-      if (role === "ADMIN_MAGANG") {
-        conditions.push("u.role = 'ANAK_MAGANG'");
-      } else if (role === "ADMIN_OS") {
-        conditions.push("u.role = 'KARYAWAN_OS'");
-      } else {
-        conditions.push("u.role = ?");
-        params.push(role);
+      if (role === "ADMIN_MAGANG" || role === "ANAK_MAGANG") {
+        conditions.push("a.peserta_magang_id IS NOT NULL");
+      } else if (role === "ADMIN_OS" || role === "KARYAWAN_OS") {
+        conditions.push("a.karyawan_os_id IS NOT NULL");
       }
     }
+
     if (tanggalParam) {
       conditions.push("a.tanggal = ?");
       params.push(tanggalParam);
@@ -189,7 +257,7 @@ export async function GET(req: NextRequest) {
     } else if (statusParam && statusParam !== "ALL") {
       const s = statusParam.toUpperCase().trim();
       if (s === "TERLAMBAT" || s === "LATE") {
-        conditions.push("(a.status_masuk = 'TERLAMBAT' OR a.status = 'TERLAMBAT')");
+        conditions.push("a.status_masuk = 'TERLAMBAT'");
       } else if (s === "TEPAT_WAKTU" || s === "HADIR_TEPAT_WAKTU") {
         conditions.push("(a.status = 'HADIR' AND (a.status_masuk = 'TEPAT_WAKTU' OR a.status_masuk IS NULL))");
       } else if (s === "HADIR" || s === "PRESENT") {
@@ -211,14 +279,17 @@ export async function GET(req: NextRequest) {
     if (searchParam && searchParam.trim()) {
       const q = `%${searchParam.trim()}%`;
       conditions.push(`(
-        u.name LIKE ? OR 
-        u.email LIKE ? OR 
-        u.identity_number LIKE ? OR 
-        u.institution LIKE ? OR 
-        u.study_program LIKE ? OR 
+        pm.name LIKE ? OR 
+        pm.email LIKE ? OR 
+        pm.identity_number LIKE ? OR 
+        pm.institution LIKE ? OR 
+        pm.study_program LIKE ? OR 
+        ko.name LIKE ? OR 
+        ko.email LIKE ? OR 
+        ko.identity_number LIKE ? OR 
         a.keterangan LIKE ?
       )`);
-      params.push(q, q, q, q, q, q);
+      params.push(q, q, q, q, q, q, q, q, q);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -227,7 +298,8 @@ export async function GET(req: NextRequest) {
       `
       SELECT
         a.id,
-        a.user_id,
+        a.karyawan_os_id,
+        a.peserta_magang_id,
         a.pengaturan_sistem_id,
         a.tanggal,
         a.jam_masuk,
@@ -241,18 +313,16 @@ export async function GET(req: NextRequest) {
         a.keterangan,
         a.created_at,
         a.updated_at,
-        u.name AS user_name,
-        u.name AS user_nama,
-        u.role AS user_role,
-        u.avatar AS user_avatar,
-        u.institution AS user_institution,
-        u.institution AS user_sekolah,
-        u.study_program AS user_study_program,
-        u.study_program AS user_jurusan,
-        u.identity_number AS user_identity_number,
-        u.identity_number AS user_nip
+        COALESCE(pm.name, ko.name) AS user_name,
+        COALESCE(pm.email, ko.email) AS user_email,
+        IF(a.peserta_magang_id IS NOT NULL, 'ANAK_MAGANG', 'KARYAWAN_OS') AS user_role,
+        COALESCE(pm.avatar, ko.avatar) AS user_avatar,
+        pm.institution AS user_institution,
+        pm.study_program AS user_study_program,
+        COALESCE(pm.identity_number, ko.identity_number) AS user_identity_number
       FROM absensi a
-      LEFT JOIN users u ON u.id = a.user_id
+      LEFT JOIN peserta_magang pm ON pm.id = a.peserta_magang_id
+      LEFT JOIN karyawan_os ko ON ko.id = a.karyawan_os_id
       ${whereClause}
       ORDER BY a.tanggal DESC, a.created_at DESC
       `,
@@ -299,39 +369,54 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      const userName = row.user_name || row.user_nama || "Peserta";
-      const userRole = row.user_role || "ANAK_MAGANG";
+      const userName = row.user_name || "Peserta";
+      const userRole = row.user_role || (row.peserta_magang_id ? "ANAK_MAGANG" : "KARYAWAN_OS");
       const userAvatar = row.user_avatar || null;
-      const userInstitution = row.user_institution || row.user_sekolah || "";
-      const userIdentityNumber = row.user_identity_number || row.user_nip || "";
-      const userStudyProgram = row.user_study_program || row.user_jurusan || "";
+      const userInstitution = row.user_institution || "";
+      const userIdentityNumber = row.user_identity_number || "";
+      const userStudyProgram = row.user_study_program || "";
+      const effectiveUserId = String(row.peserta_magang_id || row.karyawan_os_id || "");
       const createdTime = row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString();
       const updatedTime = row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString();
 
       return {
+        // Skema Database Sesuai Gambar
         id: String(row.id),
-        user_id: String(row.user_id),
-        userId: String(row.user_id),
-        pengaturan_sistem_id: row.pengaturan_sistem_id,
+        karyawan_os_id: row.karyawan_os_id ? String(row.karyawan_os_id) : null,
+        karyawanOsId: row.karyawan_os_id ? String(row.karyawan_os_id) : null,
+        peserta_magang_id: row.peserta_magang_id ? String(row.peserta_magang_id) : null,
+        pesertaMagangId: row.peserta_magang_id ? String(row.peserta_magang_id) : null,
+        pengaturan_sistem_id: row.pengaturan_sistem_id ? Number(row.pengaturan_sistem_id) : null,
         tanggal,
-        attendanceDate: tanggal,
         jam_masuk: jamMasuk,
-        checkIn: jamMasuk,
         jam_keluar: jamKeluar,
-        checkOut: jamKeluar,
-        foto_masuk: fotoMasuk,
-        checkInPhoto: fotoMasuk,
-        foto_keluar: fotoKeluar,
-        checkOutPhoto: fotoKeluar,
-        foto_pulang_cepat: fotoPulangCepat,
-        status_masuk: statusMasuk,
-        statusMasuk,
-        status_pulang: statusPulang,
-        statusPulang,
         status: row.status,
+        status_masuk: statusMasuk,
+        status_pulang: statusPulang,
+        foto_masuk: fotoMasuk,
+        foto_keluar: fotoKeluar,
+        foto_pulang_cepat: fotoPulangCepat,
+        keterangan: rawKeterangan,
+        created_at: createdTime,
+        updated_at: updatedTime,
+
+        // Alias kompatibilitas frontend & mobile UI
+        attendanceDate: tanggal,
+        jamMasuk,
+        checkIn: jamMasuk,
+        jamPulang: jamKeluar,
+        jamKeluar,
+        checkOut: jamKeluar,
+        fotoMasuk,
+        checkInPhoto: fotoMasuk,
+        fotoPulang: fotoKeluar,
+        fotoKeluar,
+        checkOutPhoto: fotoKeluar,
+        fotoPulangCepat,
+        statusMasuk,
+        statusPulang,
         menit_terlambat: lateMinutes,
         lateMinutes,
-        keterangan: alasan,
         keteranganIzin: alasan,
         alasan,
         catatanAdmin,
@@ -350,8 +435,6 @@ export async function GET(req: NextRequest) {
         userStudyProgram,
         createdAt: createdTime,
         updatedAt: updatedTime,
-        created_at: createdTime,
-        updated_at: updatedTime,
       };
     });
 
@@ -359,7 +442,8 @@ export async function GET(req: NextRequest) {
       .filter((item) => item.status === "IZIN" || item.status === "SAKIT")
       .map((item) => ({
         id: item.id,
-        userId: item.userId,
+        karyawan_os_id: item.karyawan_os_id,
+        peserta_magang_id: item.peserta_magang_id,
         absensiId: item.id,
         userName: item.userName,
         userRole: item.userRole,
@@ -392,25 +476,20 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST: Presensi Masuk, Pulang, atau Pengajuan Izin / Sakit
- *
  * Sesuai skema tabel absensi:
- *   id bigint(20) UNSIGNED auto_increment
- *   user_id bigint(20) UNSIGNED
- *   pengaturan_sistem_id int(10) UNSIGNED
+ *   karyawan_os_id bigint(20) unsigned | NULL
+ *   peserta_magang_id bigint(20) unsigned | NULL
+ *   pengaturan_sistem_id int(10) unsigned
  *   tanggal date
- *   jam_masuk time (nullable)
- *   jam_keluar time (nullable)
- *   status enum('HADIR','IZIN','SAKIT','ALPA') default HADIR
- *   status_masuk enum('TEPAT_WAKTU','TERLAMBAT') nullable
- *   status_pulang enum('TEPAT_WAKTU','PULANG_CEPAT') nullable
- *   foto_masuk varchar(500) nullable
- *   foto_keluar varchar(500) nullable
- *   foto_pulang_cepat varchar(500) nullable
- *   keterangan text nullable
- *   created_at timestamp
- *   updated_at timestamp
- *
- * CATATAN: Tidak ada kolom "attachment" di tabel ini.
+ *   jam_masuk time | NULL
+ *   jam_keluar time | NULL
+ *   status enum('HADIR','IZIN','SAKIT','ALPA')
+ *   status_masuk enum('TEPAT_WAKTU','TERLAMBAT') | NULL
+ *   status_pulang enum('TEPAT_WAKTU','PULANG_CEPAT') | NULL
+ *   foto_masuk varchar(500) | NULL
+ *   foto_keluar varchar(500) | NULL
+ *   foto_pulang_cepat varchar(500) | NULL
+ *   keterangan text | NULL
  */
 export async function POST(req: NextRequest) {
   try {
@@ -427,7 +506,9 @@ export async function POST(req: NextRequest) {
           key === "foto_keluar" ||
           key === "foto_pulang_cepat" ||
           key === "photo" ||
-          key === "foto"
+          key === "foto" ||
+          key === "checkInPhoto" ||
+          key === "checkOutPhoto"
         ) {
           fotoFile = { key, file: value };
         } else {
@@ -439,13 +520,18 @@ export async function POST(req: NextRequest) {
       body = await req.json();
     }
 
-    const userId = body.userId || body.user_id;
-    if (!userId) {
+    const pesertaMagangId = body.peserta_magang_id || body.pesertaMagangId || (body.role === "ANAK_MAGANG" ? body.id : null);
+    const karyawanOsId = body.karyawan_os_id || body.karyawanOsId || (body.role === "KARYAWAN_OS" ? body.id : null);
+
+    if (!pesertaMagangId && !karyawanOsId) {
       return NextResponse.json(
-        { success: false, message: "User ID wajib disertakan." },
+        { success: false, message: "ID peserta_magang_id atau karyawan_os_id wajib disertakan." },
         { status: 400 }
       );
     }
+
+    const isMagang = Boolean(pesertaMagangId);
+    const targetId = pesertaMagangId || karyawanOsId;
 
     const setting = await getActiveSetting();
     const today = getTodayJakarta();
@@ -453,8 +539,6 @@ export async function POST(req: NextRequest) {
 
     // ─────────────────────────────────────────────────────────────────────────
     // 1. PENGAJUAN IZIN / SAKIT
-    //    Kolom: status (IZIN|SAKIT), keterangan (text)
-    //    Tidak ada kolom attachment di tabel absensi
     // ─────────────────────────────────────────────────────────────────────────
     if (
       body.jenis ||
@@ -496,40 +580,44 @@ export async function POST(req: NextRequest) {
       const insertedIds: number[] = [];
 
       for (const tgl of dateList) {
-        const [existing]: any = await mysqlPool.query(
-          "SELECT id FROM absensi WHERE user_id = ? AND tanggal = ? LIMIT 1",
-          [userId, tgl]
-        );
+        const checkSql = isMagang
+          ? "SELECT id FROM absensi WHERE peserta_magang_id = ? AND tanggal = ? LIMIT 1"
+          : "SELECT id FROM absensi WHERE karyawan_os_id = ? AND tanggal = ? LIMIT 1";
+        const checkParam = isMagang ? pesertaMagangId : karyawanOsId;
+
+        const [existing]: any = await mysqlPool.query(checkSql, [checkParam, tgl]);
         if (existing && existing.length > 0) {
           const existingId = existing[0].id;
           await mysqlPool.query(
-            `UPDATE absensi SET status = ?, keterangan = ?, pengaturan_sistem_id = ? WHERE id = ?`,
-            [statusAbsensi, notesFormatted, setting.id, existingId]
+            `UPDATE absensi 
+             SET status = ?, keterangan = ?, pengaturan_sistem_id = ?,
+                 peserta_magang_id = COALESCE(?, peserta_magang_id),
+                 karyawan_os_id = COALESCE(?, karyawan_os_id)
+             WHERE id = ?`,
+            [statusAbsensi, notesFormatted, setting.id, pesertaMagangId, karyawanOsId, existingId]
           );
           insertedIds.push(existingId);
         } else {
           const [insertResult]: any = await mysqlPool.query(
-            `INSERT INTO absensi (user_id, pengaturan_sistem_id, tanggal, status, keterangan)
-             VALUES (?, ?, ?, ?, ?)`,
-            [userId, setting.id, tgl, statusAbsensi, notesFormatted]
+            `INSERT INTO absensi (peserta_magang_id, karyawan_os_id, pengaturan_sistem_id, tanggal, status, keterangan)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [pesertaMagangId, karyawanOsId, setting.id, tgl, statusAbsensi, notesFormatted]
           );
           insertedIds.push(insertResult.insertId);
         }
       }
 
       const primaryId = String(insertedIds[0] || "");
-      const [userRows]: any = await mysqlPool.query(
-        "SELECT id, name, role, avatar, institution, study_program FROM users WHERE id = ? LIMIT 1",
-        [userId]
-      );
-      const u = userRows?.[0] || {};
+      const userTarget = await resolveUserTarget(targetId, isMagang ? "ANAK_MAGANG" : "KARYAWAN_OS");
+      const u = userTarget.data || {};
 
       const izinObject = {
         id: primaryId,
-        userId: String(userId),
+        peserta_magang_id: pesertaMagangId ? String(pesertaMagangId) : null,
+        karyawan_os_id: karyawanOsId ? String(karyawanOsId) : null,
         absensiId: primaryId,
         userName: u.name || u.nama || "Peserta",
-        userRole: u.role || "ANAK_MAGANG",
+        userRole: isMagang ? "ANAK_MAGANG" : "KARYAWAN_OS",
         userAvatar: u.avatar || null,
         userInstitution: u.institution || u.sekolah_kampus || "",
         jenis: body.jenis || (statusAbsensi === "SAKIT" ? "Sakit" : "Izin"),
@@ -554,42 +642,47 @@ export async function POST(req: NextRequest) {
     //    Kolom: jam_masuk (time), status_masuk enum, foto_masuk varchar(500)
     // ─────────────────────────────────────────────────────────────────────────
     const action = String(body.action || "").toUpperCase();
-    if (action === "MASUK" || body.checkIn || body.foto_masuk || (!action && !body.foto_keluar)) {
+    if (action === "MASUK" || body.checkIn || body.foto_masuk || (!action && !body.foto_keluar && !body.checkOut && !body.jam_keluar)) {
       const tanggal = body.tanggal || today;
       const waktuMasuk = normalizeTime(body.jam_masuk || body.checkIn) || currentTime;
       const statusMasuk = getStatusMasuk(waktuMasuk, setting.jam_masuk_standar, setting.batas_toleransi_menit);
 
-      // foto_masuk: varchar(500) - potong ke 500 karakter
+      // Upload / Simpan Foto Masuk (varchar 500)
       const rawFoto =
-        fotoFile && (fotoFile.key === "foto_masuk" || fotoFile.key === "photo" || fotoFile.key === "foto")
+        fotoFile && (fotoFile.key === "foto_masuk" || fotoFile.key === "photo" || fotoFile.key === "foto" || fotoFile.key === "checkInPhoto")
           ? fotoFile.file
           : body.foto_masuk || body.checkInPhoto || null;
       let fotoMasukUrl: string | null = null;
       if (rawFoto) {
-        const saved = await saveStorageFile(rawFoto, "absensi", "masuk", userId, tanggal);
+        const saved = await saveStorageFile(rawFoto, "absensi", "masuk", String(targetId), tanggal);
         fotoMasukUrl = saved ? saved.slice(0, 500) : null;
       }
 
-      const [existing]: any = await mysqlPool.query(
-        "SELECT id FROM absensi WHERE user_id = ? AND tanggal = ? LIMIT 1",
-        [userId, tanggal]
-      );
+      const checkSql = isMagang
+        ? "SELECT id FROM absensi WHERE peserta_magang_id = ? AND tanggal = ? LIMIT 1"
+        : "SELECT id FROM absensi WHERE karyawan_os_id = ? AND tanggal = ? LIMIT 1";
+      const checkParam = isMagang ? pesertaMagangId : karyawanOsId;
+
+      const [existing]: any = await mysqlPool.query(checkSql, [checkParam, tanggal]);
 
       let recordId: number;
       if (existing && existing.length > 0) {
         recordId = existing[0].id;
         await mysqlPool.query(
           `UPDATE absensi
-           SET jam_masuk = ?, status_masuk = ?, foto_masuk = COALESCE(?, foto_masuk),
-               status = 'HADIR', pengaturan_sistem_id = ?
+           SET jam_masuk = ?, status_masuk = ?,
+               foto_masuk = COALESCE(?, foto_masuk),
+               status = 'HADIR', pengaturan_sistem_id = ?,
+               peserta_magang_id = COALESCE(?, peserta_magang_id),
+               karyawan_os_id = COALESCE(?, karyawan_os_id)
            WHERE id = ?`,
-          [waktuMasuk, statusMasuk, fotoMasukUrl, setting.id, recordId]
+          [waktuMasuk, statusMasuk, fotoMasukUrl, setting.id, pesertaMagangId, karyawanOsId, recordId]
         );
       } else {
         const [insertResult]: any = await mysqlPool.query(
-          `INSERT INTO absensi (user_id, pengaturan_sistem_id, tanggal, jam_masuk, status, status_masuk, foto_masuk)
-           VALUES (?, ?, ?, ?, 'HADIR', ?, ?)`,
-          [userId, setting.id, tanggal, waktuMasuk, statusMasuk, fotoMasukUrl]
+          `INSERT INTO absensi (peserta_magang_id, karyawan_os_id, pengaturan_sistem_id, tanggal, jam_masuk, status, status_masuk, foto_masuk)
+           VALUES (?, ?, ?, ?, ?, 'HADIR', ?, ?)`,
+          [pesertaMagangId, karyawanOsId, setting.id, tanggal, waktuMasuk, statusMasuk, fotoMasukUrl]
         );
         recordId = insertResult.insertId;
       }
@@ -604,8 +697,10 @@ export async function POST(req: NextRequest) {
         message: "Presensi masuk berhasil dicatat.",
         record: {
           id: String(recordId),
-          user_id: String(userId),
-          userId: String(userId),
+          peserta_magang_id: pesertaMagangId ? String(pesertaMagangId) : null,
+          pesertaMagangId: pesertaMagangId ? String(pesertaMagangId) : null,
+          karyawan_os_id: karyawanOsId ? String(karyawanOsId) : null,
+          karyawanOsId: karyawanOsId ? String(karyawanOsId) : null,
           tanggal,
           attendanceDate: tanggal,
           jam_masuk: waktuMasuk,
@@ -629,19 +724,19 @@ export async function POST(req: NextRequest) {
     //           foto_keluar varchar(500), foto_pulang_cepat varchar(500),
     //           keterangan (text)
     // ─────────────────────────────────────────────────────────────────────────
-    if (action === "PULANG" || body.checkOut || body.foto_keluar) {
+    if (action === "PULANG" || body.checkOut || body.foto_keluar || body.jam_keluar || body.jam_pulang) {
       const tanggal = body.tanggal || today;
-      const waktuPulang = normalizeTime(body.jam_keluar || body.checkOut) || currentTime;
+      const waktuPulang = normalizeTime(body.jam_keluar || body.jam_pulang || body.checkOut) || currentTime;
       const statusPulang = getStatusPulang(waktuPulang, setting.jam_pulang_standar);
 
       // foto_keluar: varchar(500)
       const rawFotoKeluar =
-        fotoFile && fotoFile.key === "foto_keluar"
+        fotoFile && (fotoFile.key === "foto_keluar" || fotoFile.key === "checkOutPhoto")
           ? fotoFile.file
-          : body.foto_keluar || body.checkOutPhoto || null;
+          : body.foto_keluar || body.checkOutPhoto || body.foto_pulang || null;
       let fotoKeluarUrl: string | null = null;
       if (rawFotoKeluar) {
-        const saved = await saveStorageFile(rawFotoKeluar, "absensi", "pulang", userId, tanggal);
+        const saved = await saveStorageFile(rawFotoKeluar, "absensi", "pulang", String(targetId), tanggal);
         fotoKeluarUrl = saved ? saved.slice(0, 500) : null;
       }
 
@@ -652,11 +747,11 @@ export async function POST(req: NextRequest) {
           : body.foto_pulang_cepat || null;
       let fotoPulangCepatUrl: string | null = null;
       if (rawFotoCepat) {
-        const saved = await saveStorageFile(rawFotoCepat, "absensi", "pulang_cepat", userId, tanggal);
+        const saved = await saveStorageFile(rawFotoCepat, "absensi", "pulang_cepat", String(targetId), tanggal);
         fotoPulangCepatUrl = saved ? saved.slice(0, 500) : null;
       }
 
-      // keterangan: text (tidak ada batas panjang)
+      // keterangan: text
       let extraKeterangan: string | null = body.keterangan || null;
       if (body.alasan_pulang_cepat || body.tugas_dikerjakan) {
         const pcInfo: string[] = [];
@@ -665,10 +760,12 @@ export async function POST(req: NextRequest) {
         extraKeterangan = pcInfo.join(" | ");
       }
 
-      const [existing]: any = await mysqlPool.query(
-        "SELECT id, keterangan FROM absensi WHERE user_id = ? AND tanggal = ? LIMIT 1",
-        [userId, tanggal]
-      );
+      const checkSql = isMagang
+        ? "SELECT id, keterangan FROM absensi WHERE peserta_magang_id = ? AND tanggal = ? LIMIT 1"
+        : "SELECT id, keterangan FROM absensi WHERE karyawan_os_id = ? AND tanggal = ? LIMIT 1";
+      const checkParam = isMagang ? pesertaMagangId : karyawanOsId;
+
+      const [existing]: any = await mysqlPool.query(checkSql, [checkParam, tanggal]);
 
       let recordId: number;
       if (existing && existing.length > 0) {
@@ -685,17 +782,19 @@ export async function POST(req: NextRequest) {
            SET jam_keluar = ?, status_pulang = ?,
                foto_keluar = COALESCE(?, foto_keluar),
                foto_pulang_cepat = COALESCE(?, foto_pulang_cepat),
-               keterangan = ?, status = 'HADIR', pengaturan_sistem_id = ?
+               keterangan = ?, status = 'HADIR', pengaturan_sistem_id = ?,
+               peserta_magang_id = COALESCE(?, peserta_magang_id),
+               karyawan_os_id = COALESCE(?, karyawan_os_id)
            WHERE id = ?`,
-          [waktuPulang, statusPulang, fotoKeluarUrl, fotoPulangCepatUrl, combinedKeterangan, setting.id, recordId]
+          [waktuPulang, statusPulang, fotoKeluarUrl, fotoPulangCepatUrl, combinedKeterangan, setting.id, pesertaMagangId, karyawanOsId, recordId]
         );
       } else {
         const [insertResult]: any = await mysqlPool.query(
           `INSERT INTO absensi
-             (user_id, pengaturan_sistem_id, tanggal, jam_keluar, status, status_pulang,
+             (peserta_magang_id, karyawan_os_id, pengaturan_sistem_id, tanggal, jam_keluar, status, status_pulang,
               foto_keluar, foto_pulang_cepat, keterangan)
-           VALUES (?, ?, ?, ?, 'HADIR', ?, ?, ?, ?)`,
-          [userId, setting.id, tanggal, waktuPulang, statusPulang, fotoKeluarUrl, fotoPulangCepatUrl, extraKeterangan]
+           VALUES (?, ?, ?, ?, ?, 'HADIR', ?, ?, ?, ?)`,
+          [pesertaMagangId, karyawanOsId, setting.id, tanggal, waktuPulang, statusPulang, fotoKeluarUrl, fotoPulangCepatUrl, extraKeterangan]
         );
         recordId = insertResult.insertId;
       }
@@ -705,15 +804,19 @@ export async function POST(req: NextRequest) {
         message: "Presensi pulang berhasil dicatat.",
         record: {
           id: String(recordId),
-          user_id: String(userId),
-          userId: String(userId),
+          peserta_magang_id: pesertaMagangId ? String(pesertaMagangId) : null,
+          pesertaMagangId: pesertaMagangId ? String(pesertaMagangId) : null,
+          karyawan_os_id: karyawanOsId ? String(karyawanOsId) : null,
+          karyawanOsId: karyawanOsId ? String(karyawanOsId) : null,
           tanggal,
           attendanceDate: tanggal,
           jam_keluar: waktuPulang,
           jamKeluar: waktuPulang,
+          jamPulang: waktuPulang,
           checkOut: waktuPulang,
           foto_keluar: fotoKeluarUrl,
           fotoKeluar: fotoKeluarUrl,
+          fotoPulang: fotoKeluarUrl,
           checkOutPhoto: fotoKeluarUrl,
           foto_pulang_cepat: fotoPulangCepatUrl,
           status: "HADIR",
@@ -738,7 +841,6 @@ export async function POST(req: NextRequest) {
 
 /**
  * PATCH: Memperbarui catatan admin atau status pada data absensi
- * Kolom yang diubah: keterangan (text), status enum(HADIR|IZIN|SAKIT|ALPA)
  */
 export async function PATCH(req: NextRequest) {
   try {
@@ -774,7 +876,6 @@ export async function PATCH(req: NextRequest) {
       ? `${baseReason} || Catatan Admin: ${catatanAdmin.trim()}`
       : baseReason;
 
-    // Validasi status sesuai enum tabel: HADIR | IZIN | SAKIT | ALPA
     const validStatuses = ["HADIR", "IZIN", "SAKIT", "ALPA"];
     const newStatus =
       status && validStatuses.includes(String(status).toUpperCase())

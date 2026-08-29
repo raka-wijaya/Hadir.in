@@ -110,7 +110,7 @@ export default function AdminTugasPage() {
 
   // Form State
   const [formData, setFormData] = useState({
-    user_id: "",
+    peserta_magang_id: "",
     log_book_id: "",
     judul_tugas: "",
     deskripsi: "",
@@ -135,7 +135,7 @@ export default function AdminTugasPage() {
   useEffect(() => {
     async function fetchInterns() {
       try {
-        const res = await fetch("/api/users?role=ANAK_MAGANG", { cache: "no-store" });
+        const res = await fetch("/api/users/peserta_magang", { cache: "no-store" });
         const data = await res.json();
         if (res.ok && data.success && Array.isArray(data.data)) {
           setInterns(data.data);
@@ -168,11 +168,11 @@ export default function AdminTugasPage() {
     try {
       setIsLoading(true);
       const params = new URLSearchParams();
-      if (selectedInternId !== "ALL") params.append("userId", selectedInternId);
+      if (selectedInternId !== "ALL") params.append("peserta_magang_id", selectedInternId);
       if (selectedCategory !== "ALL") params.append("kategori", selectedCategory);
       if (debounceSearch) params.append("q", debounceSearch);
 
-      const res = await fetch(`/api/jobdesk?${params.toString()}`, {
+      const res = await fetch(`/api/tugas?${params.toString()}`, {
         cache: "no-store",
       });
       const data = await res.json();
@@ -216,7 +216,7 @@ export default function AdminTugasPage() {
   // Reset form
   const resetForm = () => {
     setFormData({
-      user_id: interns.length > 0 ? String(interns[0].id) : "",
+      peserta_magang_id: interns.length > 0 ? String(interns[0].id) : "",
       log_book_id: "",
       judul_tugas: "",
       deskripsi: "",
@@ -235,7 +235,7 @@ export default function AdminTugasPage() {
   const handleOpenEdit = (item: TugasItem) => {
     setSelectedTugas(item);
     setFormData({
-      user_id: String(item.user_id || ""),
+      peserta_magang_id: String(item.peserta_magang_id || item.pesertaMagangId || ""),
       log_book_id: item.log_book_id ? String(item.log_book_id) : "",
       judul_tugas: item.judul_tugas || item.judulTugas || "",
       deskripsi: item.deskripsi || "",
@@ -273,11 +273,11 @@ export default function AdminTugasPage() {
         judul_tugas: formData.judul_tugas.trim(),
         deskripsi: formData.deskripsi.trim(),
         kategori: formData.kategori,
-        user_id: formData.user_id ? Number(formData.user_id) : null,
+        peserta_magang_id: formData.peserta_magang_id ? Number(formData.peserta_magang_id) : null,
         log_book_id: formData.log_book_id ? Number(formData.log_book_id) : null,
       };
 
-      const res = await fetch("/api/jobdesk", {
+      const res = await fetch("/api/tugas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -317,11 +317,11 @@ export default function AdminTugasPage() {
         judul_tugas: formData.judul_tugas.trim(),
         deskripsi: formData.deskripsi.trim(),
         kategori: formData.kategori,
-        user_id: formData.user_id ? Number(formData.user_id) : null,
+        peserta_magang_id: formData.peserta_magang_id ? Number(formData.peserta_magang_id) : null,
         log_book_id: formData.log_book_id ? Number(formData.log_book_id) : null,
       };
 
-      const res = await fetch("/api/jobdesk", {
+      const res = await fetch("/api/tugas", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -348,7 +348,7 @@ export default function AdminTugasPage() {
     if (!selectedTugas) return;
     try {
       setIsSubmitting(true);
-      const res = await fetch(`/api/jobdesk?id=${selectedTugas.id}`, {
+      const res = await fetch(`/api/tugas?id=${selectedTugas.id}`, {
         method: "DELETE",
       });
       const json = await res.json();
@@ -774,11 +774,11 @@ export default function AdminTugasPage() {
           </label>
 
           <select
-            value={formData.user_id}
+            value={formData.peserta_magang_id}
             onChange={(e) =>
               setFormData({
                 ...formData,
-                user_id: e.target.value,
+                peserta_magang_id: e.target.value,
               })
             }
             className="w-full px-3 py-2 bg-input border border-border rounded-xl text-[11px] font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -958,8 +958,8 @@ export default function AdminTugasPage() {
                     Peserta Magang <span className="text-destructive">*</span>
                   </label>
                   <select
-                    value={formData.user_id}
-                    onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+                    value={formData.peserta_magang_id}
+                    onChange={(e) => setFormData({ ...formData, peserta_magang_id: e.target.value })}
                     className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
                     <option value="">Pilih Peserta Magang</option>

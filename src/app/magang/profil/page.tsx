@@ -183,7 +183,7 @@ export default function ProfilPage() {
 
     try {
       if (user?.id) {
-        const response = await fetch("/api/users", {
+        const response = await fetch("/api/users/peserta_magang", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

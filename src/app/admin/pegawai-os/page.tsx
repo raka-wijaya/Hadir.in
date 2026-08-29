@@ -68,7 +68,7 @@ export default function AdminPegawaiOsPage() {
     try {
       setIsLoading(true);
 
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/karyawan_os", {
         cache: "no-store",
       });
 
@@ -177,7 +177,7 @@ export default function AdminPegawaiOsPage() {
     );
 
     try {
-      await fetch("/api/users", {
+      await fetch("/api/users/karyawan_os", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -221,7 +221,7 @@ export default function AdminPegawaiOsPage() {
     )}`;
 
     try {
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/karyawan_os", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -370,7 +370,7 @@ export default function AdminPegawaiOsPage() {
 
     try {
       setIsSavingEdit(true);
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/karyawan_os", {
         method: "PATCH",
         headers: {
           "Content-Type":
@@ -417,7 +417,7 @@ export default function AdminPegawaiOsPage() {
 
   const handleDeleteEmployee = async (item: User) => {
     try {
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/karyawan_os", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: item.id }),

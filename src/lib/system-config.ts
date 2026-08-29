@@ -1,7 +1,7 @@
 import { SystemSettings } from "@/types";
 
 export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
-  systemName: "SiPresma",
+  systemName: "hadirin",
   timezone: "Asia/Jakarta",
   checkInTime: "08:00",
   checkOutTime: "16:00",

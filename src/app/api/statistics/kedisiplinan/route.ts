@@ -13,13 +13,10 @@ export async function GET(request: NextRequest) {
     const params: any[] = [];
 
     if (role && role !== "ALL" && role !== "SUPERADMIN" && role !== "SUPER_ADMIN") {
-      if (role === "ADMIN_MAGANG") {
-        conditions.push("u.role = 'ANAK_MAGANG'");
-      } else if (role === "ADMIN_OS") {
-        conditions.push("u.role = 'KARYAWAN_OS'");
-      } else {
-        conditions.push("u.role = ?");
-        params.push(role);
+      if (role === "ADMIN_MAGANG" || role === "ANAK_MAGANG") {
+        conditions.push("a.peserta_magang_id IS NOT NULL");
+      } else if (role === "ADMIN_OS" || role === "KARYAWAN_OS") {
+        conditions.push("a.karyawan_os_id IS NOT NULL");
       }
     }
 
@@ -28,11 +25,13 @@ export async function GET(request: NextRequest) {
     const [rows]: any = await mysqlPool.query(
       `
       SELECT
-        u.id AS user_id,
-        u.name AS user_nama,
-        u.role AS user_role,
-        u.institution AS user_sekolah,
-        u.avatar AS user_avatar,
+        COALESCE(a.peserta_magang_id, a.karyawan_os_id) AS id,
+        a.peserta_magang_id,
+        a.karyawan_os_id,
+        COALESCE(pm.name, ko.name) AS user_nama,
+        IF(a.peserta_magang_id IS NOT NULL, 'ANAK_MAGANG', 'KARYAWAN_OS') AS user_role,
+        COALESCE(pm.institution, '') AS user_sekolah,
+        COALESCE(pm.avatar, ko.avatar) AS user_avatar,
         
         COUNT(CASE WHEN a.status = 'HADIR' AND (a.status_masuk = 'TEPAT_WAKTU' OR a.status_masuk IS NULL) THEN 1 END) AS total_hadir,
         COUNT(CASE WHEN a.status_masuk = 'TERLAMBAT' THEN 1 END) AS total_terlambat,
@@ -40,10 +39,11 @@ export async function GET(request: NextRequest) {
         COUNT(CASE WHEN a.status = 'ALPA' THEN 1 END) AS total_alpa,
         COUNT(a.id) AS total_presensi
 
-      FROM users u
-      LEFT JOIN absensi a ON a.user_id = u.id
+      FROM absensi a
+      LEFT JOIN peserta_magang pm ON pm.id = a.peserta_magang_id
+      LEFT JOIN karyawan_os ko ON ko.id = a.karyawan_os_id
       ${whereClause}
-      GROUP BY u.id, u.name, u.role, u.institution, u.avatar
+      GROUP BY a.peserta_magang_id, a.karyawan_os_id, pm.name, ko.name, pm.institution, pm.avatar, ko.avatar
       ORDER BY total_hadir DESC, total_terlambat ASC, total_presensi DESC
       LIMIT ?
       `,
@@ -67,7 +67,10 @@ export async function GET(request: NextRequest) {
 
       return {
         rank: index + 1,
-        userId: String(row.user_id),
+        id: String(row.id),
+        peserta_magang_id: row.peserta_magang_id ? String(row.peserta_magang_id) : null,
+        karyawan_os_id: row.karyawan_os_id ? String(row.karyawan_os_id) : null,
+        // id sudah merupakan peserta_magang_id atau karyawan_os_id
         nama: row.user_nama || "—",
         role: row.user_role || "—",
         sekolah: row.user_sekolah || "—",

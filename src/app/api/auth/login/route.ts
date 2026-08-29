@@ -9,13 +9,38 @@ type UserRole =
   | "KARYAWAN_OS"
   | "ANAK_MAGANG";
 
-const VALID_ROLES: UserRole[] = [
+const VALID_ROLES: readonly UserRole[] = [
   "SUPERADMIN",
   "ADMIN_MAGANG",
   "ADMIN_OS",
   "KARYAWAN_OS",
   "ANAK_MAGANG",
-];
+] as const;
+
+function normalizeRole(roleInput?: string | null): UserRole | null {
+  if (!roleInput) return null;
+  const r = roleInput.toUpperCase().trim();
+  if (r === "SUPERADMIN" || r === "SUPER_ADMIN") return "SUPERADMIN";
+  if (r === "ADMIN_MAGANG") return "ADMIN_MAGANG";
+  if (r === "ADMIN_OS") return "ADMIN_OS";
+  if (
+    r === "KARYAWAN_OS" ||
+    r === "PEGAWAI_OS" ||
+    r === "ANAK_OS" ||
+    r === "PEGAWAI"
+  )
+    return "KARYAWAN_OS";
+  if (r === "ANAK_MAGANG" || r === "MAGANG") return "ANAK_MAGANG";
+  return null;
+}
+
+function normalizeStatus(statusInput?: string | null): "ACTIVE" | "INACTIVE" {
+  if (!statusInput) return "ACTIVE";
+  const s = statusInput.toUpperCase().trim();
+  if (s === "INACTIVE" || s === "NONAKTIF" || s === "NON_AKTIF" || s === "OFF")
+    return "INACTIVE";
+  return "ACTIVE";
+}
 
 function formatDate(val: any): string | null {
   if (!val) return null;
@@ -29,31 +54,62 @@ function formatDate(val: any): string | null {
   return String(val);
 }
 
+function getDefaultAvatar(role: UserRole, name: string): string {
+  const encodedName = encodeURIComponent(name || "User");
+  switch (role) {
+    case "SUPERADMIN":
+    case "ADMIN_MAGANG":
+    case "ADMIN_OS":
+      return `https://ui-avatars.com/api/?name=${encodedName}&background=4f46e5&color=ffffff&bold=true`;
+    case "KARYAWAN_OS":
+      return `https://ui-avatars.com/api/?name=${encodedName}&background=f59e0b&color=000000&bold=true`;
+    case "ANAK_MAGANG":
+    default:
+      return `https://ui-avatars.com/api/?name=${encodedName}&background=72e3ad&color=1e2723&bold=true`;
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password } = body || {};
+    const {
+      email,
+      identifier,
+      username,
+      identity_number,
+      identityNumber,
+      nip,
+      nim,
+      password,
+    } = body || {};
 
-    const cleanEmail = String(email || "")
-      .trim()
-      .toLowerCase();
-
+    const rawLoginKey =
+      email ||
+      identifier ||
+      username ||
+      identity_number ||
+      identityNumber ||
+      nip ||
+      nim;
+    const cleanIdentifier = String(rawLoginKey || "").trim();
+    const cleanEmail = cleanIdentifier.toLowerCase();
     const cleanPassword = String(password || "");
 
-    if (!cleanEmail || !cleanPassword) {
+    if (!cleanIdentifier || !cleanPassword) {
       return NextResponse.json(
         {
           success: false,
-          message: "Email dan password wajib diisi.",
+          message: "Email / No. Identitas dan password wajib diisi.",
         },
         { status: 400 }
       );
     }
 
-    // ============================================================
-    // CARI USER DI TABEL `users` (MySQL)
-    // ============================================================
-    const [rows]: any = await mysqlPool.query(
+    let user: any = null;
+    let userTable: "admin" | "karyawan_os" | "peserta_magang" | null = null;
+
+    // 1. Cari di tabel `admin`
+    const [adminRows]: any = await mysqlPool.query(
       `
         SELECT
           id,
@@ -63,38 +119,107 @@ export async function POST(req: Request) {
           name,
           phone,
           identity_number,
-          institution,
-          study_program,
+          NULL AS institution,
+          NULL AS study_program,
           avatar,
-          start_date,
-          end_date,
+          NULL AS start_date,
+          NULL AS end_date,
           status,
           last_login_at,
           created_at,
           updated_at
-        FROM users
-        WHERE LOWER(email) = ?
+        FROM admin
+        WHERE LOWER(email) = ? OR LOWER(identity_number) = ? OR phone = ?
         LIMIT 1
       `,
-      [cleanEmail]
+      [cleanEmail, cleanEmail, cleanIdentifier]
     );
 
-    if (!rows || rows.length === 0) {
+    if (adminRows && adminRows.length > 0) {
+      user = adminRows[0];
+      userTable = "admin";
+    }
+
+    // 2. Jika belum ketemu, cari di tabel `karyawan_os`
+    if (!user) {
+      const [osRows]: any = await mysqlPool.query(
+        `
+          SELECT
+            id,
+            email,
+            password,
+            'KARYAWAN_OS' AS role,
+            name,
+            phone,
+            identity_number,
+            NULL AS institution,
+            NULL AS study_program,
+            avatar,
+            NULL AS start_date,
+            NULL AS end_date,
+            status,
+            last_login_at,
+            created_at,
+            updated_at
+          FROM karyawan_os
+          WHERE LOWER(email) = ? OR LOWER(identity_number) = ? OR phone = ?
+          LIMIT 1
+        `,
+        [cleanEmail, cleanEmail, cleanIdentifier]
+      );
+
+      if (osRows && osRows.length > 0) {
+        user = osRows[0];
+        userTable = "karyawan_os";
+      }
+    }
+
+    // 3. Jika belum ketemu, cari di tabel `peserta_magang`
+    if (!user) {
+      const [magangRows]: any = await mysqlPool.query(
+        `
+          SELECT
+            id,
+            email,
+            password,
+            'ANAK_MAGANG' AS role,
+            name,
+            phone,
+            identity_number,
+            institution,
+            study_program,
+            avatar,
+            start_date,
+            end_date,
+            status,
+            last_login_at,
+            created_at,
+            updated_at
+          FROM peserta_magang
+          WHERE LOWER(email) = ? OR LOWER(identity_number) = ? OR phone = ?
+          LIMIT 1
+        `,
+        [cleanEmail, cleanEmail, cleanIdentifier]
+      );
+
+      if (magangRows && magangRows.length > 0) {
+        user = magangRows[0];
+        userTable = "peserta_magang";
+      }
+    }
+
+    if (!user || !userTable) {
       return NextResponse.json(
         {
           success: false,
-          message: "Email atau password salah.",
+          message: "Email / No. Identitas atau password salah.",
         },
         { status: 401 }
       );
     }
 
-    const user = rows[0];
-
-    // ============================================================
-    // CEK STATUS AKUN
-    // ============================================================
-    if (user.status !== "ACTIVE") {
+    const normalizedStatus = normalizeStatus(user.status);
+    if (normalizedStatus !== "ACTIVE") {
       return NextResponse.json(
         {
           success: false,
@@ -104,27 +229,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // ============================================================
-    // CEK ROLE
-    // ============================================================
-    let userRole = String(user.role).toUpperCase() as UserRole;
-    if (userRole === ("SUPER_ADMIN" as any)) {
-      userRole = "SUPERADMIN";
-    }
-
-    if (!VALID_ROLES.includes(userRole)) {
+    const userRole = normalizeRole(user.role);
+    if (!userRole || !VALID_ROLES.includes(userRole)) {
       return NextResponse.json(
         {
           success: false,
-          message: "Role akun tidak valid.",
+          message: "Role akun tidak valid atau tidak memiliki akses.",
         },
         { status: 403 }
       );
     }
 
-    // ============================================================
-    // CEK PASSWORD
-    // ============================================================
     const isPasswordValid = await comparePassword(
       cleanPassword,
       user.password
@@ -134,56 +249,65 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "Email atau password salah.",
+          message: "Email / No. Identitas atau password salah.",
         },
         { status: 401 }
       );
     }
 
-    // ============================================================
-    // UPDATE LAST LOGIN AT
-    // ============================================================
+    // Update last_login_at di tabel yang tepat
     try {
       await mysqlPool.query(
         `
-          UPDATE users
+          UPDATE ${userTable}
           SET last_login_at = CURRENT_TIMESTAMP
           WHERE id = ?
         `,
         [user.id]
       );
     } catch (err) {
-      console.warn("Failed to update last_login_at:", err);
+      console.warn(`Failed to update last_login_at on ${userTable}:`, err);
     }
 
-    // ============================================================
-    // RESPONSE DATA USER (SANITIZED & COMPATIBLE)
-    // ============================================================
     const startDateFormatted = formatDate(user.start_date);
     const endDateFormatted = formatDate(user.end_date);
+    const resolvedAvatar =
+      user.avatar || getDefaultAvatar(userRole, user.name || "User");
 
     const safeUser = {
       id: String(user.id),
       email: user.email,
       role: userRole,
-      name: user.name,
-      nama: user.name, // alias kompatibilitas
-      phone: user.phone,
-      no_hp: user.phone, // alias kompatibilitas
-      identity_number: user.identity_number,
-      institution: user.institution,
-      sekolah_kampus: user.institution, // alias kompatibilitas
-      study_program: user.study_program,
-      jurusan: user.study_program, // alias kompatibilitas
-      avatar: user.avatar,
+      name: user.name || "",
+      phone: user.phone || null,
+      identity_number: user.identity_number || null,
+      institution: user.institution || null,
+      study_program: user.study_program || null,
+      avatar: resolvedAvatar,
       start_date: startDateFormatted,
-      periode_mulai: startDateFormatted, // alias kompatibilitas
       end_date: endDateFormatted,
-      periode_selesai: endDateFormatted, // alias kompatibilitas
-      status: user.status,
+      status: normalizedStatus,
       last_login_at: user.last_login_at,
       created_at: user.created_at,
       updated_at: user.updated_at,
+
+      // Aliases
+      nama: user.name || "",
+      no_hp: user.phone || null,
+      identityNumber: user.identity_number || null,
+      nip: user.identity_number || null,
+      nim: user.identity_number || null,
+      sekolah_kampus: user.institution || null,
+      vendor: user.institution || null,
+      jurusan: user.study_program || null,
+      studyProgram: user.study_program || null,
+      divisi: user.study_program || null,
+      unit_kerja: user.study_program || null,
+      bagian: user.study_program || null,
+      startDate: startDateFormatted,
+      periode_mulai: startDateFormatted,
+      endDate: endDateFormatted,
+      periode_selesai: endDateFormatted,
     };
 
     return NextResponse.json({

@@ -48,14 +48,15 @@ async function getActiveSettingId(): Promise<number> {
  * Memastikan tabel `izin` tersedia di database MySQL sesuai skema:
  *  1. id (BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY)
  *  2. absensi_id (BIGINT UNSIGNED NULL)
- *  3. user_id (BIGINT UNSIGNED NOT NULL)
- *  4. jenis (VARCHAR(100) NOT NULL)
- *  5. tanggal_mulai (DATE NOT NULL)
- *  6. tanggal_selesai (DATE NOT NULL)
- *  7. alasan (TEXT NOT NULL)
- *  8. attachment (VARCHAR(500) NULL)
- *  9. created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
- * 10. updated_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)
+ *  3. peserta_magang_id (BIGINT UNSIGNED NULL)
+ *  4. karyawan_os_id (BIGINT UNSIGNED NULL)
+ *  5. jenis (VARCHAR(100) NOT NULL)
+ *  6. tanggal_mulai (DATE NOT NULL)
+ *  7. tanggal_selesai (DATE NOT NULL)
+ *  8. alasan (TEXT NOT NULL)
+ *  9. attachment (VARCHAR(500) NULL)
+ * 10. created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+ * 11. updated_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)
  */
 async function ensureIzinTableExists() {
   try {
@@ -63,7 +64,8 @@ async function ensureIzinTableExists() {
       CREATE TABLE IF NOT EXISTS \`izin\` (
         \`id\` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         \`absensi_id\` BIGINT UNSIGNED DEFAULT NULL,
-        \`user_id\` BIGINT UNSIGNED NOT NULL,
+        \`peserta_magang_id\` BIGINT UNSIGNED DEFAULT NULL,
+        \`karyawan_os_id\` BIGINT UNSIGNED DEFAULT NULL,
         \`jenis\` VARCHAR(100) NOT NULL,
         \`tanggal_mulai\` DATE NOT NULL,
         \`tanggal_selesai\` DATE NOT NULL,
@@ -72,11 +74,27 @@ async function ensureIzinTableExists() {
         \`created_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         \`updated_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
-        KEY \`idx_izin_user_id\` (\`user_id\`),
+        KEY \`idx_izin_peserta_magang_id\` (\`peserta_magang_id\`),
+        KEY \`idx_izin_karyawan_os_id\` (\`karyawan_os_id\`),
         KEY \`idx_izin_absensi_id\` (\`absensi_id\`),
         KEY \`idx_izin_tanggal\` (\`tanggal_mulai\`, \`tanggal_selesai\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Migrasi aman: tambah kolom baru jika tabel lama hanya punya user_id
+    try {
+      const [cols]: any = await mysqlPool.query(`SHOW COLUMNS FROM \`izin\``);
+      const existingCols = new Set(cols.map((c: any) => c.Field.toLowerCase()));
+
+      if (existingCols.has("user_id") && !existingCols.has("peserta_magang_id")) {
+        await mysqlPool.query(`ALTER TABLE \`izin\` ADD COLUMN \`peserta_magang_id\` BIGINT UNSIGNED DEFAULT NULL AFTER \`absensi_id\``);
+      }
+      if (existingCols.has("user_id") && !existingCols.has("karyawan_os_id")) {
+        await mysqlPool.query(`ALTER TABLE \`izin\` ADD COLUMN \`karyawan_os_id\` BIGINT UNSIGNED DEFAULT NULL AFTER \`peserta_magang_id\``);
+      }
+    } catch (migErr) {
+      console.warn("Migrasi kolom izin:", migErr);
+    }
   } catch (err) {
     console.warn("ensureIzinTableExists error:", err);
   }
@@ -88,8 +106,8 @@ async function ensureIzinTableExists() {
  * ============================================================
  * Query Params:
  *  - id: ID izin spesifik
- *  - userId / user_id: filter berdasarkan user
- *  - role: filter role (ADMIN_MAGANG -> ANAK_MAGANG, ADMIN_OS -> KARYAWAN_OS)
+ *  - peserta_magang_id / pesertaMagangId: filter berdasarkan peserta magang
+ *  - karyawan_os_id / karyawanOsId: filter berdasarkan karyawan OS
  *  - startDate / start_date / tanggal_mulai: filter tanggal mulai
  *  - endDate / end_date / tanggal_selesai: filter tanggal selesai
  *  - tanggal / date: filter tanggal berada dalam rentang izin
@@ -102,13 +120,25 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const idParam = searchParams.get("id");
-    const userId = searchParams.get("userId") || searchParams.get("user_id");
-    const role = searchParams.get("role");
-    const startDate = searchParams.get("startDate") || searchParams.get("start_date") || searchParams.get("tanggal_mulai");
-    const endDate = searchParams.get("endDate") || searchParams.get("end_date") || searchParams.get("tanggal_selesai");
-    const tanggalParam = searchParams.get("tanggal") || searchParams.get("date");
+    const pesertaMagangId =
+      searchParams.get("peserta_magang_id") ||
+      searchParams.get("pesertaMagangId");
+    const karyawanOsId =
+      searchParams.get("karyawan_os_id") ||
+      searchParams.get("karyawanOsId");
+    const startDate =
+      searchParams.get("startDate") ||
+      searchParams.get("start_date") ||
+      searchParams.get("tanggal_mulai");
+    const endDate =
+      searchParams.get("endDate") ||
+      searchParams.get("end_date") ||
+      searchParams.get("tanggal_selesai");
+    const tanggalParam =
+      searchParams.get("tanggal") || searchParams.get("date");
     const jenisParam = searchParams.get("jenis");
     const search = searchParams.get("q") || searchParams.get("search");
+    const role = searchParams.get("role");
 
     const conditions: string[] = [];
     const params: any[] = [];
@@ -118,19 +148,21 @@ export async function GET(req: NextRequest) {
       params.push(idParam);
     }
 
-    if (userId) {
-      conditions.push("i.user_id = ?");
-      params.push(userId);
+    if (pesertaMagangId) {
+      conditions.push("i.peserta_magang_id = ?");
+      params.push(pesertaMagangId);
+    }
+
+    if (karyawanOsId) {
+      conditions.push("i.karyawan_os_id = ?");
+      params.push(karyawanOsId);
     }
 
     if (role && role !== "ALL" && role !== "SUPERADMIN" && role !== "SUPER_ADMIN") {
-      if (role === "ADMIN_MAGANG") {
-        conditions.push("u.role = 'ANAK_MAGANG'");
-      } else if (role === "ADMIN_OS") {
-        conditions.push("u.role = 'KARYAWAN_OS'");
-      } else {
-        conditions.push("u.role = ?");
-        params.push(role);
+      if (role === "ADMIN_MAGANG" || role === "ANAK_MAGANG") {
+        conditions.push("i.peserta_magang_id IS NOT NULL");
+      } else if (role === "ADMIN_OS" || role === "KARYAWAN_OS") {
+        conditions.push("i.karyawan_os_id IS NOT NULL");
       }
     }
 
@@ -155,18 +187,27 @@ export async function GET(req: NextRequest) {
     }
 
     if (search) {
-      conditions.push("(u.name LIKE ? OR u.email LIKE ? OR u.institution LIKE ? OR i.alasan LIKE ?)");
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+      conditions.push(
+        `(
+          pm.name LIKE ? OR pm.email LIKE ? OR pm.institution LIKE ? OR
+          ko.name LIKE ? OR ko.email LIKE ? OR
+          i.alasan LIKE ?
+        )`
+      );
+      const pat = `%${search}%`;
+      params.push(pat, pat, pat, pat, pat, pat);
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
     const [rows]: any = await mysqlPool.query(
       `
       SELECT
         i.id,
         i.absensi_id,
-        i.user_id,
+        i.peserta_magang_id,
+        i.karyawan_os_id,
         i.jenis,
         i.tanggal_mulai,
         i.tanggal_selesai,
@@ -174,17 +215,19 @@ export async function GET(req: NextRequest) {
         i.attachment,
         i.created_at,
         i.updated_at,
-        u.name AS user_name,
-        u.name AS user_nama,
-        u.role AS user_role,
-        u.avatar AS user_avatar,
-        u.institution AS user_institution,
-        u.institution AS user_sekolah,
-        u.study_program AS user_study_program,
+        pm.name  AS pm_name,
+        pm.email AS pm_email,
+        pm.avatar AS pm_avatar,
+        pm.institution AS pm_institution,
+        pm.study_program AS pm_study_program,
+        ko.name  AS ko_name,
+        ko.email AS ko_email,
+        ko.avatar AS ko_avatar,
         a.keterangan AS absensi_keterangan,
-        a.status AS absensi_status
+        a.status     AS absensi_status
       FROM izin i
-      LEFT JOIN users u ON u.id = i.user_id
+      LEFT JOIN peserta_magang pm ON pm.id = i.peserta_magang_id
+      LEFT JOIN karyawan_os    ko ON ko.id = i.karyawan_os_id
       LEFT JOIN absensi a ON a.id = i.absensi_id
       ${whereClause}
       ORDER BY i.created_at DESC, i.tanggal_mulai DESC
@@ -195,13 +238,16 @@ export async function GET(req: NextRequest) {
     const formattedData = (rows as any[]).map((row) => {
       const tanggalMulai = formatDateYMD(row.tanggal_mulai);
       const tanggalSelesai = formatDateYMD(row.tanggal_selesai);
-      const createdTime = row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString();
-      const updatedTime = row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString();
+      const createdTime = row.created_at
+        ? new Date(row.created_at).toISOString()
+        : new Date().toISOString();
+      const updatedTime = row.updated_at
+        ? new Date(row.updated_at).toISOString()
+        : new Date().toISOString();
 
       let alasanClean = row.alasan || "";
       let catatanAdmin = "";
 
-      // Ekstrak catatan admin jika ada pada string alasan atau keterangan absensi
       const rawKeterangan = row.absensi_keterangan || row.alasan || "";
       if (rawKeterangan.includes("|| Catatan Admin:")) {
         const parts = rawKeterangan.split("|| Catatan Admin:");
@@ -218,17 +264,27 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      const userName = row.user_name || row.user_nama || "Peserta";
-      const userRole = row.user_role || "ANAK_MAGANG";
-      const userAvatar = row.user_avatar || null;
-      const userInstitution = row.user_institution || row.user_sekolah || "";
-      const userStudyProgram = row.user_study_program || "";
+      // Tentukan data user: peserta_magang atau karyawan_os
+      const isPeserta = !!row.peserta_magang_id;
+      const userName = isPeserta
+        ? row.pm_name || "Peserta Magang"
+        : row.ko_name || "Karyawan OS";
+      const userEmail = isPeserta ? row.pm_email : row.ko_email;
+      const userAvatar = isPeserta ? row.pm_avatar : row.ko_avatar;
+      const userRole = isPeserta ? "ANAK_MAGANG" : "KARYAWAN_OS";
+      const userInstitution = isPeserta ? row.pm_institution || "" : "";
+      const userStudyProgram = isPeserta ? row.pm_study_program || "" : "";
 
       return {
-        // Skema tabel izin (10 kolom)
+        // Kolom tabel izin
         id: String(row.id),
         absensi_id: row.absensi_id ? String(row.absensi_id) : null,
-        user_id: String(row.user_id),
+        peserta_magang_id: row.peserta_magang_id
+          ? String(row.peserta_magang_id)
+          : null,
+        karyawan_os_id: row.karyawan_os_id
+          ? String(row.karyawan_os_id)
+          : null,
         jenis: row.jenis,
         tanggal_mulai: tanggalMulai,
         tanggal_selesai: tanggalSelesai,
@@ -239,13 +295,20 @@ export async function GET(req: NextRequest) {
 
         // Alias camelCase & relasi user untuk kompatibilitas frontend
         absensiId: row.absensi_id ? String(row.absensi_id) : null,
-        userId: String(row.user_id),
+        pesertaMagangId: row.peserta_magang_id
+          ? String(row.peserta_magang_id)
+          : null,
+        karyawanOsId: row.karyawan_os_id
+          ? String(row.karyawan_os_id)
+          : null,
         tanggalMulai,
         tanggalSelesai,
         keterangan: alasanClean,
         catatanAdmin,
         userName,
         user_nama: userName,
+        userEmail,
+        user_email: userEmail,
         userRole,
         user_role: userRole,
         userAvatar,
@@ -283,14 +346,15 @@ export async function GET(req: NextRequest) {
  * Kolom yang diisi ke tabel `izin`:
  *   1. id (auto_increment)
  *   2. absensi_id (relasi ke absensi jika sinkronisasi dibuat)
- *   3. user_id
- *   4. jenis
- *   5. tanggal_mulai
- *   6. tanggal_selesai
- *   7. alasan
- *   8. attachment
- *   9. created_at
- *  10. updated_at
+ *   3. peserta_magang_id (null jika karyawan OS)
+ *   4. karyawan_os_id (null jika peserta magang)
+ *   5. jenis
+ *   6. tanggal_mulai
+ *   7. tanggal_selesai
+ *   8. alasan
+ *   9. attachment
+ *  10. created_at
+ *  11. updated_at
  */
 export async function POST(req: NextRequest) {
   try {
@@ -304,7 +368,12 @@ export async function POST(req: NextRequest) {
       const formData = await req.formData();
       const rawBody: Record<string, any> = {};
       for (const [key, value] of formData.entries()) {
-        if (key === "attachment" || key === "file" || key === "dokumen" || key === "lampiran") {
+        if (
+          key === "attachment" ||
+          key === "file" ||
+          key === "dokumen" ||
+          key === "lampiran"
+        ) {
           attachmentFile = value;
         } else {
           rawBody[key] = value;
@@ -315,19 +384,34 @@ export async function POST(req: NextRequest) {
       body = await req.json();
     }
 
-    const userId = body.userId || body.user_id;
-    if (!userId) {
+    // Ambil identifier: peserta_magang_id atau karyawan_os_id
+    const pesertaMagangId =
+      body.peserta_magang_id || body.pesertaMagangId || null;
+    const karyawanOsId =
+      body.karyawan_os_id || body.karyawanOsId || null;
+
+    if (!pesertaMagangId && !karyawanOsId) {
       return NextResponse.json(
-        { success: false, message: "User ID wajib disertakan." },
+        {
+          success: false,
+          message:
+            "peserta_magang_id atau karyawan_os_id wajib disertakan.",
+        },
         { status: 400 }
       );
     }
 
     const today = getTodayJakarta();
     const jenisRaw = String(body.jenis || body.status || "IZIN").trim();
-    const tanggalMulai = formatDateYMD(body.tanggal_mulai || body.tanggalMulai || today);
-    const tanggalSelesai = formatDateYMD(body.tanggal_selesai || body.tanggalSelesai || tanggalMulai);
-    const alasan = String(body.alasan || body.keterangan || body.reason || "").trim();
+    const tanggalMulai = formatDateYMD(
+      body.tanggal_mulai || body.tanggalMulai || today
+    );
+    const tanggalSelesai = formatDateYMD(
+      body.tanggal_selesai || body.tanggalSelesai || tanggalMulai
+    );
+    const alasan = String(
+      body.alasan || body.keterangan || body.reason || ""
+    ).trim();
 
     if (!alasan) {
       return NextResponse.json(
@@ -338,16 +422,30 @@ export async function POST(req: NextRequest) {
 
     if (tanggalSelesai < tanggalMulai) {
       return NextResponse.json(
-        { success: false, message: "Tanggal selesai tidak boleh lebih awal dari tanggal mulai." },
+        {
+          success: false,
+          message:
+            "Tanggal selesai tidak boleh lebih awal dari tanggal mulai.",
+        },
         { status: 400 }
       );
     }
 
+    // Identifier untuk nama file
+    const fileIdentifier = pesertaMagangId || karyawanOsId;
+
     // 1. Simpan attachment file jika ada
     let attachmentUrl: string | null = null;
-    const rawAttachment = attachmentFile || body.attachment || body.file || null;
+    const rawAttachment =
+      attachmentFile || body.attachment || body.file || null;
     if (rawAttachment) {
-      const saved = await saveStorageFile(rawAttachment, "izin", "lampiran", userId, tanggalMulai);
+      const saved = await saveStorageFile(
+        rawAttachment,
+        "izin",
+        "lampiran",
+        fileIdentifier,
+        tanggalMulai
+      );
       attachmentUrl = saved ? saved.slice(0, 500) : null;
     }
 
@@ -371,14 +469,30 @@ export async function POST(req: NextRequest) {
       dateList.push(`${y}-${m}-${day}`);
     }
 
-    let primaryAbsensiId: number | null = body.absensi_id || body.absensiId ? Number(body.absensi_id || body.absensiId) : null;
+    let primaryAbsensiId: number | null =
+      body.absensi_id || body.absensiId
+        ? Number(body.absensi_id || body.absensiId)
+        : null;
 
     for (const tgl of dateList) {
       try {
+        // Cari absensi yang cocok
+        let absensiWhere = "";
+        let absensiParams: any[] = [tgl];
+
+        if (pesertaMagangId) {
+          absensiWhere = "peserta_magang_id = ? AND tanggal = ?";
+          absensiParams = [pesertaMagangId, tgl];
+        } else {
+          absensiWhere = "karyawan_os_id = ? AND tanggal = ?";
+          absensiParams = [karyawanOsId, tgl];
+        }
+
         const [existing]: any = await mysqlPool.query(
-          "SELECT id FROM absensi WHERE user_id = ? AND tanggal = ? LIMIT 1",
-          [userId, tgl]
+          `SELECT id FROM absensi WHERE ${absensiWhere} LIMIT 1`,
+          absensiParams
         );
+
         if (existing && existing.length > 0) {
           const existingId = Number(existing[0].id);
           if (!primaryAbsensiId) primaryAbsensiId = existingId;
@@ -387,10 +501,15 @@ export async function POST(req: NextRequest) {
             [statusAbsensi, notesFormatted, settingId, existingId]
           );
         } else {
+          // Insert absensi baru
+          const absFields = pesertaMagangId
+            ? "(peserta_magang_id, pengaturan_sistem_id, tanggal, status, keterangan)"
+            : "(karyawan_os_id, pengaturan_sistem_id, tanggal, status, keterangan)";
+          const absId = pesertaMagangId ? pesertaMagangId : karyawanOsId;
+
           const [insertAbs]: any = await mysqlPool.query(
-            `INSERT INTO absensi (user_id, pengaturan_sistem_id, tanggal, status, keterangan)
-             VALUES (?, ?, ?, ?, ?)`,
-            [userId, settingId, tgl, statusAbsensi, notesFormatted]
+            `INSERT INTO absensi ${absFields} VALUES (?, ?, ?, ?, ?)`,
+            [absId, settingId, tgl, statusAbsensi, notesFormatted]
           );
           if (!primaryAbsensiId) primaryAbsensiId = Number(insertAbs.insertId);
         }
@@ -404,18 +523,20 @@ export async function POST(req: NextRequest) {
       `
       INSERT INTO izin (
         absensi_id,
-        user_id,
+        peserta_magang_id,
+        karyawan_os_id,
         jenis,
         tanggal_mulai,
         tanggal_selesai,
         alasan,
         attachment
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         primaryAbsensiId,
-        userId,
+        pesertaMagangId || null,
+        karyawanOsId || null,
         jenisRaw,
         tanggalMulai,
         tanggalSelesai,
@@ -426,20 +547,36 @@ export async function POST(req: NextRequest) {
 
     const insertedIzinId = insertResult.insertId;
 
-    // 4. Ambil data user untuk respons lengkap
-    const [userRows]: any = await mysqlPool.query(
-      "SELECT id, name, role, avatar, institution, study_program FROM users WHERE id = ? LIMIT 1",
-      [userId]
-    );
-    const u = userRows?.[0] || {};
+    // 4. Ambil data peserta/karyawan untuk respons lengkap
+    let userInfo: any = {};
+    let userRole = "ANAK_MAGANG";
+
+    if (pesertaMagangId) {
+      const [pmRows]: any = await mysqlPool.query(
+        "SELECT id, name, avatar, institution, study_program FROM peserta_magang WHERE id = ? LIMIT 1",
+        [pesertaMagangId]
+      );
+      userInfo = pmRows?.[0] || {};
+      userRole = "ANAK_MAGANG";
+    } else if (karyawanOsId) {
+      const [koRows]: any = await mysqlPool.query(
+        "SELECT id, name, avatar FROM karyawan_os WHERE id = ? LIMIT 1",
+        [karyawanOsId]
+      );
+      userInfo = koRows?.[0] || {};
+      userRole = "KARYAWAN_OS";
+    }
+
     const nowIso = new Date().toISOString();
 
     const izinObject = {
       id: String(insertedIzinId),
       absensi_id: primaryAbsensiId ? String(primaryAbsensiId) : null,
       absensiId: primaryAbsensiId ? String(primaryAbsensiId) : null,
-      user_id: String(userId),
-      userId: String(userId),
+      peserta_magang_id: pesertaMagangId ? String(pesertaMagangId) : null,
+      pesertaMagangId: pesertaMagangId ? String(pesertaMagangId) : null,
+      karyawan_os_id: karyawanOsId ? String(karyawanOsId) : null,
+      karyawanOsId: karyawanOsId ? String(karyawanOsId) : null,
       jenis: jenisRaw,
       tanggal_mulai: tanggalMulai,
       tanggalMulai,
@@ -452,16 +589,16 @@ export async function POST(req: NextRequest) {
       updated_at: nowIso,
       updatedAt: nowIso,
       catatanAdmin: "",
-      userName: u.name || "Peserta",
-      user_nama: u.name || "Peserta",
-      userRole: u.role || "ANAK_MAGANG",
-      user_role: u.role || "ANAK_MAGANG",
-      userAvatar: u.avatar || null,
-      user_avatar: u.avatar || null,
-      userInstitution: u.institution || "",
-      user_institution: u.institution || "",
-      userStudyProgram: u.study_program || "",
-      user_study_program: u.study_program || "",
+      userName: userInfo.name || "Peserta",
+      user_nama: userInfo.name || "Peserta",
+      userRole,
+      user_role: userRole,
+      userAvatar: userInfo.avatar || null,
+      user_avatar: userInfo.avatar || null,
+      userInstitution: userInfo.institution || "",
+      user_institution: userInfo.institution || "",
+      userStudyProgram: userInfo.study_program || "",
+      user_study_program: userInfo.study_program || "",
     };
 
     return NextResponse.json(
@@ -476,7 +613,10 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("API Izin POST Error:", error);
     return NextResponse.json(
-      { success: false, message: error?.message || "Gagal memproses pengajuan izin." },
+      {
+        success: false,
+        message: error?.message || "Gagal memproses pengajuan izin.",
+      },
       { status: 500 }
     );
   }
@@ -517,7 +657,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const [rows]: any = await mysqlPool.query(
-      "SELECT id, absensi_id, user_id, jenis, tanggal_mulai, tanggal_selesai, alasan, attachment FROM izin WHERE id = ? LIMIT 1",
+      "SELECT id, absensi_id, peserta_magang_id, karyawan_os_id, jenis, tanggal_mulai, tanggal_selesai, alasan, attachment FROM izin WHERE id = ? LIMIT 1",
       [id]
     );
 
@@ -529,7 +669,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     const currentIzin = rows[0];
-    const adminNoteVal = catatanAdmin !== undefined ? catatanAdmin : catatan_admin;
+    const adminNoteVal =
+      catatanAdmin !== undefined ? catatanAdmin : catatan_admin;
 
     const fields: string[] = [];
     const params: any[] = [];
@@ -566,16 +707,17 @@ export async function PATCH(req: NextRequest) {
           const currentNotes = absRows[0].keterangan || "";
           let baseReason = currentNotes;
           if (currentNotes.includes("|| Catatan Admin:")) {
-            baseReason = currentNotes.split("|| Catatan Admin:")[0]?.trim() || "";
+            baseReason =
+              currentNotes.split("|| Catatan Admin:")[0]?.trim() || "";
           }
           const updatedNotes = adminNoteVal
             ? `${baseReason} || Catatan Admin: ${String(adminNoteVal).trim()}`
             : baseReason;
 
-          await mysqlPool.query("UPDATE absensi SET keterangan = ? WHERE id = ?", [
-            updatedNotes,
-            currentIzin.absensi_id,
-          ]);
+          await mysqlPool.query(
+            "UPDATE absensi SET keterangan = ? WHERE id = ?",
+            [updatedNotes, currentIzin.absensi_id]
+          );
         }
       } catch (absErr) {
         console.warn("Gagal memperbarui catatan admin di absensi:", absErr);
@@ -586,7 +728,10 @@ export async function PATCH(req: NextRequest) {
     params.push(id);
 
     if (fields.length > 1) {
-      await mysqlPool.query(`UPDATE izin SET ${fields.join(", ")} WHERE id = ?`, params);
+      await mysqlPool.query(
+        `UPDATE izin SET ${fields.join(", ")} WHERE id = ?`,
+        params
+      );
     }
 
     return NextResponse.json({
@@ -594,13 +739,17 @@ export async function PATCH(req: NextRequest) {
       message: "Data pengajuan izin berhasil diperbarui.",
       data: {
         id: String(id),
-        catatanAdmin: adminNoteVal !== undefined ? String(adminNoteVal).trim() : "",
+        catatanAdmin:
+          adminNoteVal !== undefined ? String(adminNoteVal).trim() : "",
       },
     });
   } catch (error: any) {
     console.error("API Izin PATCH Error:", error);
     return NextResponse.json(
-      { success: false, message: error?.message || "Gagal memperbarui data izin." },
+      {
+        success: false,
+        message: error?.message || "Gagal memperbarui data izin.",
+      },
       { status: 500 }
     );
   }
@@ -630,14 +779,17 @@ export async function DELETE(req: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { success: false, message: "ID izin wajib disertakan untuk menghapus." },
+        {
+          success: false,
+          message: "ID izin wajib disertakan untuk menghapus.",
+        },
         { status: 400 }
       );
     }
 
     // Ambil info izin sebelum dihapus
     const [rows]: any = await mysqlPool.query(
-      "SELECT id, absensi_id, user_id, tanggal_mulai, tanggal_selesai FROM izin WHERE id = ? LIMIT 1",
+      "SELECT id, absensi_id, peserta_magang_id, karyawan_os_id, tanggal_mulai, tanggal_selesai FROM izin WHERE id = ? LIMIT 1",
       [id]
     );
 
@@ -672,7 +824,10 @@ export async function DELETE(req: NextRequest) {
   } catch (error: any) {
     console.error("API Izin DELETE Error:", error);
     return NextResponse.json(
-      { success: false, message: error?.message || "Gagal menghapus data pengajuan izin." },
+      {
+        success: false,
+        message: error?.message || "Gagal menghapus data pengajuan izin.",
+      },
       { status: 500 }
     );
   }

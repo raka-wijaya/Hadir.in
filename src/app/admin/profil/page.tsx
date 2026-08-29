@@ -125,7 +125,7 @@ export default function AdminProfilPage() {
 
     try {
       if (user?.id) {
-        const response = await fetch("/api/users", {
+        const response = await fetch("/api/users/admin", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: user.id, ...updatedData }),

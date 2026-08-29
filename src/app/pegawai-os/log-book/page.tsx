@@ -112,7 +112,7 @@ export default function PegawaiOsLogBookPage() {
     try {
       setIsLoading(true);
       const params = new URLSearchParams();
-      if (user?.id) params.append("userId", String(user.id));
+      if (user?.id) params.append("karyawan_os_id", String(user.id));
       if (selectedDate) params.append("tanggal", selectedDate);
       if (selectedCategory !== "ALL") params.append("kategori", selectedCategory);
       if (searchQuery) params.append("q", searchQuery);
@@ -187,7 +187,7 @@ export default function PegawaiOsLogBookPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          userId: user?.id,
+          karyawan_os_id: user?.id,
         }),
       });
       const result = await res.json();

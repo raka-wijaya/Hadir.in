@@ -20,7 +20,9 @@ type AwardTier =
 
 interface PesertaKedisiplinan {
   rank: number;
-  userId: string;
+  id: string;
+  peserta_magang_id?: string | null;
+  karyawan_os_id?: string | null;
   nama: string;
   role: string;
   sekolah: string;
@@ -363,7 +365,7 @@ export function Kedisiplinan({
                 <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                   {peserta.slice(1).map((item) => (
                     <div
-                      key={item.userId}
+                      key={item.id}
                       className="flex items-center gap-2.5 p-2 rounded-xl border border-border bg-muted/20"
                     >
                       {/* Rank */}

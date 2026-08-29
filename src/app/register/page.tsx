@@ -13,13 +13,14 @@ import {
   Mail,
   Phone,
   Shield,
+  CreditCard,
   AlertCircle,
 } from "lucide-react";
 
-type NonInternRole =
+type InternalRole =
   | "KARYAWAN_OS"
-  | "ADMIN_OS"
   | "ADMIN_MAGANG"
+  | "ADMIN_OS"
   | "SUPERADMIN";
 
 export default function RegisterPage() {
@@ -32,13 +33,13 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const [selectedRole, setSelectedRole] =
-    useState<NonInternRole>("KARYAWAN_OS");
+  const [selectedRole, setSelectedRole] = useState<InternalRole>("KARYAWAN_OS");
 
   const [form, setForm] = useState({
     nama: "",
     email: "",
     no_hp: "",
+    identity_number: "",
     password: "",
     confirmPassword: "",
   });
@@ -70,7 +71,7 @@ export default function RegisterPage() {
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      setErrorMsg("Format email yang Anda masukkan tidak sesuai.");
+      setErrorMsg("Format email yang Anda masukkan tidak valid.");
       return false;
     }
 
@@ -107,6 +108,7 @@ export default function RegisterPage() {
           nama: form.nama.trim(),
           email: form.email.trim(),
           no_hp: form.no_hp.trim() || null,
+          identity_number: form.identity_number.trim() || null,
           password: form.password,
           role: selectedRole,
         }),
@@ -118,13 +120,13 @@ export default function RegisterPage() {
         : null;
 
       if (!res.ok || !data?.success) {
-        setErrorMsg(data?.message || "Gagal memproses pendaftaran akun.");
+        setErrorMsg(data?.message || "Gagal memproses pendaftaran akun internal.");
         return;
       }
 
       setSuccessMsg(
         data.message ||
-          `Akun ${selectedRole} berhasil di daftarkan. Silakan masuk menggunakan akun baru Anda.`,
+          `Akun ${selectedRole.replace("_", " ")} berhasil didaftarkan. Silakan masuk menggunakan akun baru Anda.`
       );
     } catch (error) {
       console.error("Register request error:", error);
@@ -140,29 +142,28 @@ export default function RegisterPage() {
   if (successMsg) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-3">
-        <div className="w-full max-w-xs bg-card text-card-foreground border border-border rounded-xl p-4 space-y-3 shadow-card text-center">
-          <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center mx-auto">
-            <ShieldCheck className="w-5 h-5 text-primary" />
+        <div className="w-full max-w-sm bg-card text-card-foreground border border-border rounded-xl p-5 space-y-4 shadow-card text-center">
+          <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center mx-auto">
+            <ShieldCheck className="w-6 h-6 text-primary" />
           </div>
 
-          <div className="space-y-1">
-            <h2 className="text-sm font-black font-sans text-card-foreground">
+          <div className="space-y-1.5">
+            <h2 className="text-base font-black font-sans text-card-foreground">
               Pendaftaran Akun Berhasil!
             </h2>
 
-            <p className="text-[10px] font-sans text-muted-foreground leading-relaxed">
+            <p className="text-xs font-sans text-muted-foreground leading-relaxed">
               {successMsg}
             </p>
 
-            <div className="mt-2.5 rounded-lg border border-primary/20 bg-primary/5 p-2.5">
-              <div className="flex items-center font-sans justify-center gap-1.5 text-primary font-bold text-[10px]">
-                <ShieldCheck className="w-3.5 h-3.5" />
+            <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-2.5">
+              <div className="flex items-center font-sans justify-center gap-1.5 text-primary font-bold text-xs">
+                <ShieldCheck className="w-4 h-4" />
                 Role: {selectedRole}
               </div>
 
-              <p className="text-[9px] font-sans text-muted-foreground mt-1">
-                Akun internal telah aktif dan dapat digunakan untuk masuk ke
-                sistem.
+              <p className="text-[10px] font-sans text-muted-foreground mt-1">
+                Akun internal telah aktif dan dapat langsung digunakan untuk masuk.
               </p>
             </div>
           </div>
@@ -172,14 +173,14 @@ export default function RegisterPage() {
             onClick={() => router.push("/login")}
             className="
               w-full
-              min-h-[38px]
+              min-h-[40px]
               py-2
               px-4
               rounded-lg
               bg-primary
               text-primary-foreground
               font-black
-              text-[11px]
+              text-xs
               hover:opacity-90
               active:scale-[0.99]
               transition-all
@@ -191,7 +192,7 @@ export default function RegisterPage() {
               font-sans
             "
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
+            <ShieldCheck className="w-4 h-4" />
             Masuk Sekarang
           </button>
         </div>
@@ -200,41 +201,82 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-3 py-4">
-      <div className="w-full max-w-md bg-card text-card-foreground border border-border rounded-xl p-4 md:p-5 shadow-card">
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-3 py-6">
+      <div className="w-full max-w-md bg-card text-card-foreground border border-border rounded-xl p-4 md:p-6 shadow-card space-y-4">
         {/* HEADER */}
-        <div className="text-center space-y-1 mb-4">
+        <div className="text-center space-y-1">
           <div className="w-9 h-9 font-sans rounded-lg bg-primary text-primary-foreground font-black text-base flex items-center justify-center mx-auto shadow-card">
             H
           </div>
 
-          <h1 className="text-base font-sans md:text-lg font-black tracking-tight text-card-foreground">
+          <h1 className="text-lg font-black font-sans tracking-tight text-card-foreground">
             Daftar Akun Internal
           </h1>
 
-          <p className="text-[10px] font-semibold font-sans text-muted-foreground">
-            Presensi Karyawan & Staf Disdukcapil Sidoarjo
+          <p className="text-xs font-semibold font-sans text-muted-foreground">
+            Presensi Karyawan OS & Staf Disdukcapil Sidoarjo
           </p>
         </div>
 
-        {/* ERROR */}
+        {/* ERROR MESSAGE */}
         {errorMsg && (
-          <div className="mb-3 bg-destructive/10 border border-destructive/30 rounded-lg p-2 flex items-center justify-center gap-2 text-[10px] font-bold text-destructive text-center animate-in fade-in">
-            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-2.5 flex items-center justify-center gap-2 text-xs font-bold text-destructive text-center animate-in fade-in">
+            <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* DATA INTERNAL */}
-          <div className="space-y-2.5">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          {/* ROLE SELECTION */}
+          <div className="space-y-2 p-3 rounded-lg border border-border bg-background">
+            <div className="flex items-start gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Shield className="w-4 h-4 text-primary" />
+              </div>
+
+              <div>
+                <p className="text-xs font-sans font-black text-card-foreground">
+                  Pilih Role Akun Internal
+                </p>
+                <p className="text-[10px] text-muted-foreground font-sans">
+                  Pilih role sesuai jabatan atau penugasan Anda.
+                </p>
+              </div>
+            </div>
+
             <div className="space-y-1">
-              <label className="text-[10px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
-                <User className="w-3 h-3 text-primary" />
-                Nama Lengkap
-                <span className="text-destructive">*</span>
+              <label className="text-[11px] font-sans font-extrabold text-card-foreground">
+                Role Penugasan <span className="text-destructive">*</span>
               </label>
 
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value as InternalRole)}
+                className={`${inputClass} font-bold`}
+              >
+                <option value="KARYAWAN_OS">
+                  KARYAWAN OS — Karyawan Outsourcing
+                </option>
+                <option value="ADMIN_MAGANG">
+                  ADMIN MAGANG — Administrator Magang
+                </option>
+                <option value="ADMIN_OS">
+                  ADMIN OS — Administrator Outsourcing
+                </option>
+                <option value="SUPERADMIN">
+                  SUPERADMIN — Super Administrator
+                </option>
+              </select>
+            </div>
+          </div>
+
+          {/* INFORMASI UTAMA */}
+          <div className="space-y-2.5">
+            <div className="space-y-1">
+              <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
+                <User className="w-3.5 h-3.5 text-primary" />
+                Nama Lengkap <span className="text-destructive">*</span>
+              </label>
               <input
                 type="text"
                 value={form.nama}
@@ -247,126 +289,60 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
-                <Mail className="w-3 h-3 text-primary" />
-                Email
-                <span className="text-destructive">*</span>
+              <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
+                <Mail className="w-3.5 h-3.5 text-primary" />
+                Alamat Email <span className="text-destructive">*</span>
               </label>
-
               <input
                 type="email"
                 value={form.email}
                 onChange={set("email")}
-                placeholder="contoh@email.com"
+                placeholder="nama@email.com"
                 autoComplete="email"
                 className={inputClass}
                 required
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
-                <Phone className="w-3 h-3 text-primary" />
-                No. HP / WhatsApp
-                <span className="text-muted-foreground font-sans font-normal">
-                  (opsional)
-                </span>
-              </label>
-
-              <input
-                type="tel"
-                value={form.no_hp}
-                onChange={set("no_hp")}
-                placeholder="08xxxxxxxxxx"
-                autoComplete="tel"
-                className={inputClass}
-              />
-            </div>
-
-            {/* ROLE SELECTION */}
-            <div className="space-y-2.5 p-2.5 rounded-lg border border-border bg-background">
-              <div className="flex items-start gap-2">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Shield className="w-3.5 h-3.5 text-primary" />
-                </div>
-
-                <div>
-                  <p className="text-[11px] font-sans font-black text-card-foreground">
-                    Pilih Role Akun Internal
-                  </p>
-
-                  <p className="text-[9px] text-muted-foreground font-sans mt-0.5">
-                    Pilih role sesuai posisi atau wewenang.
-                  </p>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <div className="space-y-1">
+                <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
+                  <CreditCard className="w-3.5 h-3.5 text-primary" />
+                  NIP / Nomor Identitas
+                </label>
+                <input
+                  type="text"
+                  value={form.identity_number}
+                  onChange={set("identity_number")}
+                  placeholder="Nomor Induk Pegawai"
+                  className={inputClass}
+                />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-sans font-extrabold text-card-foreground">
-                  Role Penugasan
-                  <span className="text-destructive ml-1">*</span>
+                <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5 text-primary" />
+                  No. HP / WhatsApp
                 </label>
-
-                <select
-                  value={selectedRole}
-                  onChange={(e) =>
-                    setSelectedRole(e.target.value as NonInternRole)
-                  }
-                  className={`${inputClass} font-bold`}
-                >
-                  <option value="KARYAWAN_OS">
-                    KARYAWAN OS - Karyawan Outsourcing
-                  </option>
-
-                  <option value="ADMIN_MAGANG">
-                    ADMIN MAGANG — Administrator Magang
-                  </option>
-
-                  <option value="ADMIN_OS">
-                    ADMIN OS — Administrator Outsourcing
-                  </option>
-
-                  <option value="SUPERADMIN">
-                    SUPERADMIN — Super Administrator
-                  </option>
-                </select>
-              </div>
-
-              <div className="p-2 rounded-lg bg-muted border border-border text-[9px] text-muted-foreground flex items-center gap-2">
-                <ShieldCheck className="w-3 h-3 text-primary shrink-0" />
-
-                <span className="font-sans">
-                  Akun akan memiliki hak akses sebagai{" "}
-                  <strong className="text-foreground">{selectedRole}</strong>.
-                </span>
+                <input
+                  type="tel"
+                  value={form.no_hp}
+                  onChange={set("no_hp")}
+                  placeholder="08xxxxxxxxxx"
+                  autoComplete="tel"
+                  className={inputClass}
+                />
               </div>
             </div>
           </div>
 
           {/* PASSWORD */}
           <div className="space-y-2.5">
-            <div className="flex items-start gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Lock className="w-3.5 h-3.5 text-primary" />
-              </div>
-
-              <div>
-                <p className="text-[11px] font-sans font-black text-card-foreground">
-                  Buat Password Akun
-                </p>
-
-                <p className="text-[9px] font-sans text-muted-foreground mt-0.5">
-                  Password digunakan untuk masuk ke sistem.
-                </p>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               <div className="space-y-1">
-                <label className="text-[10px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-primary" />
-                  Password
-                  <span className="text-destructive">*</span>
+                <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-primary" />
+                  Password <span className="text-destructive">*</span>
                 </label>
 
                 <div className="relative">
@@ -379,7 +355,6 @@ export default function RegisterPage() {
                     className={`${inputClass} pr-9`}
                     required
                   />
-
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
@@ -395,10 +370,9 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-primary" />
-                  Konfirmasi Password
-                  <span className="text-destructive">*</span>
+                <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-primary" />
+                  Konfirmasi Password <span className="text-destructive">*</span>
                 </label>
 
                 <div className="relative">
@@ -411,7 +385,6 @@ export default function RegisterPage() {
                     className={`${inputClass} pr-9`}
                     required
                   />
-
                   <button
                     type="button"
                     onClick={() => setShowConfirm((prev) => !prev)}
@@ -428,20 +401,20 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* SUBMIT */}
+          {/* SUBMIT BUTTON */}
           <button
             type="submit"
             disabled={isLoading}
             className="
               w-full
-              min-h-[38px]
-              py-2
+              min-h-[42px]
+              py-2.5
               px-4
               rounded-lg
               bg-primary
               text-primary-foreground
               font-black
-              text-[11px]
+              text-xs
               hover:opacity-90
               active:scale-[0.99]
               transition-all
@@ -450,6 +423,7 @@ export default function RegisterPage() {
               justify-center
               gap-2
               shadow-card
+              font-sans
               disabled:opacity-50
               disabled:cursor-not-allowed
               disabled:active:scale-100
@@ -461,22 +435,22 @@ export default function RegisterPage() {
               </span>
             ) : (
               <>
-                <UserPlus className="w-3.5 h-3.5" />
-                <span>Daftar sebagai {selectedRole}</span>
+                <UserPlus className="w-4 h-4" />
+                <span>Daftar sebagai {selectedRole.replace("_", " ")}</span>
               </>
             )}
           </button>
         </form>
 
         {/* FOOTER */}
-        <div className="text-center pt-3 mt-3 border-t border-border">
-          <p className="text-[10px] text-muted-foreground font-sans font-semibold">
+        <div className="text-center pt-3 border-t border-border">
+          <p className="text-xs text-muted-foreground font-sans font-semibold">
             Sudah punya akun?{" "}
             <Link
               href="/login"
               className="font-extrabold text-primary font-sans hover:opacity-80 hover:underline inline-flex items-center gap-1 transition-all"
             >
-              <ShieldCheck className="w-3 h-3" />
+              <ShieldCheck className="w-3.5 h-3.5" />
               Masuk di sini
             </Link>
           </p>

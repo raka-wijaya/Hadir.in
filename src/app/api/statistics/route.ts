@@ -14,13 +14,10 @@ export async function GET(request: NextRequest) {
     const params: any[] = [today];
 
     if (role && role !== "ALL" && role !== "SUPERADMIN" && role !== "SUPER_ADMIN") {
-      if (role === "ADMIN_MAGANG") {
-        conditions.push("u.role = 'ANAK_MAGANG'");
-      } else if (role === "ADMIN_OS") {
-        conditions.push("u.role = 'KARYAWAN_OS'");
-      } else {
-        conditions.push("u.role = ?");
-        params.push(role);
+      if (role === "ADMIN_MAGANG" || role === "ANAK_MAGANG") {
+        conditions.push("a.peserta_magang_id IS NOT NULL");
+      } else if (role === "ADMIN_OS" || role === "KARYAWAN_OS") {
+        conditions.push("a.karyawan_os_id IS NOT NULL");
       }
     }
 
@@ -34,7 +31,6 @@ export async function GET(request: NextRequest) {
         COUNT(CASE WHEN a.status IN ('IZIN', 'SAKIT') THEN 1 END) AS izinSakit,
         COUNT(CASE WHEN a.status = 'ALPA' THEN 1 END) AS alpa
       FROM absensi a
-      LEFT JOIN users u ON u.id = a.user_id
       ${whereClause}
       `,
       params

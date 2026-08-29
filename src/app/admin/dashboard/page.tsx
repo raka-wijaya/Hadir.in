@@ -176,7 +176,8 @@ export default function AdminDashboardPage() {
 
       const [
         absRes,
-        usersRes,
+        magangRes,
+        osRes,
         logbookRes,
         jobdeskRes,
       ] = await Promise.all([
@@ -184,7 +185,11 @@ export default function AdminDashboardPage() {
           cache: "no-store",
         }),
 
-        fetch("/api/users", {
+        fetch("/api/users/peserta_magang", {
+          cache: "no-store",
+        }),
+
+        fetch("/api/users/karyawan_os", {
           cache: "no-store",
         }),
 
@@ -192,7 +197,7 @@ export default function AdminDashboardPage() {
           cache: "no-store",
         }),
 
-        fetch("/api/jobdesk", {
+        fetch("/api/tugas", {
           cache: "no-store",
         }),
       ]);
@@ -242,40 +247,27 @@ export default function AdminDashboardPage() {
         setTugasList([]);
       }
 
-      if (usersRes.ok) {
-        const usersData =
-          await usersRes.json();
-
-        if (
-          usersData.success &&
-          Array.isArray(usersData.data)
-        ) {
-          const activeUsers =
-            usersData.data.filter(
-              (u: any) =>
-                u.status === "ACTIVE" ||
-                !u.status
-            );
-
-          const countMagang =
-            activeUsers.filter(
-              (u: any) =>
-                u.role === "ANAK_MAGANG"
-            ).length;
-
-          const countOS =
-            activeUsers.filter(
-              (u: any) =>
-                u.role === "KARYAWAN_OS"
-            ).length;
-
-          setTotalMagang(countMagang);
-          setTotalOS(countOS);
-        } else {
-          setTotalMagang(0);
-          setTotalOS(0);
+      let countMagang = 0;
+      if (magangRes.ok) {
+        const magangData = await magangRes.json();
+        if (magangData.success && Array.isArray(magangData.data)) {
+          countMagang = magangData.data.filter(
+            (u: any) => u.status === "ACTIVE" || !u.status
+          ).length;
         }
       }
+      setTotalMagang(countMagang);
+
+      let countOS = 0;
+      if (osRes.ok) {
+        const osData = await osRes.json();
+        if (osData.success && Array.isArray(osData.data)) {
+          countOS = osData.data.filter(
+            (u: any) => u.status === "ACTIVE" || !u.status
+          ).length;
+        }
+      }
+      setTotalOS(countOS);
     } catch (err) {
       console.error(
         "Gagal memuat data dashboard admin:",

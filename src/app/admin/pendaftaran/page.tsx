@@ -276,7 +276,7 @@ export default function AdminPendaftaranPage() {
       const tahun = new Date().getFullYear();
       const defaultPassword = `${namaDepan}${tahun}`;
 
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/users/peserta_magang", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

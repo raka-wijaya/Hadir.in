@@ -9,22 +9,43 @@ type UserRole =
   | "KARYAWAN_OS"
   | "ANAK_MAGANG";
 
-const VALID_ROLES: UserRole[] = [
+const VALID_ROLES: readonly UserRole[] = [
   "SUPERADMIN",
   "ADMIN_MAGANG",
   "ADMIN_OS",
   "KARYAWAN_OS",
   "ANAK_MAGANG",
-];
+] as const;
 
 function normalizeRole(roleInput?: string): UserRole {
   const r = String(roleInput || "").trim().toUpperCase();
   if (r === "MAGANG" || r === "ANAK_MAGANG") return "ANAK_MAGANG";
-  if (r === "PEGAWAI" || r === "KARYAWAN_OS" || r === "PEGAWAI_OS" || r === "ANAK_OS") return "KARYAWAN_OS";
+  if (
+    r === "PEGAWAI" ||
+    r === "KARYAWAN_OS" ||
+    r === "PEGAWAI_OS" ||
+    r === "ANAK_OS"
+  )
+    return "KARYAWAN_OS";
   if (r === "SUPER_ADMIN" || r === "SUPERADMIN") return "SUPERADMIN";
   if (r === "ADMIN_MAGANG") return "ADMIN_MAGANG";
   if (r === "ADMIN_OS") return "ADMIN_OS";
-  return "ANAK_MAGANG";
+  return "KARYAWAN_OS";
+}
+
+function getDefaultAvatar(role: UserRole, name: string): string {
+  const encodedName = encodeURIComponent(name || "User");
+  switch (role) {
+    case "SUPERADMIN":
+    case "ADMIN_MAGANG":
+    case "ADMIN_OS":
+      return `https://ui-avatars.com/api/?name=${encodedName}&background=4f46e5&color=ffffff&bold=true`;
+    case "KARYAWAN_OS":
+      return `https://ui-avatars.com/api/?name=${encodedName}&background=f59e0b&color=000000&bold=true`;
+    case "ANAK_MAGANG":
+    default:
+      return `https://ui-avatars.com/api/?name=${encodedName}&background=72e3ad&color=1e2723&bold=true`;
+  }
 }
 
 export async function POST(req: Request) {
@@ -36,15 +57,14 @@ export async function POST(req: Request) {
     const rawPassword = body.password;
     const rawPhone = body.phone || body.no_hp;
     const rawInstitution = body.institution || body.sekolah_kampus;
-    const rawStudyProgram = body.study_program || body.studyProgram || body.jurusan;
-    const rawIdentityNumber = body.identity_number || body.identityNumber;
-    const rawAvatar = body.avatar;
-    const rawStartDate = body.start_date || body.periode_mulai || body.startDate;
+    const rawStudyProgram =
+      body.study_program || body.studyProgram || body.jurusan;
+    const rawIdentityNumber =
+      body.identity_number || body.identityNumber || body.nip || body.nim;
+    const rawStartDate =
+      body.start_date || body.periode_mulai || body.startDate;
     const rawEndDate = body.end_date || body.periode_selesai || body.endDate;
 
-    // ============================================================
-    // VALIDASI FIELD WAJIB
-    // ============================================================
     if (!rawName || !rawEmail || !rawPassword) {
       return NextResponse.json(
         {
@@ -55,24 +75,29 @@ export async function POST(req: Request) {
       );
     }
 
-    // ============================================================
-    // CLEAN DATA
-    // ============================================================
     const cleanName = String(rawName).trim().slice(0, 150);
     const cleanEmail = String(rawEmail).trim().toLowerCase().slice(0, 150);
     const cleanPassword = String(rawPassword);
     const cleanPhone = rawPhone ? String(rawPhone).trim().slice(0, 20) : null;
     const cleanRole = normalizeRole(body.role);
-    const cleanInstitution = rawInstitution ? String(rawInstitution).trim().slice(0, 200) : null;
-    const cleanStudyProgram = rawStudyProgram ? String(rawStudyProgram).trim().slice(0, 150) : null;
-    const cleanIdentityNumber = rawIdentityNumber ? String(rawIdentityNumber).trim().slice(0, 50) : null;
-    const cleanAvatar = rawAvatar ? String(rawAvatar).trim().slice(0, 500) : null;
-    const startDate = rawStartDate ? String(rawStartDate).trim().slice(0, 10) : null;
+    const cleanIdentityNumber = rawIdentityNumber
+      ? String(rawIdentityNumber).trim().slice(0, 50)
+      : null;
+    const cleanInstitution = rawInstitution
+      ? String(rawInstitution).trim().slice(0, 200)
+      : null;
+    const cleanStudyProgram = rawStudyProgram
+      ? String(rawStudyProgram).trim().slice(0, 150)
+      : null;
+    const startDate = rawStartDate
+      ? String(rawStartDate).trim().slice(0, 10)
+      : null;
     const endDate = rawEndDate ? String(rawEndDate).trim().slice(0, 10) : null;
 
-    // ============================================================
-    // VALIDASI ROLE
-    // ============================================================
+    const cleanAvatar = body.avatar
+      ? String(body.avatar).trim().slice(0, 500)
+      : getDefaultAvatar(cleanRole, cleanName);
+
     if (!VALID_ROLES.includes(cleanRole)) {
       return NextResponse.json(
         {
@@ -83,9 +108,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // ============================================================
-    // VALIDASI PASSWORD
-    // ============================================================
     if (cleanPassword.length < 6) {
       return NextResponse.json(
         {
@@ -96,46 +118,31 @@ export async function POST(req: Request) {
       );
     }
 
-    // ============================================================
-    // VALIDASI PERIODE MAGANG (JIKA DIISI)
-    // ============================================================
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Format tanggal magang tidak valid.",
-          },
-          { status: 400 }
-        );
-      }
-
-      if (end < start) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Tanggal selesai magang tidak boleh sebelum tanggal mulai.",
-          },
-          { status: 400 }
-        );
-      }
+    // Cek duplikasi email di tabel terkait
+    let existingRows: any[] = [];
+    if (
+      cleanRole === "SUPERADMIN" ||
+      cleanRole === "ADMIN_MAGANG" ||
+      cleanRole === "ADMIN_OS"
+    ) {
+      const [rows]: any = await mysqlPool.query(
+        "SELECT id FROM admin WHERE LOWER(email) = ? LIMIT 1",
+        [cleanEmail]
+      );
+      existingRows = rows;
+    } else if (cleanRole === "KARYAWAN_OS") {
+      const [rows]: any = await mysqlPool.query(
+        "SELECT id FROM karyawan_os WHERE LOWER(email) = ? LIMIT 1",
+        [cleanEmail]
+      );
+      existingRows = rows;
+    } else if (cleanRole === "ANAK_MAGANG") {
+      const [rows]: any = await mysqlPool.query(
+        "SELECT id FROM peserta_magang WHERE LOWER(email) = ? LIMIT 1",
+        [cleanEmail]
+      );
+      existingRows = rows;
     }
-
-    // ============================================================
-    // CEK DUPLIKASI EMAIL DI TABEL `users`
-    // ============================================================
-    const [existingRows]: any = await mysqlPool.query(
-      `
-        SELECT id, email
-        FROM users
-        WHERE LOWER(email) = ?
-        LIMIT 1
-      `,
-      [cleanEmail]
-    );
 
     if (existingRows && existingRows.length > 0) {
       return NextResponse.json(
@@ -147,38 +154,49 @@ export async function POST(req: Request) {
       );
     }
 
-    // ============================================================
-    // HASH PASSWORD
-    // ============================================================
     const hashedPassword = await hashPassword(cleanPassword);
+    let newUserId: any;
 
-    // ============================================================
-    // INSERT KE TABEL `users` (MySQL)
-    // ============================================================
-    let result: any;
-    try {
+    if (
+      cleanRole === "SUPERADMIN" ||
+      cleanRole === "ADMIN_MAGANG" ||
+      cleanRole === "ADMIN_OS"
+    ) {
       const [insertRes]: any = await mysqlPool.query(
-        `
-          INSERT INTO users (
-            email,
-            password,
-            role,
-            name,
-            phone,
-            identity_number,
-            institution,
-            study_program,
-            avatar,
-            start_date,
-            end_date,
-            status
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')
-        `,
+        `INSERT INTO admin (email, password, role, name, phone, identity_number, avatar, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
         [
           cleanEmail,
           hashedPassword,
           cleanRole,
+          cleanName,
+          cleanPhone,
+          cleanIdentityNumber,
+          cleanAvatar,
+        ]
+      );
+      newUserId = insertRes.insertId;
+    } else if (cleanRole === "KARYAWAN_OS") {
+      const [insertRes]: any = await mysqlPool.query(
+        `INSERT INTO karyawan_os (email, password, name, phone, identity_number, avatar, status)
+         VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')`,
+        [
+          cleanEmail,
+          hashedPassword,
+          cleanName,
+          cleanPhone,
+          cleanIdentityNumber,
+          cleanAvatar,
+        ]
+      );
+      newUserId = insertRes.insertId;
+    } else if (cleanRole === "ANAK_MAGANG") {
+      const [insertRes]: any = await mysqlPool.query(
+        `INSERT INTO peserta_magang (email, password, name, phone, identity_number, institution, study_program, avatar, start_date, end_date, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
+        [
+          cleanEmail,
+          hashedPassword,
           cleanName,
           cleanPhone,
           cleanIdentityNumber,
@@ -189,67 +207,14 @@ export async function POST(req: Request) {
           endDate,
         ]
       );
-      result = insertRes;
-    } catch (insertErr: any) {
-      // Fallback jika database masih memiliki kolom NOT NULL username
-      if (insertErr?.code === "ER_NO_DEFAULT_FOR_FIELD" || insertErr?.message?.includes("username")) {
-        const [insertResFallback]: any = await mysqlPool.query(
-          `
-            INSERT INTO users (
-              username,
-              email,
-              password,
-              role,
-              name,
-              phone,
-              identity_number,
-              institution,
-              study_program,
-              avatar,
-              start_date,
-              end_date,
-              status
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')
-          `,
-          [
-            cleanEmail,
-            cleanEmail,
-            hashedPassword,
-            cleanRole,
-            cleanName,
-            cleanPhone,
-            cleanIdentityNumber,
-            cleanInstitution,
-            cleanStudyProgram,
-            cleanAvatar,
-            startDate,
-            endDate,
-          ]
-        );
-        result = insertResFallback;
-      } else {
-        throw insertErr;
-      }
-    }
-
-    const rawKodePendaftaran = body.kode_pendaftaran ? String(body.kode_pendaftaran).trim() : null;
-    if (rawKodePendaftaran) {
-      try {
-        await mysqlPool.query(
-          `UPDATE pendaftaran SET user_id = ? WHERE LOWER(TRIM(kode_pendaftaran)) = LOWER(?)`,
-          [result.insertId, rawKodePendaftaran]
-        );
-      } catch (linkErr) {
-        console.warn("Gagal menautkan user_id ke pendaftaran:", linkErr);
-      }
+      newUserId = insertRes.insertId;
     }
 
     return NextResponse.json(
       {
         success: true,
         message: "Akun berhasil dibuat. Silakan masuk.",
-        userId: String(result.insertId),
+        userId: String(newUserId),
         role: cleanRole,
       },
       { status: 201 }
