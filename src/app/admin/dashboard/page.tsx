@@ -498,7 +498,6 @@ export default function AdminDashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-
         {/* STATISTIK */}
         <div
           className={`grid gap-3 ${
@@ -507,8 +506,7 @@ export default function AdminDashboardPage() {
               : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
           }`}
         >
-          {(isSuperAdmin ||
-            isAdminMagang) && (
+          {(isSuperAdmin || isAdminMagang) && (
             <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
@@ -532,8 +530,7 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {(isSuperAdmin ||
-            isAdminOS) && (
+          {(isSuperAdmin || isAdminOS) && (
             <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
@@ -654,12 +651,13 @@ export default function AdminDashboardPage() {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
             <div>
-              <h2 className="text-lg md:text-xl font-black text-foreground tracking-tight">
-                Riwayat Logbook & Tugas Terbaru
+              <h2 className="text-lg md:text-xl font-black text-neutral-900 dark:text-neutral-100 tracking-tight">
+                Riwayat Logbook &amp; Tugas Terbaru
               </h2>
 
               <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-                Pantau seluruh catatan aktivitas harian dan progres pengerjaan tugas peserta secara real-time.
+                Pantau seluruh catatan aktivitas harian dan progres pengerjaan
+                tugas peserta secara real-time.
               </p>
             </div>
 
@@ -667,9 +665,7 @@ export default function AdminDashboardPage() {
               <div className="inline-flex p-1 bg-muted/60 rounded-xl border border-border text-xs font-bold">
                 <button
                   type="button"
-                  onClick={() =>
-                    setInfoFilterTab("ALL")
-                  }
+                  onClick={() => setInfoFilterTab("ALL")}
                   className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     infoFilterTab === "ALL"
                       ? "bg-card text-foreground shadow-xs font-black"
@@ -681,9 +677,7 @@ export default function AdminDashboardPage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setInfoFilterTab("LOGBOOK")
-                  }
+                  onClick={() => setInfoFilterTab("LOGBOOK")}
                   className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                     infoFilterTab === "LOGBOOK"
                       ? "bg-card text-foreground shadow-xs font-black"
@@ -692,16 +686,12 @@ export default function AdminDashboardPage() {
                 >
                   <BookOpen className="w-3.5 h-3.5 text-primary" />
 
-                  <span>
-                    Logbook ({logbookList.length})
-                  </span>
+                  <span>Logbook ({logbookList.length})</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setInfoFilterTab("TUGAS")
-                  }
+                  onClick={() => setInfoFilterTab("TUGAS")}
                   className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                     infoFilterTab === "TUGAS"
                       ? "bg-card text-foreground shadow-xs font-black"
@@ -710,21 +700,16 @@ export default function AdminDashboardPage() {
                 >
                   <Briefcase className="w-3.5 h-3.5 text-primary" />
 
-                  <span>
-                    Tugas ({tugasList.length})
-                  </span>
+                  <span>Tugas ({tugasList.length})</span>
                 </button>
               </div>
 
-              {(isSuperAdmin ||
-                isAdminMagang) && (
+              {(isSuperAdmin || isAdminMagang) && (
                 <Link
                   href="/admin/log-book"
                   className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs"
                 >
-                  <span>
-                    Kelola Logbook
-                  </span>
+                  <span>Kelola Logbook</span>
 
                   <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground" />
                 </Link>
@@ -733,15 +718,11 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
             {/* LOGBOOK */}
-            {(infoFilterTab === "ALL" ||
-              infoFilterTab === "LOGBOOK") && (
+            {(infoFilterTab === "ALL" || infoFilterTab === "LOGBOOK") && (
               <div
-                className={`bg-card text-card-foreground border border-border rounded-2xl p-5 md:p-6 shadow-card space-y-4 ${
-                  infoFilterTab === "LOGBOOK"
-                    ? "lg:col-span-2"
-                    : ""
+                className={`bg-card border border-border rounded-2xl p-5 md:p-6 shadow-card space-y-4 ${
+                  infoFilterTab === "LOGBOOK" ? "lg:col-span-2" : ""
                 }`}
               >
                 <div className="flex items-center justify-between border-b border-border pb-3">
@@ -751,7 +732,7 @@ export default function AdminDashboardPage() {
                     </span>
 
                     <div>
-                      <h3 className="text-sm md:text-base font-extrabold light:text-card-[#262626] dark:[#e5e5e5]">
+                      <h3 className="font-extrabold text-base text-foreground">
                         Riwayat Logbook Aktivitas Terbaru
                       </h3>
 
@@ -761,15 +742,12 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  {(isSuperAdmin ||
-                    isAdminMagang) && (
+                  {(isSuperAdmin || isAdminMagang) && (
                     <Link
                       href="/admin/log-book"
                       className="text-primary hover:underline text-xs font-bold inline-flex items-center gap-1"
                     >
-                      <span>
-                        Lihat Semua
-                      </span>
+                      <span>Lihat Semua</span>
 
                       <ChevronRight className="w-3.5 h-3.5" />
                     </Link>
@@ -790,32 +768,25 @@ export default function AdminDashboardPage() {
                       <NotebookPen className="w-5 h-5" />
                     </div>
 
-                    <p className="text-xs font-bold text-card-foreground">
+                    <p className="text-xs font-bold text-foreground">
                       Belum ada catatan logbook
                     </p>
 
                     <p className="text-[11px] text-muted-foreground">
-                      Aktivitas harian yang dicatat oleh peserta magang akan tampil di sini.
+                      Aktivitas harian yang dicatat oleh peserta magang akan
+                      tampil di sini.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {logbookList
-                      .slice(
-                        0,
-                        infoFilterTab === "LOGBOOK"
-                          ? 8
-                          : 5
-                      )
+                      .slice(0, infoFilterTab === "LOGBOOK" ? 8 : 5)
                       .map((item) => {
-                        const durasiJam =
-                          item.durasi_menit
-                            ? `${Math.floor(
-                                item.durasi_menit / 60
-                              )}j ${
-                                item.durasi_menit % 60
-                              }m`
-                            : "—";
+                        const durasiJam = item.durasi_menit
+                          ? `${Math.floor(item.durasi_menit / 60)}j ${
+                              item.durasi_menit % 60
+                            }m`
+                          : "—";
 
                         const katLabel =
                           LOGBOOK_CATEGORY_LABELS[
@@ -825,7 +796,7 @@ export default function AdminDashboardPage() {
                         return (
                           <div
                             key={item.id}
-                            className="p-3.5 rounded-xl bg-muted text-card-foreground border border-border hover:border-primary/40 hover:bg-input transition-all space-y-2 group"
+                            className="p-3.5 rounded-xl bg-muted text-foreground border border-border hover:border-primary/40 hover:bg-input transition-all space-y-2 group"
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-2.5 min-w-0">
@@ -833,20 +804,15 @@ export default function AdminDashboardPage() {
                                   src={
                                     item.user_avatar ||
                                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                      item.user_nama ||
-                                        item.userName ||
-                                        "P"
+                                      item.user_nama || item.userName || "P",
                                     )}&background=random&bold=true`
                                   }
-                                  alt={
-                                    item.user_nama ||
-                                    "Avatar"
-                                  }
+                                  alt={item.user_nama || "Avatar"}
                                   className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
                                 />
 
                                 <div className="min-w-0">
-                                  <h4 className="font-extrabold text-xs text-card-foreground truncate">
+                                  <h4 className="font-extrabold text-xs text-foreground truncate">
                                     {item.user_nama ||
                                       item.userName ||
                                       "Peserta Magang"}
@@ -862,20 +828,16 @@ export default function AdminDashboardPage() {
 
                               <span
                                 className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                                  item.kategori
+                                  item.kategori,
                                 )}`}
                               >
-                                {getKategoriIcon(
-                                  item.kategori
-                                )}
+                                {getKategoriIcon(item.kategori)}
 
-                                <span className="capitalize">
-                                  {katLabel}
-                                </span>
+                                <span className="capitalize">{katLabel}</span>
                               </span>
                             </div>
 
-                            <p className="text-xs text-card-foreground font-medium line-clamp-2 leading-relaxed bg-card p-2 rounded-lg border border-border">
+                            <p className="text-xs text-foreground font-medium line-clamp-2 leading-relaxed bg-card p-2 rounded-lg border border-border">
                               {item.aktivitas}
                             </p>
 
@@ -884,29 +846,19 @@ export default function AdminDashboardPage() {
                                 <span className="flex items-center gap-1 font-medium">
                                   <Calendar className="w-3 h-3 text-primary" />
 
-                                  {formatTanggalIndo(
-                                    item.tanggal
-                                  )}
+                                  {formatTanggalIndo(item.tanggal)}
                                 </span>
 
-                                <span>
-                                  •
-                                </span>
+                                <span>•</span>
 
                                 <span className="flex items-center gap-1 font-mono">
                                   <Clock className="w-3 h-3 text-primary" />
-
-                                  {formatWaktu(
-                                    item.waktu_mulai
-                                  )}{" "}
-                                  -{" "}
-                                  {formatWaktu(
-                                    item.waktu_selesai
-                                  )}
+                                  {formatWaktu(item.waktu_mulai)} -{" "}
+                                  {formatWaktu(item.waktu_selesai)}
                                 </span>
                               </div>
 
-                              <span className="font-bold text-card-foreground bg-muted px-2 py-0.5 rounded-md border border-border">
+                              <span className="font-bold text-foreground bg-muted px-2 py-0.5 rounded-md border border-border">
                                 {durasiJam}
                               </span>
                             </div>
@@ -919,13 +871,10 @@ export default function AdminDashboardPage() {
             )}
 
             {/* TUGAS */}
-            {(infoFilterTab === "ALL" ||
-              infoFilterTab === "TUGAS") && (
+            {(infoFilterTab === "ALL" || infoFilterTab === "TUGAS") && (
               <div
                 className={`bg-card border border-border rounded-2xl p-5 md:p-6 shadow-card space-y-4 ${
-                  infoFilterTab === "TUGAS"
-                    ? "lg:col-span-2"
-                    : ""
+                  infoFilterTab === "TUGAS" ? "lg:col-span-2" : ""
                 }`}
               >
                 <div className="flex items-center justify-between border-b border-border pb-3">
@@ -935,12 +884,13 @@ export default function AdminDashboardPage() {
                     </span>
 
                     <div>
-                      <h3 className="text-sm md:text-base font-extrabold text-foreground">
+                      <h3 className="font-extrabold text-base text-foreground">
                         Riwayat Tugas Terbaru
                       </h3>
 
                       <p className="text-[11px] text-muted-foreground">
-                        Daftar seluruh penugasan yang diberikan kepada peserta magang
+                        Daftar seluruh penugasan yang diberikan kepada peserta
+                        magang
                       </p>
                     </div>
                   </div>
@@ -969,22 +919,16 @@ export default function AdminDashboardPage() {
                     </p>
 
                     <p className="text-[11px] text-muted-foreground">
-                      Tugas yang didelegasikan ke peserta magang akan tampil di sini.
+                      Tugas yang didelegasikan ke peserta magang akan tampil di
+                      sini.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {tugasList
-                      .slice(
-                        0,
-                        infoFilterTab === "TUGAS"
-                          ? 8
-                          : 5
-                      )
+                      .slice(0, infoFilterTab === "TUGAS" ? 8 : 5)
                       .map((task) => {
-                        const katLabel =
-                          task.kategori ||
-                          "Umum";
+                        const katLabel = task.kategori || "Umum";
 
                         return (
                           <div
@@ -997,21 +941,16 @@ export default function AdminDashboardPage() {
                                   src={
                                     task.user_avatar ||
                                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                      task.user_nama ||
-                                        "P"
+                                      task.user_nama || "P",
                                     )}&background=random&bold=true`
                                   }
-                                  alt={
-                                    task.user_nama ||
-                                    "Avatar"
-                                  }
+                                  alt={task.user_nama || "Avatar"}
                                   className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
                                 />
 
                                 <div className="min-w-0">
                                   <h4 className="font-extrabold text-xs text-foreground truncate">
-                                    {task.user_nama ||
-                                      "Peserta Magang"}
+                                    {task.user_nama || "Peserta Magang"}
                                   </h4>
 
                                   <p className="text-[10px] text-muted-foreground truncate">
@@ -1024,16 +963,12 @@ export default function AdminDashboardPage() {
 
                               <span
                                 className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                                  katLabel
+                                  katLabel,
                                 )}`}
                               >
-                                {getKategoriIcon(
-                                  katLabel
-                                )}
+                                {getKategoriIcon(katLabel)}
 
-                                <span className="capitalize">
-                                  {katLabel}
-                                </span>
+                                <span className="capitalize">{katLabel}</span>
                               </span>
                             </div>
 
@@ -1041,9 +976,7 @@ export default function AdminDashboardPage() {
                               <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
 
                               <p className="font-extrabold text-xs text-foreground leading-snug">
-                                {task.judul_tugas ||
-                                  task.judulTugas ||
-                                  "—"}
+                                {task.judul_tugas || task.judulTugas || "—"}
                               </p>
                             </div>
 
@@ -1061,7 +994,6 @@ export default function AdminDashboardPage() {
                                   <span className="font-bold text-primary">
                                     Logbook:
                                   </span>{" "}
-
                                   {task.log_book_aktivitas}
                                 </span>
                               </div>
@@ -1072,12 +1004,8 @@ export default function AdminDashboardPage() {
                                 <Calendar className="w-3 h-3 text-primary" />
 
                                 {task.log_book_tanggal
-                                  ? formatTanggalIndo(
-                                      task.log_book_tanggal
-                                    )
-                                  : formatTanggalIndo(
-                                      task.created_at
-                                    )}
+                                  ? formatTanggalIndo(task.log_book_tanggal)
+                                  : formatTanggalIndo(task.created_at)}
                               </span>
 
                               <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border/60">
@@ -1098,19 +1026,17 @@ export default function AdminDashboardPage() {
         <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
             <div>
-              <h3 className="font-extrabold text-foreground text-[16px] md:text-lg">
+              <h3 className="font-extrabold text-neutral-900 dark:text-neutral-100 text-[16px] md:text-lg">
                 Daftar Presensi Hari Ini
               </h3>
 
               <p className="text-xs text-muted-foreground">
                 Catatan presensi{" "}
-
                 {isAdminMagang
                   ? "siswa magang"
                   : isAdminOS
-                  ? "karyawan OS"
-                  : "siswa magang & karyawan OS"}{" "}
-
+                    ? "karyawan OS"
+                    : "siswa magang & karyawan OS"}{" "}
                 tanggal {todayStr}
               </p>
             </div>
@@ -1123,11 +1049,7 @@ export default function AdminDashboardPage() {
                   type="text"
                   placeholder="Cari nama..."
                   value={searchQuery}
-                  onChange={(e) =>
-                    setSearchQuery(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="rounded-xl border border-border bg-input pl-9 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -1135,24 +1057,14 @@ export default function AdminDashboardPage() {
               {isSuperAdmin && (
                 <select
                   value={roleFilter}
-                  onChange={(e) =>
-                    setRoleFilter(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setRoleFilter(e.target.value)}
                   className="rounded-xl border border-border bg-input px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-bold"
                 >
-                  <option value="ALL">
-                    Semua Role
-                  </option>
+                  <option value="ALL">Semua Role</option>
 
-                  <option value="MAGANG">
-                    Anak Magang
-                  </option>
+                  <option value="MAGANG">Anak Magang</option>
 
-                  <option value="OS">
-                    Karyawan OS
-                  </option>
+                  <option value="OS">Karyawan OS</option>
                 </select>
               )}
             </div>
@@ -1162,151 +1074,106 @@ export default function AdminDashboardPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-border text-muted-foreground uppercase tracking-wider font-extrabold">
-                  <th className="py-3 px-3">
-                    Nama Peserta
-                  </th>
+                  <th className="py-3 px-3">Nama Peserta</th>
 
-                  <th className="py-3 px-3">
-                    Role
-                  </th>
+                  <th className="py-3 px-3">Role</th>
 
-                  <th className="py-3 px-3">
-                    Jam Masuk
-                  </th>
+                  <th className="py-3 px-3">Jam Masuk</th>
 
-                  <th className="py-3 px-3">
-                    Status Masuk
-                  </th>
+                  <th className="py-3 px-3">Status Masuk</th>
 
-                  <th className="py-3 px-3">
-                    Jam Pulang
-                  </th>
+                  <th className="py-3 px-3">Jam Pulang</th>
 
-                  <th className="py-3 px-3">
-                    Status Total
-                  </th>
+                  <th className="py-3 px-3">Status Total</th>
 
-                  <th className="py-3 px-3 text-right font-extrabold">
-                    Aksi
-                  </th>
+                  <th className="py-3 px-3 text-right font-extrabold">Aksi</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-border">
                 {filteredTodayList.length > 0 ? (
-                  filteredTodayList.map(
-                    (rec) => (
-                      <tr
-                        key={rec.id}
-                        className="hover:bg-accent/50 transition-colors"
-                      >
-                        <td className="py-3 px-3">
-                          <div className="font-extrabold text-foreground">
-                            {rec.user_nama ||
-                              rec.userName}
-                          </div>
+                  filteredTodayList.map((rec) => (
+                    <tr
+                      key={rec.id}
+                      className="hover:bg-accent/50 transition-colors"
+                    >
+                      <td className="py-3 px-3">
+                        <div className="font-extrabold text-foreground">
+                          {rec.user_nama || rec.userName}
+                        </div>
 
-                          <div className="text-[10px] text-muted-foreground">
-                            {rec.user_sekolah ||
-                              rec.userInstitution}
-                          </div>
-                        </td>
+                        <div className="text-[10px] text-muted-foreground">
+                          {rec.user_sekolah || rec.userInstitution}
+                        </div>
+                      </td>
 
-                        <td className="py-3 px-3 font-bold text-foreground">
-                          {(() => {
-                            const recRole =
-                              String(
-                                rec.user_role ||
-                                  rec.userRole ||
-                                  ""
-                              ).toUpperCase();
+                      <td className="py-3 px-3 font-bold text-foreground">
+                        {(() => {
+                          const recRole = String(
+                            rec.user_role || rec.userRole || "",
+                          ).toUpperCase();
 
-                            return recRole ===
-                              "ANAK_MAGANG"
-                              ? "Siswa Magang"
-                              : "Karyawan OS";
-                          })()}
-                        </td>
+                          return recRole === "ANAK_MAGANG"
+                            ? "Siswa Magang"
+                            : "Karyawan OS";
+                        })()}
+                      </td>
 
-                        <td className="py-3 px-3 font-mono font-bold text-foreground">
-                          {rec.jam_masuk ||
-                            rec.checkIn ||
-                            "--:--"}
-                        </td>
+                      <td className="py-3 px-3 font-mono font-bold text-foreground">
+                        {rec.jam_masuk || rec.checkIn || "--:--"}
+                      </td>
 
-                        <td className="py-3 px-3 font-bold">
-                          {String(
-                            rec.status_masuk ||
-                              rec.statusMasuk ||
-                              ""
-                          ).toUpperCase() ===
-                          "TEPAT_WAKTU" ? (
-                            <span className="text-status-hadir">
-                              Tepat Waktu
-                            </span>
-                          ) : String(
-                              rec.status_masuk ||
-                                rec.statusMasuk ||
-                                ""
-                            ).toUpperCase() ===
-                            "TERLAMBAT" ? (
-                            <span className="text-status-terlambat">
-                              Terlambat
+                      <td className="py-3 px-3 font-bold">
+                        {String(
+                          rec.status_masuk || rec.statusMasuk || "",
+                        ).toUpperCase() === "TEPAT_WAKTU" ? (
+                          <span className="text-status-hadir">Tepat Waktu</span>
+                        ) : String(
+                            rec.status_masuk || rec.statusMasuk || "",
+                          ).toUpperCase() === "TERLAMBAT" ? (
+                          <span className="text-status-terlambat">
+                            Terlambat
+                            {rec.menit_terlambat || rec.lateMinutes
+                              ? ` (+${
+                                  rec.menit_terlambat || rec.lateMinutes
+                                } mnt)`
+                              : ""}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">--</span>
+                        )}
+                      </td>
 
-                              {rec.menit_terlambat ||
-                              rec.lateMinutes
-                                ? ` (+${
-                                    rec.menit_terlambat ||
-                                    rec.lateMinutes
-                                  } mnt)`
-                                : ""}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              --
-                            </span>
-                          )}
-                        </td>
+                      <td className="py-3 px-3 font-mono font-bold text-foreground">
+                        {rec.jam_keluar ||
+                          rec.jam_pulang ||
+                          rec.checkOut ||
+                          "--:--"}
+                      </td>
 
-                        <td className="py-3 px-3 font-mono font-bold text-foreground">
-                          {rec.jam_keluar ||
-                            rec.jam_pulang ||
-                            rec.checkOut ||
-                            "--:--"}
-                        </td>
+                      <td className="py-3 px-3">
+                        <StatusBadge status={rec.status} />
+                      </td>
 
-                        <td className="py-3 px-3">
-                          <StatusBadge
-                            status={rec.status}
-                          />
-                        </td>
+                      <td className="py-3 px-3 text-right">
+                        {(rec.foto_masuk ||
+                          rec.foto_keluar ||
+                          rec.foto_pulang_cepat ||
+                          rec.checkInPhoto ||
+                          rec.checkOutPhoto) && (
+                          <button
+                            onClick={() => setSelectedPhotoRecord(rec)}
+                            className="p-1.5 rounded-lg border border-border bg-input hover:bg-accent text-foreground transition-all inline-flex items-center gap-1 font-bold text-[11px]"
+                            title="Lihat Bukti Foto Swafoto"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
 
-                        <td className="py-3 px-3 text-right">
-                          {(rec.foto_masuk ||
-                            rec.foto_keluar ||
-                            rec.foto_pulang_cepat ||
-                            rec.checkInPhoto ||
-                            rec.checkOutPhoto) && (
-                            <button
-                              onClick={() =>
-                                setSelectedPhotoRecord(
-                                  rec
-                                )
-                              }
-                              className="p-1.5 rounded-lg border border-border bg-input hover:bg-accent text-foreground transition-all inline-flex items-center gap-1 font-bold text-[11px]"
-                              title="Lihat Bukti Foto Swafoto"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-
-                              <span>
-                                Bukti Foto
-                              </span>
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  )
+                            <span>Bukti Foto</span>
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
                     <td
@@ -1324,14 +1191,8 @@ export default function AdminDashboardPage() {
 
         {selectedPhotoRecord && (
           <PhotoModal
-            isOpen={Boolean(
-              selectedPhotoRecord
-            )}
-            onClose={() =>
-              setSelectedPhotoRecord(
-                null
-              )
-            }
+            isOpen={Boolean(selectedPhotoRecord)}
+            onClose={() => setSelectedPhotoRecord(null)}
             fotoMasuk={
               selectedPhotoRecord.foto_masuk ||
               selectedPhotoRecord.fotoMasuk ||
@@ -1374,18 +1235,13 @@ export default function AdminDashboardPage() {
               selectedPhotoRecord.userName ||
               "Peserta"
             }
-            userRole={
-              selectedPhotoRecord.user_role ||
-              "ANAK_MAGANG"
-            }
+            userRole={selectedPhotoRecord.user_role || "ANAK_MAGANG"}
             attendanceDate={
               selectedPhotoRecord.tanggal ||
               selectedPhotoRecord.attendanceDate ||
               todayStr
             }
-            status={
-              selectedPhotoRecord.status
-            }
+            status={selectedPhotoRecord.status}
             lateMinutes={
               selectedPhotoRecord.menit_terlambat ||
               selectedPhotoRecord.lateMinutes ||

@@ -114,10 +114,15 @@ export default function RegistrationPortalPage() {
         body: fd,
       });
 
-      const result = await res.json();
+      let result: any = null;
+      try {
+        result = await res.json();
+      } catch {
+        result = null;
+      }
 
-      if (!res.ok || !result.success) {
-        throw new Error(result.message || "Gagal memproses pendaftaran.");
+      if (!res.ok || !result?.success) {
+        throw new Error(result?.message || "Gagal memproses pendaftaran.");
       }
 
       setGeneratedCode(result.data?.kode_pendaftaran || "");

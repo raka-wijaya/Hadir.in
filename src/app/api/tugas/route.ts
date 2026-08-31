@@ -34,17 +34,30 @@ async function ensureTugasTableExists() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Migrasi aman jika tabel sebelumnya masih menggunakan user_id
+    // Migrasi aman agar log_book_id dan peserta_magang_id nullable (NULL DEFAULT NULL)
     try {
       const [cols]: any = await mysqlPool.query(`SHOW COLUMNS FROM \`tugas\``);
       const existing = new Set(cols.map((c: any) => c.Field.toLowerCase()));
+
       if (existing.has("user_id") && !existing.has("peserta_magang_id")) {
         await mysqlPool.query(
-          `ALTER TABLE \`tugas\` ADD COLUMN \`peserta_magang_id\` BIGINT(20) UNSIGNED DEFAULT NULL AFTER \`id\``
+          `ALTER TABLE \`tugas\` ADD COLUMN \`peserta_magang_id\` BIGINT(20) UNSIGNED DEFAULT NULL AFTER \`id\``,
         );
       }
-    } catch {
-      // Abaikan jika kolom sudah ada
+
+      if (existing.has("log_book_id")) {
+        await mysqlPool.query(
+          `ALTER TABLE \`tugas\` MODIFY COLUMN \`log_book_id\` INT(11) NULL DEFAULT NULL`,
+        );
+      }
+
+      if (existing.has("peserta_magang_id")) {
+        await mysqlPool.query(
+          `ALTER TABLE \`tugas\` MODIFY COLUMN \`peserta_magang_id\` BIGINT(20) UNSIGNED NULL DEFAULT NULL`,
+        );
+      }
+    } catch (migErr) {
+      console.warn("ensureTugasTableExists migration warning:", migErr);
     }
   } catch (err) {
     console.warn("ensureTugasTableExists warning:", err);
@@ -218,8 +231,19 @@ export async function POST(req: NextRequest) {
     await ensureTugasTableExists();
     const body = await req.json();
 
-    const pesertaMagangId =
-      body.peserta_magang_id || body.pesertaMagangId || null;
+    const rawIds = body.peserta_magang_ids || body.pesertaMagangIds;
+    let targetIds: (number | null)[] = [];
+
+    if (Array.isArray(rawIds) && rawIds.length > 0) {
+      targetIds = rawIds
+        .map((id) => Number(id))
+        .filter((id) => !isNaN(id) && id > 0);
+    } else if (body.peserta_magang_id || body.pesertaMagangId) {
+      targetIds = [Number(body.peserta_magang_id || body.pesertaMagangId)];
+    } else {
+      targetIds = [null];
+    }
+
     const logBookId = body.log_book_id || body.logBookId || null;
     const judulTugas = (body.judul_tugas || body.judulTugas || "").trim();
     const deskripsi = (body.deskripsi || "").trim();
@@ -232,68 +256,77 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const [result]: any = await mysqlPool.query(
-      `
-      INSERT INTO \`tugas\` (
-        \`peserta_magang_id\`,
-        \`log_book_id\`,
-        \`judul_tugas\`,
-        \`deskripsi\`,
-        \`kategori\`
-      )
-      VALUES (?, ?, ?, ?, ?)
-      `,
-      [
-        pesertaMagangId ? Number(pesertaMagangId) : null,
-        logBookId ? Number(logBookId) : null,
-        judulTugas,
+    const insertedRecords: any[] = [];
+
+    for (const pId of targetIds) {
+      const [result]: any = await mysqlPool.query(
+        `
+        INSERT INTO \`tugas\` (
+          \`peserta_magang_id\`,
+          \`log_book_id\`,
+          \`judul_tugas\`,
+          \`deskripsi\`,
+          \`kategori\`
+        )
+        VALUES (?, ?, ?, ?, ?)
+        `,
+        [
+          pId ? Number(pId) : null,
+          logBookId ? Number(logBookId) : null,
+          judulTugas,
+          deskripsi,
+          kategori,
+        ],
+      );
+
+      const insertedId = result.insertId;
+
+      let userInfo: any = {};
+      if (pId) {
+        try {
+          const [pmRows]: any = await mysqlPool.query(
+            "SELECT id, name, avatar, institution, study_program FROM peserta_magang WHERE id = ? LIMIT 1",
+            [pId],
+          );
+          if (pmRows && pmRows.length > 0) userInfo = pmRows[0];
+        } catch {
+          // ignore
+        }
+      }
+
+      insertedRecords.push({
+        id: Number(insertedId),
+        peserta_magang_id: pId ? String(pId) : null,
+        pesertaMagangId: pId ? String(pId) : null,
+        log_book_id: logBookId ? Number(logBookId) : null,
+        logBookId: logBookId ? Number(logBookId) : null,
+        judul_tugas: judulTugas,
+        judulTugas: judulTugas,
         deskripsi,
         kategori,
-      ]
-    );
-
-    const insertedId = result.insertId;
-
-    // Ambil info peserta magang jika ada
-    let userInfo: any = {};
-    if (pesertaMagangId) {
-      try {
-        const [pmRows]: any = await mysqlPool.query(
-          "SELECT id, name, avatar, institution, study_program FROM peserta_magang WHERE id = ? LIMIT 1",
-          [pesertaMagangId]
-        );
-        if (pmRows && pmRows.length > 0) userInfo = pmRows[0];
-      } catch {
-        // ignore
-      }
+        created_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        user_nama: userInfo.name || null,
+        userName: userInfo.name || null,
+        user_avatar: userInfo.avatar || null,
+        user_institution: userInfo.institution || null,
+      });
     }
 
-    const createdRecord = {
-      id: Number(insertedId),
-      peserta_magang_id: pesertaMagangId ? String(pesertaMagangId) : null,
-      pesertaMagangId: pesertaMagangId ? String(pesertaMagangId) : null,
-      log_book_id: logBookId ? Number(logBookId) : null,
-      logBookId: logBookId ? Number(logBookId) : null,
-      judul_tugas: judulTugas,
-      judulTugas: judulTugas,
-      deskripsi,
-      kategori,
-      created_at: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      user_nama: userInfo.name || null,
-      userName: userInfo.name || null,
-      user_avatar: userInfo.avatar || null,
-      user_institution: userInfo.institution || null,
-    };
+    const message =
+      insertedRecords.length > 1
+        ? `Tugas berhasil dibagikan kepada ${insertedRecords.length} peserta magang.`
+        : "Tugas berhasil ditambahkan.";
 
     return NextResponse.json(
       {
         success: true,
-        message: "Tugas berhasil ditambahkan.",
-        data: createdRecord,
-        item: createdRecord,
+        message,
+        data: insertedRecords[0] || null,
+        items: insertedRecords,
+        count: insertedRecords.length,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (err: any) {
     console.error("POST /api/tugas error:", err);

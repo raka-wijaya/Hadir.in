@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { mysqlPool } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
+import { saveStorageFile } from "@/lib/storage";
 
 const ADMIN_ROLES = ["SUPERADMIN", "ADMIN_MAGANG", "ADMIN_OS"] as const;
 type AdminRole = (typeof ADMIN_ROLES)[number];
@@ -139,16 +140,22 @@ export async function POST(req: Request) {
       ? String(rawIdentityNumber).trim().slice(0, 50)
       : null;
 
-    const avatar = body.avatar
-      ? String(body.avatar).trim().slice(0, 500)
-      : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4f46e5&color=ffffff&bold=true`;
+    let finalAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4f46e5&color=ffffff&bold=true`;
+    if (body.avatar && typeof body.avatar === "string") {
+      if (body.avatar.startsWith("data:")) {
+        const saved = await saveStorageFile(body.avatar, "avatars", "avatar", identityNumber || email);
+        if (saved) finalAvatar = saved;
+      } else {
+        finalAvatar = String(body.avatar).trim().slice(0, 500);
+      }
+    }
 
     const hashedPassword = await hashPassword(rawPassword);
 
     const [insertRes]: any = await mysqlPool.query(
       `INSERT INTO admin (name, email, password, role, status, phone, identity_number, avatar)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, email, hashedPassword, normalizedRole, status, phone, identityNumber, avatar]
+      [name, email, hashedPassword, normalizedRole, status, phone, identityNumber, finalAvatar]
     );
 
     return NextResponse.json(
@@ -267,8 +274,13 @@ export async function PATCH(req: Request) {
       params.push(finalIdentity ? String(finalIdentity).trim().slice(0, 50) : null);
     }
     if (avatar !== undefined) {
+      let finalAvatar = avatar;
+      if (avatar && typeof avatar === "string" && avatar.startsWith("data:")) {
+        const saved = await saveStorageFile(avatar, "avatars", "avatar", id);
+        if (saved) finalAvatar = saved;
+      }
       fields.push("avatar = ?");
-      params.push(avatar ? String(avatar).trim().slice(0, 500) : null);
+      params.push(finalAvatar ? String(finalAvatar).trim().slice(0, 500) : null);
     }
 
     if (fields.length === 0) {
@@ -296,6 +308,9 @@ export async function PATCH(req: Request) {
     return NextResponse.json({
       success: true,
       message: "Data admin berhasil diperbarui.",
+      data: {
+        avatar: avatar !== undefined ? params[fields.indexOf("avatar = ?")] : undefined,
+      },
     });
   } catch (err: any) {
     console.error("PATCH /api/users/admin error:", err);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -323,7 +324,10 @@ export default function LupaPasswordPage() {
             "
           >
             {isLoading ? (
-              <span className="animate-pulse">Memproses Reset...</span>
+              <>
+                <Spinner />
+                <span>Memproses Reset...</span>
+              </>
             ) : (
               <>
                 <KeyRound className="w-3.5 h-3.5" />

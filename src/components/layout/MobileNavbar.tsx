@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth/context";
-import { LayoutDashboard, CheckCircle2, History, User } from "lucide-react";
+import { LayoutDashboard, NotebookPen, History, User } from "lucide-react";
 
 export function MobileNavbar() {
   const pathname = usePathname();
@@ -23,23 +23,23 @@ export function MobileNavbar() {
     {
       title: "Beranda",
       href: `${basePath}/dashboard`,
-      icon: <LayoutDashboard className="w-5 h-5" />
+      icon: <LayoutDashboard className="w-5 h-5" />,
     },
     {
-      title: "Absen",
-      href: `${basePath}/kehadiran`,
-      icon: <CheckCircle2 className="w-5 h-5" />
+      title: "Logbook",
+      href: `${basePath}/log-book`,
+      icon: <NotebookPen className="w-5 h-5" />,
     },
     {
       title: "Riwayat",
       href: `${basePath}/riwayat`,
-      icon: <History className="w-5 h-5" />
+      icon: <History className="w-5 h-5" />,
     },
     {
       title: "Profil",
       href: `${basePath}/profil`,
-      icon: <User className="w-5 h-5" />
-    }
+      icon: <User className="w-5 h-5" />,
+    },
   ];
 
   return (

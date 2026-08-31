@@ -87,10 +87,6 @@ export default function AdminAnakMagangPage() {
     });
   };
 
-  // =========================================================
-  // FORMAT DATE
-  // =========================================================
-
   const formatDate = (
     date: string | Date | null | undefined
   ) => {
@@ -107,10 +103,6 @@ export default function AdminAnakMagangPage() {
       timeZone: "Asia/Jakarta",
     });
   };
-
-  // =========================================================
-  // LOAD DATA
-  // =========================================================
 
   const loadInterns = async () => {
     try {
@@ -136,10 +128,7 @@ export default function AdminAnakMagangPage() {
         );
       }
     } catch (err) {
-      console.error(
-        "Gagal memuat data anak magang:",
-        err
-      );
+      console.error("Terjadi kesalahan saat memuat data peserta magang.", err);
     } finally {
       setIsLoading(false);
     }
@@ -149,10 +138,6 @@ export default function AdminAnakMagangPage() {
     loadInterns();
   }, []);
 
-  // =========================================================
-  // DEBOUNCE SEARCH
-  // =========================================================
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebounceSearch(search);
@@ -160,10 +145,6 @@ export default function AdminAnakMagangPage() {
 
     return () => clearTimeout(timer);
   }, [search]);
-
-  // =========================================================
-  // SEARCH
-  // =========================================================
 
   const filtered = interns.filter((i) => {
     const q = debounceSearch.trim().toLowerCase();
@@ -193,10 +174,6 @@ export default function AdminAnakMagangPage() {
       nimStr.includes(q)
     );
   });
-
-  // =========================================================
-  // TOGGLE STATUS
-  // =========================================================
 
   const toggleStatus = async (
     id: string | number,
@@ -234,32 +211,27 @@ export default function AdminAnakMagangPage() {
         );
 
         setBannerAlert({
-          title: "Status Diperbarui",
+          title: "Status Berhasil Diperbarui",
           message: `Status pengguna berhasil diubah menjadi ${newStatus}.`,
           color: "green",
         });
       } else {
         showAlert(
-          data.message ||
-            "Gagal mengubah status.",
-          "Gagal Mengubah Status",
-          "red"
+          data.message || "Gagal memperbarui status.",
+          "Gagal memperbarui status.",
+          "red",
         );
       }
     } catch (err) {
       console.error(err);
 
       showAlert(
-        "Gagal terhubung ke server. Silakan coba lagi.",
-        "Koneksi Gagal",
-        "red"
+        "Gagal terhubung ke server. Silakan coba beberapa saat lagi.",
+        "Koneksi Gagal. Silakan coba lagi.",
+        "red",
       );
     }
   };
-
-  // =========================================================
-  // ADD
-  // =========================================================
 
   const handleAddIntern = async (
     e: React.FormEvent
@@ -290,10 +262,7 @@ export default function AdminAnakMagangPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(
-          data.message ||
-            "Gagal menambahkan data."
-        );
+        throw new Error(data.message || "Gagal menyimpan data.");
       }
 
       setShowAddModal(false);
@@ -306,27 +275,22 @@ export default function AdminAnakMagangPage() {
       setNewEnd("2026-10-31");
 
       setBannerAlert({
-        title: "Berhasil Menambahkan",
-        message: `Data anak magang "${newName}" berhasil ditambahkan.`,
+        title: "Berhasil ditambahkan.",
+        message: `Data peserta magang "${newName}" berhasil ditambahkan.`,
         color: "green",
       });
 
       await loadInterns();
     } catch (err: any) {
       showAlert(
-        err?.message ||
-          "Gagal menambahkan data anak magang.",
-        "Gagal Tambah Data",
-        "red"
+        err?.message || "Gagal menambahkan data peserta magang.",
+        "Gagal menambahkan data peserta magang.",
+        "red",
       );
     } finally {
       setIsSaving(false);
     }
   };
-
-  // =========================================================
-  // EDIT
-  // =========================================================
 
   const handleEdit = (item: User) => {
     setEditItem(item);
@@ -390,10 +354,6 @@ export default function AdminAnakMagangPage() {
     );
   };
 
-  // =========================================================
-  // UPDATE
-  // =========================================================
-
   const handleUpdateIntern = async (
     e: React.FormEvent
   ) => {
@@ -425,10 +385,7 @@ export default function AdminAnakMagangPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(
-          data.message ||
-            "Gagal memperbarui data."
-        );
+        throw new Error(data.message || "Gagal menyimpan perubahan data.");
       }
 
       setInterns((prev) =>
@@ -466,8 +423,8 @@ export default function AdminAnakMagangPage() {
       );
 
       showAlert(
-        `Data peserta "${editName}" berhasil diperbarui.`,
-        "Perubahan Disimpan",
+        `Data peserta magang "${editName}" berhasil ditambahkan.`,
+        "Perubahan berhasil disimpan.",
         "green"
       );
 
@@ -477,18 +434,14 @@ export default function AdminAnakMagangPage() {
 
       showAlert(
         err?.message ||
-          "Gagal memperbarui data anak magang.",
-        "Gagal Update Data",
+          "Gagal memperbarui data peserta magang.",
+        "Gagal Memperbarui Data.",
         "red"
       );
     } finally {
       setIsUpdating(false);
     }
   };
-
-  // =========================================================
-  // DELETE
-  // =========================================================
 
   const handleDelete = async (
     item: User
@@ -514,7 +467,7 @@ export default function AdminAnakMagangPage() {
       if (!res.ok || !data.success) {
         throw new Error(
           data.message ||
-            "Gagal menghapus data."
+            "Terjadi kesalahan saat menghapus data. Silakan coba lagi."
         );
       }
 
@@ -527,7 +480,7 @@ export default function AdminAnakMagangPage() {
       );
 
       setBannerAlert({
-        title: "Data Dihapus",
+        title: "Data Berhasil Dihapus",
         message: `Data ${name} berhasil dihapus dari sistem.`,
         color: "blue",
       });
@@ -536,51 +489,35 @@ export default function AdminAnakMagangPage() {
 
       showAlert(
         err?.message ||
-          "Gagal menghapus data. Silakan coba lagi.",
+          "Terjadi kesalahan saat menghapus data. Silakan coba lagi.",
         "Gagal Hapus Data",
         "red"
       );
     }
   };
 
-  // =========================================================
-  // RENDER
-  // =========================================================
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
-
-        {/* ================================================= */}
-        {/* ALERT */}
-        {/* ================================================= */}
-
         <ConfirmModal
-          isOpen={Boolean(
-            deleteUserConfirm
-          )}
+          isOpen={Boolean(deleteUserConfirm)}
           title="Hapus Data Anak Magang"
           message={`Apakah Anda yakin ingin menghapus data ${
-            deleteUserConfirm?.nama ||
-            deleteUserConfirm?.name ||
-            "peserta"
+            deleteUserConfirm?.nama || deleteUserConfirm?.name || "peserta"
           }? Data yang dihapus tidak dapat dipulihkan.`}
           confirmLabel="Ya, Hapus Data"
           cancelLabel="Batal"
           confirmColor="red"
           onConfirm={async () => {
             if (deleteUserConfirm) {
-              const u =
-                deleteUserConfirm;
+              const u = deleteUserConfirm;
 
               setDeleteUserConfirm(null);
 
               await handleDelete(u);
             }
           }}
-          onCancel={() =>
-            setDeleteUserConfirm(null)
-          }
+          onCancel={() => setDeleteUserConfirm(null)}
         />
 
         <AlertModal
@@ -602,37 +539,27 @@ export default function AdminAnakMagangPage() {
             color={bannerAlert.color}
             title={bannerAlert.title}
             withCloseButton
-            onClose={() =>
-              setBannerAlert(null)
-            }
+            onClose={() => setBannerAlert(null)}
           >
             {bannerAlert.message}
           </Alert>
         )}
 
-        {/* ================================================= */}
-        {/* HEADER */}
-        {/* ================================================= */}
-
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
-
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight">
               Manajemen Anak Magang
             </h1>
 
             <p className="text-xs md:text-sm text-muted-foreground font-semibold mt-1">
-              Kelola data NIM, nama, kampus,
-              periode magang, dan status
+              Kelola data NIM, nama, kampus, periode magang, dan status
               keaktifan peserta.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() =>
-              setShowAddModal(true)
-            }
+            onClick={() => setShowAddModal(true)}
             className="
               px-4 py-2.5
               rounded-xl
@@ -649,20 +576,12 @@ export default function AdminAnakMagangPage() {
             "
           >
             <Plus className="w-4 h-4" />
-            <span>
-              Tambah Anak Magang
-            </span>
+            <span>Tambah Anak Magang</span>
           </button>
         </div>
 
-        {/* ================================================= */}
-        {/* SEARCH */}
-        {/* ================================================= */}
-
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card">
-
           <div className="relative md:max-w-md w-full">
-
             <Search
               className="
                 w-4 h-4
@@ -676,9 +595,7 @@ export default function AdminAnakMagangPage() {
               type="text"
               placeholder="Cari NIM, nama, atau kampus..."
               value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
+              onChange={(e) => setSearch(e.target.value)}
               className="
                 w-full
                 pl-9 pr-9 py-2.5
@@ -700,9 +617,7 @@ export default function AdminAnakMagangPage() {
             {search && (
               <button
                 type="button"
-                onClick={() =>
-                  setSearch("")
-                }
+                onClick={() => setSearch("")}
                 className="
                   absolute right-2.5 top-1/2
                   -translate-y-1/2
@@ -720,18 +635,12 @@ export default function AdminAnakMagangPage() {
           </div>
         </div>
 
-        {/* ================================================= */}
-        {/* TABLE */}
-        {/* ================================================= */}
-
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
-
           <div className="overflow-x-auto">
-
             <table className="w-full text-left text-xs">
-
               <thead>
-                <tr className="
+                <tr
+                  className="
                   bg-muted/60
                   border-b border-border
                   text-muted-foreground
@@ -739,36 +648,23 @@ export default function AdminAnakMagangPage() {
                   text-[11px]
                   uppercase
                   tracking-wider
-                ">
-                  <th className="py-3.5 px-4">
-                    NIM
-                  </th>
+                "
+                >
+                  <th className="py-3.5 px-4">NIM</th>
 
-                  <th className="py-3.5 px-4">
-                    Nama
-                  </th>
+                  <th className="py-3.5 px-4">Nama</th>
 
-                  <th className="py-3.5 px-4">
-                    Kampus
-                  </th>
+                  <th className="py-3.5 px-4">Kampus</th>
 
-                  <th className="py-3.5 px-4">
-                    Periode
-                  </th>
+                  <th className="py-3.5 px-4">Periode</th>
 
-                  <th className="py-3.5 px-4">
-                    Status
-                  </th>
+                  <th className="py-3.5 px-4">Status</th>
 
-                  <th className="py-3.5 px-4 text-right">
-                    Aksi
-                  </th>
+                  <th className="py-3.5 px-4 text-right">Aksi</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-border">
-
-                {/* LOADING */}
 
                 {isLoading ? (
                   <tr>
@@ -786,8 +682,6 @@ export default function AdminAnakMagangPage() {
                   </tr>
                 ) : filtered.length === 0 ? (
 
-                  /* EMPTY */
-
                   <tr>
                     <td
                       colSpan={6}
@@ -801,9 +695,7 @@ export default function AdminAnakMagangPage() {
                       Tidak ada data anak magang.
                     </td>
                   </tr>
-
                 ) : (
-
                   /* DATA */
 
                   filtered.map((item) => (
@@ -814,38 +706,34 @@ export default function AdminAnakMagangPage() {
                         transition-colors
                       "
                     >
-
                       {/* NIM */}
 
-                      <td className="
+                      <td
+                        className="
                         py-3.5 px-4
                         font-mono
                         text-xs
                         font-extrabold
                         text-primary
-                      ">
-                        {item.identityNumber ||
-                          "-"}
+                      "
+                      >
+                        {item.identityNumber || "-"}
                       </td>
 
                       {/* NAMA */}
 
-                      <td className="
+                      <td
+                        className="
                         py-3.5 px-4
                         font-extrabold
                         text-foreground
-                      ">
-
+                      "
+                      >
                         <div className="flex items-center gap-3">
-
                           {item.avatar ? (
                             <img
                               src={item.avatar}
-                              alt={
-                                item.nama ||
-                                item.name ||
-                                "Avatar"
-                              }
+                              alt={item.nama || item.name || "Avatar"}
                               className="
                                 w-9 h-9
                                 rounded-full
@@ -854,7 +742,8 @@ export default function AdminAnakMagangPage() {
                               "
                             />
                           ) : (
-                            <div className="
+                            <div
+                              className="
                               w-9 h-9
                               rounded-full
                               bg-primary/10
@@ -862,55 +751,52 @@ export default function AdminAnakMagangPage() {
                               flex items-center justify-center
                               text-primary
                               font-black
-                            ">
-                              {(
-                                item.nama ||
-                                item.name ||
-                                "?"
-                              )
+                            "
+                            >
+                              {(item.nama || item.name || "?")
                                 .charAt(0)
                                 .toUpperCase()}
                             </div>
                           )}
 
                           <div className="min-w-0">
-
-                            <div className="
+                            <div
+                              className="
                               font-extrabold
                               text-foreground
                               truncate
                               max-w-[220px]
-                            ">
-                              {item.nama ||
-                                item.name ||
-                                "-"}
+                            "
+                            >
+                              {item.nama || item.name || "-"}
                             </div>
 
-                            <div className="
+                            <div
+                              className="
                               text-[11px]
                               text-muted-foreground
                               font-normal
                               truncate
                               max-w-[220px]
-                            ">
+                            "
+                            >
                               {item.email}
                             </div>
-
                           </div>
                         </div>
                       </td>
 
                       {/* KAMPUS */}
 
-                      <td className="
+                      <td
+                        className="
                         py-3.5 px-4
                         text-xs
                         font-bold
                         text-foreground
-                      ">
-
+                      "
+                      >
                         <div className="flex items-center gap-1.5">
-
                           <GraduationCap
                             className="
                               w-4 h-4
@@ -920,40 +806,40 @@ export default function AdminAnakMagangPage() {
                           />
 
                           <span>
-                            {item.sekolah_kampus ||
-                              item.institution ||
-                              "-"}
+                            {item.sekolah_kampus || item.institution || "-"}
                           </span>
-
                         </div>
 
-                        <div className="
+                        <div
+                          className="
                           text-[11px]
                           text-muted-foreground
                           font-normal
                           pl-5
                           mt-0.5
-                        ">
+                        "
+                        >
                           {item.unit_kerja ||
                             item.studyProgram ||
                             "Informatika"}
                         </div>
-
                       </td>
 
                       {/* PERIODE */}
 
-                      <td className="
+                      <td
+                        className="
                         py-3.5 px-4
                         text-xs
                         font-semibold
                         text-foreground
-                      ">
-
-                        <div className="
+                      "
+                      >
+                        <div
+                          className="
                           flex items-center gap-1.5
-                        ">
-
+                        "
+                        >
                           <Calendar
                             className="
                               w-3.5 h-3.5
@@ -963,50 +849,41 @@ export default function AdminAnakMagangPage() {
                           />
 
                           <span>
-                            {formatDate(
-                              item.periode_mulai ||
-                                item.startDate
-                            )}
+                            {formatDate(item.periode_mulai || item.startDate)}
 
                             {" s.d. "}
 
-                            {formatDate(
-                              item.periode_selesai ||
-                                item.endDate
-                            )}
+                            {formatDate(item.periode_selesai || item.endDate)}
                           </span>
-
                         </div>
                       </td>
 
                       {/* STATUS */}
 
                       <td className="py-3.5 px-4">
-                        <StatusBadge
-                          status={item.status}
-                        />
+                        <StatusBadge status={item.status} />
                       </td>
 
                       {/* AKSI */}
 
-                      <td className="
+                      <td
+                        className="
                         py-3.5 px-4
-                      ">
-
-                        <div className="
+                      "
+                      >
+                        <div
+                          className="
                           flex
                           items-center
                           justify-end
                           gap-1
-                        ">
-
+                        "
+                        >
                           {/* EDIT */}
 
                           <button
                             type="button"
-                            onClick={() =>
-                              handleEdit(item)
-                            }
+                            onClick={() => handleEdit(item)}
                             title="Edit data"
                             className="
                               p-2
@@ -1025,11 +902,7 @@ export default function AdminAnakMagangPage() {
 
                           <button
                             type="button"
-                            onClick={() =>
-                              setDeleteUserConfirm(
-                                item
-                              )
-                            }
+                            onClick={() => setDeleteUserConfirm(item)}
                             title="Hapus data"
                             className="
                               p-2
@@ -1048,15 +921,9 @@ export default function AdminAnakMagangPage() {
 
                           <button
                             type="button"
-                            onClick={() =>
-                              toggleStatus(
-                                item.id,
-                                item.status
-                              )
-                            }
+                            onClick={() => toggleStatus(item.id, item.status)}
                             title={
-                              item.status ===
-                              "ACTIVE"
+                              item.status === "ACTIVE"
                                 ? "Nonaktifkan"
                                 : "Aktifkan"
                             }
@@ -1067,8 +934,7 @@ export default function AdminAnakMagangPage() {
                               transition-all
                               cursor-pointer
                               ${
-                                item.status ===
-                                "ACTIVE"
+                                item.status === "ACTIVE"
                                   ? "text-status-terlambat hover:bg-status-terlambat/10"
                                   : "text-status-hadir hover:bg-status-hadir/10"
                               }
@@ -1076,14 +942,11 @@ export default function AdminAnakMagangPage() {
                           >
                             <RefreshCw className="w-4 h-4" />
                           </button>
-
                         </div>
                       </td>
-
                     </tr>
                   ))
                 )}
-
               </tbody>
             </table>
           </div>
@@ -1094,350 +957,284 @@ export default function AdminAnakMagangPage() {
         {/* ================================================= */}
 
         {showAddModal && (
-          <div className="
-            fixed inset-0
-            z-50
-            flex items-center justify-center
-            p-4
-            bg-black/60
-            backdrop-blur-sm
-            animate-in
-            fade-in
-          ">
-
+          <div
+            className="
+      fixed inset-0
+      z-50
+      flex items-center justify-center
+      p-4
+      bg-black/60
+      backdrop-blur-sm
+      animate-in
+      fade-in
+    "
+          >
             <form
               onSubmit={handleAddIntern}
               className="
-                bg-card
-                border border-border
-                rounded-2xl
-                w-full
-                max-w-sm
-                p-5
-                shadow-elevated
-                space-y-3.5
-                animate-in
-                zoom-in-95
-                max-h-[90vh]
-                overflow-y-auto
-              "
+        bg-card
+        border border-border
+        rounded-2xl
+        w-full
+        max-w-2xl
+        p-5 md:p-6
+        shadow-elevated
+        space-y-5
+        animate-in
+        zoom-in-95
+        max-h-[90vh]
+        overflow-y-auto
+      "
             >
-
               {/* HEADER */}
-
-              <div className="
-                flex items-center justify-between
-                border-b border-border
-                pb-3
-              ">
-
+              <div
+                className="
+          flex items-center justify-between
+          border-b border-border
+          pb-3
+        "
+              >
                 <div>
-                  <h3 className="
-                    font-black
-                    text-base
-                    text-foreground
-                  ">
+                  <h3
+                    className="
+              font-black
+              text-base
+              text-foreground
+            "
+                  >
                     Tambah Data Anak Magang
                   </h3>
 
-                  <p className="
-                    text-[11px]
-                    text-muted-foreground
-                    mt-0.5
-                  ">
-                    Tambahkan peserta baru
-                    ke dalam sistem.
+                  <p
+                    className="
+              text-[11px]
+              text-muted-foreground
+              mt-0.5
+            "
+                  >
+                    Tambahkan peserta baru ke dalam sistem.
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowAddModal(false)
-                  }
+                  onClick={() => setShowAddModal(false)}
                   className="
-                    p-1.5
-                    rounded-lg
-                    text-muted-foreground
-                    hover:text-foreground
-                    hover:bg-accent
-                    transition-colors
-                    cursor-pointer
-                  "
+            p-1.5
+            rounded-lg
+            text-muted-foreground
+            hover:text-foreground
+            hover:bg-accent
+            transition-colors
+            cursor-pointer
+          "
                 >
                   <X className="w-4 h-4" />
                 </button>
-
               </div>
 
-              {/* NAME */}
-
-              <div className="space-y-1">
-
-                <label className="
-                  text-[11px]
-                  font-extrabold
-                  text-foreground
-                ">
-                  Nama Lengkap *
-                </label>
-
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) =>
-                    setNewName(
-                      e.target.value
-                    )
-                  }
-                  placeholder="Masukkan nama lengkap"
-                  className="
-                    w-full
-                    rounded-xl
-                    border border-border
-                    bg-input
-                    px-3
-                    py-2
-                    text-xs
-                    text-foreground
-                    placeholder:text-muted-foreground
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-primary/40
-                    focus:border-primary
-                  "
-                  required
-                />
-              </div>
-
-              {/* EMAIL */}
-
-              <div className="space-y-1">
-
-                <label className="
-                  text-[11px]
-                  font-extrabold
-                  text-foreground
-                ">
-                  Email *
-                </label>
-
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) =>
-                    setNewEmail(
-                      e.target.value
-                    )
-                  }
-                  placeholder="name@student.ac.id"
-                  className="
-                    w-full
-                    rounded-xl
-                    border border-border
-                    bg-input
-                    px-3
-                    py-2
-                    text-xs
-                    text-foreground
-                    placeholder:text-muted-foreground
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-primary/40
-                    focus:border-primary
-                  "
-                  required
-                />
-              </div>
-
-              {/* INSTITUTION */}
-
-              <div className="space-y-1">
-
-                <label className="
-                  text-[11px]
-                  font-extrabold
-                  text-foreground
-                ">
-                  Kampus / Instansi *
-                </label>
-
-                <input
-                  type="text"
-                  value={newInstitution}
-                  onChange={(e) =>
-                    setNewInstitution(
-                      e.target.value
-                    )
-                  }
-                  placeholder="Universitas..."
-                  className="
-                    w-full
-                    rounded-xl
-                    border border-border
-                    bg-input
-                    px-3
-                    py-2
-                    text-xs
-                    text-foreground
-                    placeholder:text-muted-foreground
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-primary/40
-                    focus:border-primary
-                  "
-                  required
-                />
-              </div>
-
-              {/* PROGRAM */}
-
-              <div className="space-y-1">
-
-                <label className="
-                  text-[11px]
-                  font-extrabold
-                  text-foreground
-                ">
-                  Program Studi *
-                </label>
-
-                <input
-                  type="text"
-                  value={newProgram}
-                  onChange={(e) =>
-                    setNewProgram(
-                      e.target.value
-                    )
-                  }
-                  placeholder="Teknik Informatika..."
-                  className="
-                    w-full
-                    rounded-xl
-                    border border-border
-                    bg-input
-                    px-3
-                    py-2
-                    text-xs
-                    text-foreground
-                    placeholder:text-muted-foreground
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-primary/40
-                    focus:border-primary
-                  "
-                  required
-                />
-              </div>
-
-              {/* DATE */}
-
-              <div className="grid grid-cols-2 gap-2">
-
+              {/* FORM GRID */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* NAME */}
                 <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground">
+                    Nama Lengkap *
+                  </label>
 
-                  <label className="
-                    text-[11px]
-                    font-extrabold
-                    text-foreground
-                  ">
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="Masukkan nama lengkap"
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3
+              py-2
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              transition-all
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary/40
+              focus:border-primary
+            "
+                    required
+                  />
+                </div>
+
+                {/* EMAIL */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground">
+                    Email *
+                  </label>
+
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="name@student.ac.id"
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3
+              py-2
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              transition-all
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary/40
+              focus:border-primary
+            "
+                    required
+                  />
+                </div>
+
+                {/* INSTITUTION */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground">
+                    Kampus / Instansi *
+                  </label>
+
+                  <input
+                    type="text"
+                    value={newInstitution}
+                    onChange={(e) => setNewInstitution(e.target.value)}
+                    placeholder="Universitas..."
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3
+              py-2
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              transition-all
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary/40
+              focus:border-primary
+            "
+                    required
+                  />
+                </div>
+
+                {/* PROGRAM */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground">
+                    Program Studi *
+                  </label>
+
+                  <input
+                    type="text"
+                    value={newProgram}
+                    onChange={(e) => setNewProgram(e.target.value)}
+                    placeholder="Teknik Informatika..."
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3
+              py-2
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              transition-all
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary/40
+              focus:border-primary
+            "
+                    required
+                  />
+                </div>
+
+                {/* START DATE */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground">
                     Periode Mulai
                   </label>
 
                   <input
                     type="date"
                     value={newStart}
-                    onChange={(e) =>
-                      setNewStart(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setNewStart(e.target.value)}
                     className="
-                      w-full
-                      rounded-xl
-                      border border-border
-                      bg-input
-                      px-2.5
-                      py-2
-                      text-xs
-                      text-foreground
-                      transition-all
-                      focus:outline-none
-                      focus:ring-2
-                      focus:ring-primary/40
-                      focus:border-primary
-                    "
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3
+              py-2
+              text-xs
+              text-foreground
+              transition-all
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary/40
+              focus:border-primary
+            "
                   />
                 </div>
 
+                {/* END DATE */}
                 <div className="space-y-1">
-
-                  <label className="
-                    text-[11px]
-                    font-extrabold
-                    text-foreground
-                  ">
+                  <label className="text-[11px] font-extrabold text-foreground">
                     Periode Selesai
                   </label>
 
                   <input
                     type="date"
                     value={newEnd}
-                    onChange={(e) =>
-                      setNewEnd(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setNewEnd(e.target.value)}
                     className="
-                      w-full
-                      rounded-xl
-                      border border-border
-                      bg-input
-                      px-2.5
-                      py-2
-                      text-xs
-                      text-foreground
-                      transition-all
-                      focus:outline-none
-                      focus:ring-2
-                      focus:ring-primary/40
-                      focus:border-primary
-                    "
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3
+              py-2
+              text-xs
+              text-foreground
+              transition-all
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary/40
+              focus:border-primary
+            "
                   />
                 </div>
-
               </div>
 
               {/* BUTTON */}
-
-              <div className="
-                flex gap-2
-                pt-2
-              ">
-
+              <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowAddModal(false)
-                  }
+                  onClick={() => setShowAddModal(false)}
                   className="
-                    flex-1
-                    py-2.5
-                    rounded-xl
-                    border border-border
-                    bg-secondary
-                    text-secondary-foreground
-                    font-extrabold
-                    text-xs
-                    hover:bg-accent
-                    hover:text-accent-foreground
-                    transition-colors
-                    cursor-pointer
-                  "
+            px-5
+            py-2.5
+            rounded-xl
+            border border-border
+            bg-secondary
+            text-secondary-foreground
+            font-extrabold
+            text-xs
+            hover:bg-accent
+            hover:text-accent-foreground
+            transition-colors
+            cursor-pointer
+          "
                 >
                   Batal
                 </button>
@@ -1446,28 +1243,24 @@ export default function AdminAnakMagangPage() {
                   type="submit"
                   disabled={isSaving}
                   className="
-                    flex-1
-                    py-2.5
-                    rounded-xl
-                    bg-primary
-                    text-primary-foreground
-                    font-black
-                    text-xs
-                    shadow-card
-                    hover:brightness-95
-                    active:scale-[0.98]
-                    transition-all
-                    disabled:opacity-50
-                    cursor-pointer
-                  "
+            px-5
+            py-2.5
+            rounded-xl
+            bg-primary
+            text-primary-foreground
+            font-black
+            text-xs
+            shadow-card
+            hover:brightness-95
+            active:scale-[0.98]
+            transition-all
+            disabled:opacity-50
+            cursor-pointer
+          "
                 >
-                  {isSaving
-                    ? "Menyimpan..."
-                    : "Simpan Data"}
+                  {isSaving ? "Menyimpan..." : "Simpan Data"}
                 </button>
-
               </div>
-
             </form>
           </div>
         )}
@@ -1477,7 +1270,8 @@ export default function AdminAnakMagangPage() {
         {/* ================================================= */}
 
         {editItem && (
-          <div className="
+          <div
+            className="
             fixed inset-0
             z-50
             flex items-center justify-center
@@ -1486,8 +1280,8 @@ export default function AdminAnakMagangPage() {
             backdrop-blur-sm
             animate-in
             fade-in
-          ">
-
+          "
+          >
             <form
               onSubmit={handleUpdateIntern}
               className="
@@ -1505,41 +1299,40 @@ export default function AdminAnakMagangPage() {
                 overflow-y-auto
               "
             >
-
               {/* HEADER */}
 
-              <div className="
+              <div
+                className="
                 flex items-center justify-between
                 border-b border-border
                 pb-3
-              ">
-
+              "
+              >
                 <div>
-
-                  <h3 className="
+                  <h3
+                    className="
                     font-black
                     text-lg
                     text-foreground
-                  ">
+                  "
+                  >
                     Edit Data Anak Magang
                   </h3>
 
-                  <p className="
+                  <p
+                    className="
                     text-xs
                     text-muted-foreground
                     mt-0.5
-                  ">
-                    Perbarui data informasi
-                    dan periode magang peserta.
+                  "
+                  >
+                    Perbarui data informasi dan periode magang peserta.
                   </p>
-
                 </div>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setEditItem(null)
-                  }
+                  onClick={() => setEditItem(null)}
                   className="
                     p-1.5
                     rounded-lg
@@ -1552,29 +1345,25 @@ export default function AdminAnakMagangPage() {
                 >
                   <X className="w-5 h-5" />
                 </button>
-
               </div>
 
               {/* NAME */}
 
               <div className="space-y-1">
-
-                <label className="
+                <label
+                  className="
                   text-xs
                   font-extrabold
                   text-foreground
-                ">
+                "
+                >
                   Nama Lengkap *
                 </label>
 
                 <input
                   type="text"
                   value={editName}
-                  onChange={(e) =>
-                    setEditName(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setEditName(e.target.value)}
                   placeholder="Masukkan nama lengkap"
                   className="
                     w-full
@@ -1593,36 +1382,33 @@ export default function AdminAnakMagangPage() {
                   "
                   required
                 />
-
               </div>
 
               {/* ID + EMAIL */}
 
-              <div className="
+              <div
+                className="
                 grid
                 grid-cols-1
                 sm:grid-cols-2
                 gap-2
-              ">
-
+              "
+              >
                 <div className="space-y-1">
-
-                  <label className="
+                  <label
+                    className="
                     text-xs
                     font-extrabold
                     text-foreground
-                  ">
+                  "
+                  >
                     NIM / No. Identitas
                   </label>
 
                   <input
                     type="text"
                     value={editIdentity}
-                    onChange={(e) =>
-                      setEditIdentity(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setEditIdentity(e.target.value)}
                     placeholder="21081010001"
                     className="
                       w-full
@@ -1640,27 +1426,23 @@ export default function AdminAnakMagangPage() {
                       focus:border-primary
                     "
                   />
-
                 </div>
 
                 <div className="space-y-1">
-
-                  <label className="
+                  <label
+                    className="
                     text-xs
                     font-extrabold
                     text-foreground
-                  ">
+                  "
+                  >
                     Email *
                   </label>
 
                   <input
                     type="email"
                     value={editEmail}
-                    onChange={(e) =>
-                      setEditEmail(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setEditEmail(e.target.value)}
                     placeholder="email@student.ac.id"
                     className="
                       w-full
@@ -1679,31 +1461,26 @@ export default function AdminAnakMagangPage() {
                     "
                     required
                   />
-
                 </div>
-
               </div>
 
               {/* INSTITUTION */}
 
               <div className="space-y-1">
-
-                <label className="
+                <label
+                  className="
                   text-xs
                   font-extrabold
                   text-foreground
-                ">
+                "
+                >
                   Kampus / Instansi *
                 </label>
 
                 <input
                   type="text"
                   value={editInstitution}
-                  onChange={(e) =>
-                    setEditInstitution(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setEditInstitution(e.target.value)}
                   placeholder="Universitas..."
                   className="
                     w-full
@@ -1722,29 +1499,25 @@ export default function AdminAnakMagangPage() {
                   "
                   required
                 />
-
               </div>
 
               {/* PROGRAM */}
 
               <div className="space-y-1">
-
-                <label className="
+                <label
+                  className="
                   text-xs
                   font-extrabold
                   text-foreground
-                ">
+                "
+                >
                   Program Studi / Divisi *
                 </label>
 
                 <input
                   type="text"
                   value={editProgram}
-                  onChange={(e) =>
-                    setEditProgram(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setEditProgram(e.target.value)}
                   placeholder="Teknik Informatika..."
                   className="
                     w-full
@@ -1763,35 +1536,32 @@ export default function AdminAnakMagangPage() {
                   "
                   required
                 />
-
               </div>
 
               {/* DATE */}
 
-              <div className="
+              <div
+                className="
                 grid
                 grid-cols-2
                 gap-2
-              ">
-
+              "
+              >
                 <div className="space-y-1">
-
-                  <label className="
+                  <label
+                    className="
                     text-xs
                     font-extrabold
                     text-foreground
-                  ">
+                  "
+                  >
                     Periode Mulai
                   </label>
 
                   <input
                     type="date"
                     value={editStart}
-                    onChange={(e) =>
-                      setEditStart(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setEditStart(e.target.value)}
                     className="
                       w-full
                       rounded-xl
@@ -1807,27 +1577,23 @@ export default function AdminAnakMagangPage() {
                       focus:border-primary
                     "
                   />
-
                 </div>
 
                 <div className="space-y-1">
-
-                  <label className="
+                  <label
+                    className="
                     text-xs
                     font-extrabold
                     text-foreground
-                  ">
+                  "
+                  >
                     Periode Selesai
                   </label>
 
                   <input
                     type="date"
                     value={editEnd}
-                    onChange={(e) =>
-                      setEditEnd(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setEditEnd(e.target.value)}
                     className="
                       w-full
                       rounded-xl
@@ -1843,31 +1609,26 @@ export default function AdminAnakMagangPage() {
                       focus:border-primary
                     "
                   />
-
                 </div>
-
               </div>
 
               {/* STATUS */}
 
               <div className="space-y-1">
-
-                <label className="
+                <label
+                  className="
                   text-xs
                   font-extrabold
                   text-foreground
-                ">
+                "
+                >
                   Status Keaktifan
                 </label>
 
                 <select
                   value={editStatus}
                   onChange={(e) =>
-                    setEditStatus(
-                      e.target.value as
-                        | "ACTIVE"
-                        | "INACTIVE"
-                    )
+                    setEditStatus(e.target.value as "ACTIVE" | "INACTIVE")
                   }
                   className="
                     w-full
@@ -1885,29 +1646,23 @@ export default function AdminAnakMagangPage() {
                     focus:border-primary
                   "
                 >
-                  <option value="ACTIVE">
-                    Aktif (ACTIVE)
-                  </option>
+                  <option value="ACTIVE">Aktif (ACTIVE)</option>
 
-                  <option value="INACTIVE">
-                    Nonaktif (INACTIVE)
-                  </option>
+                  <option value="INACTIVE">Nonaktif (INACTIVE)</option>
                 </select>
-
               </div>
 
               {/* BUTTON */}
 
-              <div className="
+              <div
+                className="
                 flex gap-2
                 pt-2
-              ">
-
+              "
+              >
                 <button
                   type="button"
-                  onClick={() =>
-                    setEditItem(null)
-                  }
+                  onClick={() => setEditItem(null)}
                   className="
                     flex-1
                     py-2.5
@@ -1945,17 +1700,12 @@ export default function AdminAnakMagangPage() {
                     cursor-pointer
                   "
                 >
-                  {isUpdating
-                    ? "Menyimpan..."
-                    : "Simpan Perubahan"}
+                  {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>
-
               </div>
-
             </form>
           </div>
         )}
-
       </div>
     </DashboardLayout>
   );

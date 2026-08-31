@@ -99,13 +99,13 @@ export function Topbar({ onToggleMobileSidebar }: TopbarProps) {
         </button>
 
         {/* Notification Bell */}
-        <div className="relative">
+        {/* <div className="relative">
           <button className="p-2.5 rounded-xl border border-border bg-input hover:bg-accent text-foreground transition-all relative">
             <Bell className="w-4 h-4 text-muted-foreground" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary animate-ping" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary" />
           </button>
-        </div>
+        </div> */}
 
         {/* Profile Avatar Dropdown */}
         <div className="relative">

@@ -54,7 +54,8 @@ interface Izin {
 }
 
 interface UserOption {
-  id: string;
+  id: string; // composite unique key: "magang-1", "os-2", "admin-3"
+  rawId: string; // original numeric ID for FK submission
   name: string;
   email: string;
   role: string;
@@ -222,20 +223,35 @@ export default function AdminIzinPage() {
       ]);
 
       const allUsers = [
-        ...(Array.isArray(magangData?.data) ? magangData.data.map((u: any) => ({ ...u, role: "ANAK_MAGANG" })) : []),
-        ...(Array.isArray(osData?.data) ? osData.data.map((u: any) => ({ ...u, role: "KARYAWAN_OS" })) : []),
-        ...(Array.isArray(adminData?.data) ? adminData.data : []),
+        ...(Array.isArray(magangData?.data)
+          ? magangData.data.map((u: any) => ({
+              ...u,
+              role: "ANAK_MAGANG",
+              _prefix: "magang",
+            }))
+          : []),
+        ...(Array.isArray(osData?.data)
+          ? osData.data.map((u: any) => ({
+              ...u,
+              role: "KARYAWAN_OS",
+              _prefix: "os",
+            }))
+          : []),
+        ...(Array.isArray(adminData?.data)
+          ? adminData.data.map((u: any) => ({ ...u, _prefix: "admin" }))
+          : []),
       ];
 
       setUserOptions(
         allUsers.map((u: any) => ({
-          id: String(u.id),
+          id: `${u._prefix}-${u.id}`,
+          rawId: String(u.id),
           name: u.name || u.nama || "User",
           email: u.email,
           role: u.role,
           institution: u.institution,
           study_program: u.study_program,
-        }))
+        })),
       );
     } catch (err) {
       console.warn("Gagal memuat daftar user untuk dropdown izin:", err);
@@ -259,7 +275,7 @@ export default function AdminIzinPage() {
     const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Jakarta" }).format(new Date());
     const firstUser = userOptions[0];
     setFormData({
-      selectedUserId: firstUser?.id || "",
+      selectedUserId: firstUser?.rawId || "",
       selectedUserRole: firstUser?.role || "",
       jenis: "Sakit",
       tanggalMulai: today,
@@ -568,7 +584,8 @@ export default function AdminIzinPage() {
               </h1>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">
-              Kelola, verifikasi, buat pengajuan baru, dan berikan catatan admin untuk izin magang &amp; pegawai OS.
+              Kelola, verifikasi, buat pengajuan baru, dan berikan catatan admin
+              untuk izin magang &amp; pegawai OS.
             </p>
           </div>
 
@@ -580,7 +597,9 @@ export default function AdminIzinPage() {
               title="Segarkan Data"
               className="p-2 rounded-xl border border-border bg-card text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-primary" : ""}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${isLoading ? "animate-spin text-primary" : ""}`}
+              />
             </button>
             <button
               type="button"
@@ -597,38 +616,62 @@ export default function AdminIzinPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Total Izin</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Total Izin
+              </span>
               <FileCheck className="w-4 h-4 text-primary" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">{stats.total}</p>
-            <p className="text-[11px] text-muted-foreground">Semua permohonan</p>
+            <p className="text-2xl md:text-3xl font-black text-foreground">
+              {stats.total}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Semua permohonan
+            </p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Izin Sakit</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Izin Sakit
+              </span>
               <AlertCircle className="w-4 h-4 text-rose-500" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-400">{stats.sakit}</p>
-            <p className="text-[11px] text-muted-foreground">Alasan kesehatan</p>
+            <p className="text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-400">
+              {stats.sakit}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Alasan kesehatan
+            </p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Keperluan Pribadi</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Keperluan Pribadi
+              </span>
               <Users className="w-4 h-4 text-blue-500" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400">{stats.pribadi}</p>
-            <p className="text-[11px] text-muted-foreground">Urusan personal / keluarga</p>
+            <p className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400">
+              {stats.pribadi}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Urusan personal / keluarga
+            </p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Izin Hari Ini</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Izin Hari Ini
+              </span>
               <Clock className="w-4 h-4 text-amber-500" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">{stats.activeToday}</p>
-            <p className="text-[11px] text-muted-foreground">Sedang berlangsung</p>
+            <p className="text-2xl md:text-3xl font-black text-foreground">
+              {stats.activeToday}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Sedang berlangsung
+            </p>
           </div>
         </div>
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
@@ -694,7 +737,11 @@ export default function AdminIzinPage() {
               )}
             </div>
           </div>
-          {(searchQuery || filterJenis !== "ALL" || filterRole !== "ALL" || filterStartDate || filterEndDate) && (
+          {(searchQuery ||
+            filterJenis !== "ALL" ||
+            filterRole !== "ALL" ||
+            filterStartDate ||
+            filterEndDate) && (
             <div className="flex justify-end pt-1 border-t border-border/60">
               <button
                 onClick={() => {
@@ -726,7 +773,8 @@ export default function AdminIzinPage() {
               Belum Ada Pengajuan Izin
             </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              Belum terdapat data pengajuan izin yang masuk atau sesuai dengan kriteria filter pencarian.
+              Belum terdapat data pengajuan izin yang masuk atau sesuai dengan
+              kriteria filter pencarian.
             </p>
             <button
               onClick={handleOpenCreate}
@@ -780,7 +828,7 @@ export default function AdminIzinPage() {
                   <div className="flex items-center gap-2">
                     <span
                       className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border ${getJenisBadgeClass(
-                        item.jenis
+                        item.jenis,
                       )}`}
                     >
                       {formatJenisIzin(item.jenis)}
@@ -892,34 +940,76 @@ export default function AdminIzinPage() {
 
         {/* MODAL: Tambah Izin Baru (CREATE) */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl p-4 md:p-5 space-y-3 animate-in zoom-in-95">
-              <div className="flex items-center justify-between border-b border-border pb-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                    <Plus className="w-4 h-4" />
-                  </span>
-                    <h3 className="font-black text-base text-foreground">
-                      Tambah Pengajuan Izin Baru
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="p-1 rounded-lg text-muted-foreground hover:bg-muted transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+          <div
+            className="
+      fixed inset-0 z-50
+      flex items-center justify-center
+      p-4
+      bg-black/60
+      backdrop-blur-xs
+      animate-in fade-in
+    "
+          >
+            <div
+              className="
+        bg-card
+        border border-border
+        rounded-2xl
+        w-full
+        max-w-2xl
+        shadow-2xl
+        p-4 md:p-6
+        space-y-4
+        animate-in zoom-in-95
+        max-h-[90vh]
+        overflow-y-auto
+      "
+            >
+              {/* HEADER */}
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <div>
+                  <h3 className="font-black text-base text-foreground">
+                    Tambah Pengajuan Izin Baru
+                  </h3>
+
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Buat pengajuan izin baru untuk peserta atau pegawai.
+                  </p>
                 </div>
-                <form onSubmit={handleCreateSubmit} className="space-y-3">
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="
+            p-1.5
+            rounded-lg
+            text-muted-foreground
+            hover:text-foreground
+            hover:bg-muted
+            transition-all
+            cursor-pointer
+          "
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateSubmit} className="space-y-4">
+                {/* GRID 2 KOLOM */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* PILIH USER */}
                   <div>
                     <label className="block text-[11px] font-bold text-foreground mb-1">
                       Pilih Peserta / User *
                     </label>
+
                     <select
                       value={formData.selectedUserId}
                       onChange={(e) => {
-                        const selected = userOptions.find(u => u.id === e.target.value);
+                        const selected = userOptions.find(
+                          (u) => u.rawId === e.target.value,
+                        );
+
                         setFormData({
                           ...formData,
                           selectedUserId: e.target.value,
@@ -927,23 +1017,40 @@ export default function AdminIzinPage() {
                         });
                       }}
                       required
-                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                      className="
+                w-full
+                px-3 py-2
+                bg-input
+                border border-border
+                rounded-xl
+                text-xs
+                font-semibold
+                text-foreground
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary
+                cursor-pointer
+              "
                     >
                       <option value="" disabled>
                         -- Pilih Pengaju Izin --
                       </option>
+
                       {userOptions.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.name} ({u.role}){" "}
-                          {u.institution ? `- ${u.institution}` : ""}
+                        <option key={u.id} value={u.rawId}>
+                          {u.name} ({u.role})
+                          {u.institution ? ` - ${u.institution}` : ""}
                         </option>
                       ))}
                     </select>
                   </div>
+
+                  {/* JENIS IZIN */}
                   <div>
                     <label className="block text-[11px] font-bold text-foreground mb-1">
                       Jenis Izin *
                     </label>
+
                     <select
                       value={formData.jenis}
                       onChange={(e) =>
@@ -952,7 +1059,20 @@ export default function AdminIzinPage() {
                           jenis: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                      className="
+                w-full
+                px-3 py-2
+                bg-input
+                border border-border
+                rounded-xl
+                text-xs
+                font-semibold
+                text-foreground
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary
+                cursor-pointer
+              "
                     >
                       <option value="Sakit">Sakit</option>
                       <option value="Keperluan Pribadi">
@@ -961,52 +1081,79 @@ export default function AdminIzinPage() {
                       <option value="Lainnya">Lainnya</option>
                     </select>
                   </div>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-[11px] font-bold text-foreground mb-1">
-                        Tanggal Mulai *
-                      </label>
 
-                      <input
-                        type="date"
-                        value={formData.tanggalMulai}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            tanggalMulai: e.target.value,
-                          })
-                        }
-                        required
-                        className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-foreground mb-1">
-                        Tanggal Selesai *
-                      </label>
-
-                      <input
-                        type="date"
-                        value={formData.tanggalSelesai}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            tanggalSelesai: e.target.value,
-                          })
-                        }
-                        required
-                        className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                  </div>
+                  {/* TANGGAL MULAI */}
                   <div>
+                    <label className="block text-[11px] font-bold text-foreground mb-1">
+                      Tanggal Mulai *
+                    </label>
+
+                    <input
+                      type="date"
+                      value={formData.tanggalMulai}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          tanggalMulai: e.target.value,
+                        })
+                      }
+                      required
+                      className="
+                w-full
+                px-3 py-2
+                bg-input
+                border border-border
+                rounded-xl
+                text-xs
+                font-semibold
+                text-foreground
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary
+              "
+                    />
+                  </div>
+
+                  {/* TANGGAL SELESAI */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground mb-1">
+                      Tanggal Selesai *
+                    </label>
+
+                    <input
+                      type="date"
+                      value={formData.tanggalSelesai}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          tanggalSelesai: e.target.value,
+                        })
+                      }
+                      required
+                      className="
+                w-full
+                px-3 py-2
+                bg-input
+                border border-border
+                rounded-xl
+                text-xs
+                font-semibold
+                text-foreground
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary
+              "
+                    />
+                  </div>
+
+                  {/* ALASAN - FULL WIDTH */}
+                  <div className="md:col-span-2">
                     <label className="block text-[11px] font-bold text-foreground mb-1">
                       Alasan Pengajuan Izin *
                     </label>
 
                     <textarea
-                      rows={2}
+                      rows={3}
                       value={formData.alasan}
                       onChange={(e) =>
                         setFormData({
@@ -1016,15 +1163,32 @@ export default function AdminIzinPage() {
                       }
                       placeholder="Tuliskan keterangan atau alasan pengajuan izin..."
                       required
-                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground resize-none"
+                      className="
+                w-full
+                px-3 py-2
+                bg-input
+                border border-border
+                rounded-xl
+                text-xs
+                font-semibold
+                text-foreground
+                placeholder:text-muted-foreground
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary
+                resize-none
+              "
                     />
                   </div>
-                  <div>
+
+                  {/* CATATAN ADMIN - FULL WIDTH */}
+                  <div className="md:col-span-2">
                     <label className="block text-[11px] font-bold text-foreground mb-1">
                       Catatan Admin (Opsional)
                     </label>
+
                     <textarea
-                      rows={2}
+                      rows={3}
                       value={formData.catatanAdmin}
                       onChange={(e) =>
                         setFormData({
@@ -1033,38 +1197,84 @@ export default function AdminIzinPage() {
                         })
                       }
                       placeholder="Tambahkan catatan tindak lanjut dari admin..."
-                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground resize-none"
+                      className="
+                w-full
+                px-3 py-2
+                bg-input
+                border border-border
+                rounded-xl
+                text-xs
+                font-semibold
+                text-foreground
+                placeholder:text-muted-foreground
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary
+                resize-none
+              "
                     />
                   </div>
-                  <div className="flex gap-2 pt-2 border-t border-border">
-                    <button
-                      type="button"
-                      onClick={() => setIsCreateModalOpen(false)}
-                      disabled={isSaving}
-                      className="flex-1 py-2 rounded-xl border border-border bg-card text-foreground font-bold text-xs hover:bg-muted transition-all cursor-pointer"
-                    >
-                      Batal
-                    </button>
+                </div>
 
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                    >
-                      {isSaving ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Menyimpan...
-                        </>
-                      ) : (
-                        "Simpan Pengajuan"
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </div>
+                {/* BUTTON */}
+                <div className="flex justify-end gap-2 pt-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    disabled={isSaving}
+                    className="
+              px-5
+              py-2.5
+              rounded-xl
+              border border-border
+              bg-card
+              text-foreground
+              font-bold
+              text-xs
+              hover:bg-muted
+              transition-all
+              cursor-pointer
+              disabled:opacity-50
+            "
+                  >
+                    Batal
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="
+              px-5
+              py-2.5
+              rounded-xl
+              bg-primary
+              text-primary-foreground
+              font-bold
+              text-xs
+              hover:bg-primary/90
+              transition-all
+              shadow-md
+              flex items-center
+              justify-center
+              gap-1.5
+              cursor-pointer
+              disabled:opacity-50
+            "
+                  >
+                    {isSaving ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      "Simpan Pengajuan"
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
-          )}
+          </div>
+        )}
 
         {/* MODAL: Edit Izin (UPDATE) */}
         {isEditModalOpen && selectedIzin && (
@@ -1108,9 +1318,7 @@ export default function AdminIzinPage() {
                     className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
                   >
                     <option value="Sakit">Sakit</option>
-                    <option value="Keperluan Pribadi">
-                      Keperluan Pribadi
-                    </option>
+                    <option value="Keperluan Pribadi">Keperluan Pribadi</option>
                     <option value="Lainnya">Lainnya</option>
                   </select>
                 </div>
@@ -1236,8 +1444,12 @@ export default function AdminIzinPage() {
               </div>
 
               <div className="p-3 rounded-xl bg-muted/50 border border-border text-xs space-y-0.5">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">Pemohon</span>
-                <p className="font-extrabold text-foreground">{selectedIzin.userName}</p>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                  Pemohon
+                </span>
+                <p className="font-extrabold text-foreground">
+                  {selectedIzin.userName}
+                </p>
                 <p className="text-muted-foreground text-[11px]">
                   {selectedIzin.jenis} • {fmtDate(selectedIzin.tanggalMulai)}
                 </p>
@@ -1296,9 +1508,16 @@ export default function AdminIzinPage() {
                 <Trash2 className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-black text-foreground">Hapus Pengajuan Izin?</h3>
+                <h3 className="text-base font-black text-foreground">
+                  Hapus Pengajuan Izin?
+                </h3>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Pengajuan izin milik <span className="font-bold text-foreground">{selectedIzin.userName}</span> ({fmtDate(selectedIzin.tanggalMulai)}) akan dihapus dari data izin dan presensi. Tindakan ini tidak dapat dibatalkan.
+                  Pengajuan izin milik{" "}
+                  <span className="font-bold text-foreground">
+                    {selectedIzin.userName}
+                  </span>{" "}
+                  ({fmtDate(selectedIzin.tanggalMulai)}) akan dihapus dari data
+                  izin dan presensi. Tindakan ini tidak dapat dibatalkan.
                 </p>
               </div>
               <div className="flex items-center justify-center gap-2 pt-2">
@@ -1316,7 +1535,11 @@ export default function AdminIzinPage() {
                   onClick={handleDeleteSubmit}
                   className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "Ya, Hapus"}
+                  {isSaving ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    "Ya, Hapus"
+                  )}
                 </button>
               </div>
             </div>

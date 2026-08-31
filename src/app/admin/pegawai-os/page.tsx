@@ -452,7 +452,6 @@ export default function AdminPegawaiOsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-
         <ConfirmModal
           isOpen={Boolean(deleteConfirm)}
           title="Hapus Pegawai OS"
@@ -485,24 +484,20 @@ export default function AdminPegawaiOsPage() {
             </h1>
 
             <p className="text-xs md:text-sm text-muted-foreground font-semibold">
-              Kelola data pegawai outsourcing, NIP,
-              divisi kerja, kontak, dan status keaktifan.
+              Kelola data pegawai outsourcing, NIP, divisi kerja, kontak, dan
+              status keaktifan.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() =>
-                setShowAddModal(true)
-              }
+              onClick={() => setShowAddModal(true)}
               className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs md:text-sm font-black hover:opacity-95 transition-all flex items-center gap-1.5 shadow-card"
             >
               <Plus className="w-4 h-4" />
 
-              <span>
-                Tambah Pegawai OS
-              </span>
+              <span>Tambah Pegawai OS</span>
             </button>
           </div>
         </div>
@@ -532,33 +527,19 @@ export default function AdminPegawaiOsPage() {
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-
               <thead>
                 <tr className="bg-muted/60 border-b border-border text-muted-foreground font-extrabold text-xs uppercase tracking-wider">
-                  <th className="py-3 px-4">
-                    NIP
-                  </th>
+                  <th className="py-3 px-4">NIP</th>
 
-                  <th className="py-3 px-4">
-                    Nama
-                  </th>
+                  <th className="py-3 px-4">Nama</th>
 
-                  <th className="py-3 px-4">
-                    Kontak (Email / No HP)
-                  </th>
+                  <th className="py-3 px-4">Kontak (Email / No HP)</th>
 
-                  <th className="py-3 px-4">
-                    Divisi
-                  </th>
+                  <th className="py-3 px-4">Divisi</th>
 
-                  <th className="py-3 px-4">
-                    Status
-                  </th>
+                  <th className="py-3 px-4">Status</th>
 
-                  <th className="py-3 px-4 text-right">
-                    Aksi
-                  </th>
-
+                  <th className="py-3 px-4 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -572,42 +553,31 @@ export default function AdminPegawaiOsPage() {
                     </td>
                   </tr>
                 ) : filtered.length > 0 ? (
-
                   filtered.map((item) => (
                     <tr
                       key={item.id}
                       className="hover:bg-accent/40 transition-colors"
                     >
-
                       <td className="py-3.5 px-4 font-mono text-xs font-extrabold text-primary">
-                        {item.identityNumber ||
-                          "NIP-OS-882910"}
+                        {item.identityNumber || "NIP-OS-882910"}
                       </td>
 
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-
                           <img
                             src={
                               item.avatar ||
                               `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                item.nama ||
-                                  item.name ||
-                                  "Pegawai"
+                                item.nama || item.name || "Pegawai",
                               )}&background=f59e0b&color=000000&bold=true`
                             }
-                            alt={
-                              item.nama ||
-                              item.name ||
-                              "Pegawai"
-                            }
+                            alt={item.nama || item.name || "Pegawai"}
                             className="w-8 h-8 rounded-full object-cover border border-border"
                           />
 
                           <div>
                             <div className="font-extrabold text-foreground">
-                              {item.nama ||
-                                item.name}
+                              {item.nama || item.name}
                             </div>
 
                             <div className="text-[11px] text-muted-foreground font-normal">
@@ -616,30 +586,21 @@ export default function AdminPegawaiOsPage() {
                                 "PT Sinergi OS"}
                             </div>
                           </div>
-
                         </div>
                       </td>
 
                       <td className="py-3.5 px-4 text-xs font-medium text-foreground">
-
                         <div className="font-semibold flex items-center gap-1">
                           <Mail className="w-3 h-3 text-muted-foreground" />
 
-                          <span>
-                            {item.email || "-"}
-                          </span>
+                          <span>{item.email || "-"}</span>
                         </div>
 
                         <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
                           <Phone className="w-3 h-3 text-muted-foreground" />
 
-                          <span>
-                            {item.no_hp ||
-                              item.phone ||
-                              "-"}
-                          </span>
+                          <span>{item.no_hp || item.phone || "-"}</span>
                         </div>
-
                       </td>
 
                       <td className="py-3.5 px-4 text-xs font-bold text-foreground">
@@ -650,22 +611,15 @@ export default function AdminPegawaiOsPage() {
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <StatusBadge
-                          status={item.status}
-                        />
+                        <StatusBadge status={item.status} />
                       </td>
 
                       <td className="py-3.5 px-4">
                         <div className="flex items-center justify-end gap-2">
-
                           <button
                             type="button"
                             title="Edit Pegawai"
-                            onClick={() =>
-                              handleEditEmployee(
-                                item
-                              )
-                            }
+                            onClick={() => handleEditEmployee(item)}
                             className="p-2 rounded-xl text-primary hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-all"
                           >
                             <Pencil className="w-4 h-4" />
@@ -683,53 +637,39 @@ export default function AdminPegawaiOsPage() {
                           <button
                             type="button"
                             title={
-                              item.status ===
-                              "ACTIVE"
+                              item.status === "ACTIVE"
                                 ? "Nonaktifkan Pegawai"
                                 : "Aktifkan Pegawai"
                             }
-                            onClick={() =>
-                              toggleStatus(
-                                item.id
-                              )
-                            }
+                            onClick={() => toggleStatus(item.id)}
                             className={`p-2 rounded-xl transition-all border ${
-                              item.status ===
-                              "ACTIVE"
+                              item.status === "ACTIVE"
                                 ? "text-status-terlambat hover:bg-status-terlambat/10 border-transparent hover:border-status-terlambat/20"
                                 : "text-status-hadir hover:bg-status-hadir/10 border-transparent hover:border-status-hadir/20"
                             }`}
                           >
                             <RefreshCw className="w-4 h-4" />
                           </button>
-
                         </div>
                       </td>
-
                     </tr>
                   ))
-
                 ) : (
-
                   <tr>
                     <td
                       colSpan={6}
                       className="py-10 text-center text-muted-foreground"
                     >
                       <div className="flex flex-col items-center gap-2">
-
                         <UserCheck className="w-8 h-8 opacity-40" />
 
                         <span className="text-xs font-semibold">
                           Tidak ada data pegawai OS.
                         </span>
-
                       </div>
                     </td>
                   </tr>
-
                 )}
-
               </tbody>
             </table>
           </div>
@@ -737,24 +677,38 @@ export default function AdminPegawaiOsPage() {
 
         {showAddModal && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+            className="
+      fixed inset-0 z-50
+      flex items-center justify-center
+      p-4
+      bg-black/60
+      backdrop-blur-xs
+      animate-in fade-in
+    "
             onMouseDown={(e) => {
-              if (
-                e.target ===
-                e.currentTarget
-              ) {
+              if (e.target === e.currentTarget) {
                 closeAddModal();
               }
             }}
           >
-
             <form
               onSubmit={handleAddEmployee}
-              className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-elevated space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+              className="
+        bg-card
+        border border-border
+        rounded-2xl
+        w-full
+        max-w-2xl
+        p-6
+        shadow-elevated
+        space-y-5
+        animate-in zoom-in-95
+        max-h-[90vh]
+        overflow-y-auto
+      "
             >
-
+              {/* HEADER */}
               <div className="flex items-start justify-between gap-4">
-
                 <div>
                   <h3 className="font-black text-lg text-foreground">
                     Tambah Pegawai OS Baru
@@ -768,24 +722,258 @@ export default function AdminPegawaiOsPage() {
                 <button
                   type="button"
                   onClick={closeAddModal}
+                  className="
+            p-1.5
+            rounded-lg
+            text-muted-foreground
+            hover:text-foreground
+            hover:bg-accent
+            transition-all
+            cursor-pointer
+          "
+                  title="Tutup"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* FORM 2 KOLOM */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* NAMA */}
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    Nama Lengkap *
+                  </label>
+
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="Masukkan nama pegawai OS"
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3.5 py-2.5
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary
+            "
+                    required
+                  />
+                </div>
+
+                {/* EMAIL */}
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    Email Work *
+                  </label>
+
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="pegawai@os.sipresma.go.id"
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3.5 py-2.5
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary
+            "
+                    required
+                  />
+                </div>
+
+                {/* NOMOR HP */}
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    No. HP / Kontak *
+                  </label>
+
+                  <input
+                    type="text"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    placeholder="081234567890"
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3.5 py-2.5
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary
+            "
+                    required
+                  />
+                </div>
+
+                {/* VENDOR */}
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    Vendor Outsourcing *
+                  </label>
+
+                  <input
+                    type="text"
+                    value={newVendor}
+                    onChange={(e) => setNewVendor(e.target.value)}
+                    placeholder="PT Sinergi Facility Management"
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3.5 py-2.5
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary
+            "
+                    required
+                  />
+                </div>
+
+                {/* DIVISI - FULL WIDTH */}
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-xs font-extrabold text-foreground">
+                    Divisi / Unit Kerja *
+                  </label>
+
+                  <input
+                    type="text"
+                    value={newDivisi}
+                    onChange={(e) => setNewDivisi(e.target.value)}
+                    placeholder="Teknisi Operasional / Security / IT Support..."
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3.5 py-2.5
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary
+            "
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* BUTTON */}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={closeAddModal}
+                  className="
+            px-6
+            py-2.5
+            rounded-xl
+            border border-border
+            bg-secondary
+            text-secondary-foreground
+            font-extrabold
+            text-xs
+            hover:bg-accent
+            transition-all
+            cursor-pointer
+          "
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="submit"
+                  className="
+            px-6
+            py-2.5
+            rounded-xl
+            bg-primary
+            text-primary-foreground
+            font-black
+            text-xs
+            shadow-card
+            hover:opacity-95
+            transition-all
+            cursor-pointer
+          "
+                >
+                  Simpan Pegawai OS
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+        {showEditModal && editingEmployee && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) {
+                closeEditModal();
+              }
+            }}
+          >
+            <form
+              onSubmit={handleSaveEdit}
+              className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-elevated space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-black text-lg text-foreground">
+                    Edit Pegawai OS
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Perbarui informasi pegawai OS.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeEditModal}
                   className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
                   title="Tutup"
                 >
                   <X className="w-4 h-4" />
                 </button>
-
               </div>
-
+              <div className="space-y-1">
+                <label className="text-xs font-extrabold text-foreground">
+                  NIP
+                </label>
+                <input
+                  type="text"
+                  value={editingEmployee.identityNumber || ""}
+                  readOnly
+                  className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-xs font-mono font-bold text-muted-foreground cursor-not-allowed"
+                />
+              </div>
               <div className="space-y-1">
                 <label className="text-xs font-extrabold text-foreground">
                   Nama Lengkap *
                 </label>
                 <input
                   type="text"
-                  value={newName}
-                  onChange={(e) =>
-                    setNewName(e.target.value)
-                  }
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
                   placeholder="Masukkan nama pegawai OS"
                   className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
                   required
@@ -797,10 +985,8 @@ export default function AdminPegawaiOsPage() {
                 </label>
                 <input
                   type="email"
-                  value={newEmail}
-                  onChange={(e) =>
-                    setNewEmail(e.target.value)
-                  }
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
                   placeholder="pegawai@os.sipresma.go.id"
                   className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
                   required
@@ -812,10 +998,8 @@ export default function AdminPegawaiOsPage() {
                 </label>
                 <input
                   type="text"
-                  value={newPhone}
-                  onChange={(e) =>
-                    setNewPhone(e.target.value)
-                  }
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
                   placeholder="081234567890"
                   className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
                   required
@@ -827,12 +1011,8 @@ export default function AdminPegawaiOsPage() {
                 </label>
                 <input
                   type="text"
-                  value={newVendor}
-                  onChange={(e) =>
-                    setNewVendor(
-                      e.target.value
-                    )
-                  }
+                  value={editVendor}
+                  onChange={(e) => setEditVendor(e.target.value)}
                   placeholder="PT Sinergi Facility Management"
                   className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
                   required
@@ -844,12 +1024,8 @@ export default function AdminPegawaiOsPage() {
                 </label>
                 <input
                   type="text"
-                  value={newDivisi}
-                  onChange={(e) =>
-                    setNewDivisi(
-                      e.target.value
-                    )
-                  }
+                  value={editDivisi}
+                  onChange={(e) => setEditDivisi(e.target.value)}
                   placeholder="Teknisi Operasional / Security / IT Support..."
                   className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
                   required
@@ -858,176 +1034,22 @@ export default function AdminPegawaiOsPage() {
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={closeAddModal}
+                  onClick={closeEditModal}
                   className="flex-1 py-2.5 rounded-xl border border-border bg-secondary font-extrabold text-xs hover:bg-accent transition-all"
                 >
                   Batal
                 </button>
-
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-card hover:opacity-95 transition-all"
+                  disabled={isSavingEdit}
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-card hover:opacity-95 transition-all disabled:opacity-50"
                 >
-                  Simpan Pegawai OS
+                  {isSavingEdit ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>
               </div>
             </form>
           </div>
         )}
-        {showEditModal &&
-          editingEmployee && (
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
-              onMouseDown={(e) => {
-                if (
-                  e.target ===
-                  e.currentTarget
-                ) {
-                  closeEditModal();
-                }
-              }}
-            >
-
-              <form
-                onSubmit={handleSaveEdit}
-                className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-elevated space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="font-black text-lg text-foreground">
-                      Edit Pegawai OS
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Perbarui informasi pegawai OS.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={closeEditModal}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-                    title="Tutup"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-extrabold text-foreground">
-                    NIP
-                  </label>
-                  <input
-                    type="text"
-                    value={
-                      editingEmployee.identityNumber ||
-                      ""
-                    }
-                    readOnly
-                    className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-xs font-mono font-bold text-muted-foreground cursor-not-allowed"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-extrabold text-foreground">
-                    Nama Lengkap *
-                  </label>
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) =>
-                      setEditName(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Masukkan nama pegawai OS"
-                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-extrabold text-foreground">
-                    Email Work *
-                  </label>
-                  <input
-                    type="email"
-                    value={editEmail}
-                    onChange={(e) =>
-                      setEditEmail(
-                        e.target.value
-                      )
-                    }
-                    placeholder="pegawai@os.sipresma.go.id"
-                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-extrabold text-foreground">
-                    No. HP / Kontak *
-                  </label>
-                  <input
-                    type="text"
-                    value={editPhone}
-                    onChange={(e) =>
-                      setEditPhone(
-                        e.target.value
-                      )
-                    }
-                    placeholder="081234567890"
-                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-extrabold text-foreground">
-                    Vendor Outsourcing *
-                  </label>
-                  <input
-                    type="text"
-                    value={editVendor}
-                    onChange={(e) =>
-                      setEditVendor(
-                        e.target.value
-                      )
-                    }
-                    placeholder="PT Sinergi Facility Management"
-                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-extrabold text-foreground">
-                    Divisi / Unit Kerja *
-                  </label>
-                  <input
-                    type="text"
-                    value={editDivisi}
-                    onChange={(e) =>
-                      setEditDivisi(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Teknisi Operasional / Security / IT Support..."
-                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={closeEditModal}
-                    className="flex-1 py-2.5 rounded-xl border border-border bg-secondary font-extrabold text-xs hover:bg-accent transition-all"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSavingEdit}
-                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-card hover:opacity-95 transition-all disabled:opacity-50"
-                  >
-                    {isSavingEdit ? "Menyimpan..." : "Simpan Perubahan"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
       </div>
     </DashboardLayout>
   );

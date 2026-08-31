@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -430,9 +431,10 @@ export default function RegisterPage() {
             "
           >
             {isLoading ? (
-              <span className="animate-pulse font-sans">
-                Mendaftarkan Akun...
-              </span>
+              <>
+                <Spinner />
+                <span className="font-sans">Mendaftarkan Akun...</span>
+              </>
             ) : (
               <>
                 <UserPlus className="w-4 h-4" />

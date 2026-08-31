@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -285,9 +286,10 @@ function LoginForm() {
             "
           >
             {isLoading ? (
-              <span className="text-xs font-bold font-sans animate-pulse">
-                Memverifikasi...
-              </span>
+              <>
+                <Spinner />
+                <span>Verifikasi Akun</span>
+              </>
             ) : (
               <>
                 <LogIn className="w-4 h-4" />

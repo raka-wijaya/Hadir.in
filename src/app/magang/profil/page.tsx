@@ -181,6 +181,7 @@ export default function ProfilPage() {
         )}&background=f59e0b&color=000000&bold=true`,
     };
 
+    let serverAvatar = updatedData.avatar;
     try {
       if (user?.id) {
         const response = await fetch("/api/users/peserta_magang", {
@@ -192,14 +193,17 @@ export default function ProfilPage() {
           }),
         });
 
+        const resData = await response.json().catch(() => ({}));
         if (!response.ok) {
-          const resData = await response.json().catch(() => ({}));
           console.warn("Gagal update user ke server:", resData.message);
+        } else if (resData?.data?.avatar) {
+          serverAvatar = resData.data.avatar;
+          setAvatar(serverAvatar);
         }
       }
 
-      // Update state auth context dan localStorage
-      updateUser(updatedData);
+      // Update state auth context dan localStorage dengan URL avatar yang tersimpan di server
+      updateUser({ ...updatedData, avatar: serverAvatar });
 
       setIsEditing(false);
       setSavedMsg("Profil berhasil diperbarui!");

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { mysqlPool } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
+import { saveStorageFile } from "@/lib/storage";
 
 function normalizeStatus(statusInput?: string | null): "ACTIVE" | "INACTIVE" {
   if (!statusInput) return "ACTIVE";
@@ -154,9 +155,15 @@ export async function POST(req: Request) {
       : null;
     const endDate = rawEndDate ? String(rawEndDate).trim().slice(0, 10) : null;
 
-    const avatar = body.avatar
-      ? String(body.avatar).trim().slice(0, 500)
-      : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=72e3ad&color=1e2723&bold=true`;
+    let finalAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=72e3ad&color=1e2723&bold=true`;
+    if (body.avatar && typeof body.avatar === "string") {
+      if (body.avatar.startsWith("data:")) {
+        const saved = await saveStorageFile(body.avatar, "avatars", "avatar", identityNumber || email);
+        if (saved) finalAvatar = saved;
+      } else {
+        finalAvatar = String(body.avatar).trim().slice(0, 500);
+      }
+    }
 
     const hashedPassword = await hashPassword(rawPassword);
 
@@ -172,7 +179,7 @@ export async function POST(req: Request) {
         identityNumber,
         institution,
         studyProgram,
-        avatar,
+        finalAvatar,
         startDate,
         endDate,
       ]
@@ -191,7 +198,7 @@ export async function POST(req: Request) {
           identity_number: identityNumber,
           institution,
           study_program: studyProgram,
-          avatar,
+          avatar: finalAvatar,
           start_date: startDate,
           end_date: endDate,
           status,
@@ -338,8 +345,13 @@ export async function PATCH(req: Request) {
       );
     }
     if (avatar !== undefined) {
+      let finalAvatar = avatar;
+      if (avatar && typeof avatar === "string" && avatar.startsWith("data:")) {
+        const saved = await saveStorageFile(avatar, "avatars", "avatar", id);
+        if (saved) finalAvatar = saved;
+      }
       fields.push("avatar = ?");
-      params.push(avatar ? String(avatar).trim().slice(0, 500) : null);
+      params.push(finalAvatar ? String(finalAvatar).trim().slice(0, 500) : null);
     }
     if (finalStartDate !== undefined) {
       fields.push("start_date = ?");
@@ -379,6 +391,9 @@ export async function PATCH(req: Request) {
     return NextResponse.json({
       success: true,
       message: "Data peserta magang berhasil diperbarui.",
+      data: {
+        avatar: avatar !== undefined ? params[fields.indexOf("avatar = ?")] : undefined,
+      },
     });
   } catch (err: any) {
     console.error("PATCH /api/users/peserta_magang error:", err);

@@ -177,7 +177,8 @@ export default function RekapKehadiranPage() {
               </h1>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">
-              Laporan terpusat pemantauan presensi dan absensi harian mahasiswa magang & pegawai OS.
+              Laporan terpusat pemantauan presensi dan absensi harian mahasiswa
+              magang & pegawai OS.
             </p>
           </div>
 
@@ -187,7 +188,9 @@ export default function RekapKehadiranPage() {
               title="Segarkan Data"
               className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-primary" : ""}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${isLoading ? "animate-spin text-primary" : ""}`}
+              />
             </button>
             <button
               onClick={() => setIsPrintModalOpen(true)}
@@ -205,34 +208,48 @@ export default function RekapKehadiranPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Total Presensi</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Total Presensi
+              </span>
               <Users className="w-4 h-4 text-primary" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">{stats.total}</p>
+            <p className="text-2xl md:text-3xl font-black text-foreground">
+              {stats.total}
+            </p>
             <p className="text-[11px] text-muted-foreground">Catatan terekam</p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-emerald-500/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Tepat Waktu</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Tepat Waktu
+              </span>
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400">{stats.hadirTepat}</p>
+            <p className="text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400">
+              {stats.hadirTepat}
+            </p>
             <p className="text-[11px] text-muted-foreground">Hadir disiplin</p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-amber-500/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Terlambat</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Terlambat
+              </span>
               <Clock className="w-4 h-4 text-amber-500" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-amber-600 dark:text-amber-400">{stats.terlambat}</p>
+            <p className="text-2xl md:text-3xl font-black text-amber-600 dark:text-amber-400">
+              {stats.terlambat}
+            </p>
             <p className="text-[11px] text-muted-foreground">Masuk lewat jam</p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-rose-500/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Izin / Sakit / Alpa</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Izin / Sakit / Alpa
+              </span>
               <AlertCircle className="w-4 h-4 text-rose-500" />
             </div>
             <p className="text-2xl md:text-3xl font-black text-foreground">
@@ -324,14 +341,23 @@ export default function RekapKehadiranPage() {
 
           <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs">
             <button
-              onClick={() => setSortOrder(sortOrder === "DESC" ? "ASC" : "DESC")}
+              onClick={() =>
+                setSortOrder(sortOrder === "DESC" ? "ASC" : "DESC")
+              }
               className="inline-flex items-center gap-1.5 font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <ArrowUpDown className="w-3.5 h-3.5 text-primary" />
-              <span>Urutan: {sortOrder === "DESC" ? "Terbaru (DESC)" : "Terlama (ASC)"}</span>
+              <span>
+                Urutan:{" "}
+                {sortOrder === "DESC" ? "Terbaru (DESC)" : "Terlama (ASC)"}
+              </span>
             </button>
 
-            {(startDate || endDate || roleFilter !== "ALL" || statusFilter !== "ALL" || search) && (
+            {(startDate ||
+              endDate ||
+              roleFilter !== "ALL" ||
+              statusFilter !== "ALL" ||
+              search) && (
               <button
                 onClick={() => {
                   setStartDate("");
@@ -350,28 +376,35 @@ export default function RekapKehadiranPage() {
 
         {/* Data Table */}
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
-          <div className="p-4 border-b border-border flex items-center justify-between gap-4">
-            <h2 className="text-sm md:text-base font-extrabold text-foreground flex items-center gap-2">
-              <span>Daftar Rekapitulasi Presensi Kehadiran</span>
+          <div className="p-4 md:p-5 border-b border-border flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <h2 className="font-extrabold text-base text-foreground">
+                Daftar Rekapitulasi Presensi Kehadiran
+              </h2>
               <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
                 {sortedRecords.length} data
               </span>
-            </h2>
+            </div>
           </div>
 
           {isLoading ? (
             <div className="py-16 flex flex-col items-center justify-center text-muted-foreground space-y-3">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-xs font-semibold">Memuat rekapitulasi presensi...</p>
+              <p className="text-xs font-semibold">
+                Memuat rekapitulasi presensi...
+              </p>
             </div>
           ) : sortedRecords.length === 0 ? (
             <div className="py-16 text-center space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
                 <FileText className="w-6 h-6" />
               </div>
-              <p className="text-sm font-bold text-foreground">Tidak ada data presensi</p>
+              <p className="text-sm font-bold text-foreground">
+                Tidak ada data presensi
+              </p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Belum ada data kehadiran yang sesuai dengan kriteria pencarian dan filter yang dipilih.
+                Belum ada data kehadiran yang sesuai dengan kriteria pencarian
+                dan filter yang dipilih.
               </p>
             </div>
           ) : (
@@ -380,23 +413,34 @@ export default function RekapKehadiranPage() {
                 <thead>
                   <tr className="bg-muted/40 border-b border-border text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
                     <th className="py-3 px-4 w-12 text-center">No</th>
-                    <th className="py-3 px-4 min-w-[200px]">Pengguna / Pegawai</th>
+                    <th className="py-3 px-4 min-w-[200px]">
+                      Pengguna / Pegawai
+                    </th>
                     <th className="py-3 px-4 min-w-[150px]">Role & Instansi</th>
                     <th className="py-3 px-4 min-w-[130px]">Tanggal</th>
                     <th className="py-3 px-4 min-w-[110px]">Masuk</th>
                     <th className="py-3 px-4 min-w-[110px]">Pulang</th>
-                    <th className="py-3 px-4 min-w-[140px]">Status Kehadiran</th>
+                    <th className="py-3 px-4 min-w-[140px]">
+                      Status Kehadiran
+                    </th>
                     <th className="py-3 px-4 text-center w-24">Bukti Foto</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-border text-foreground">
                   {sortedRecords.map((rec, index) => {
                     const effectiveStatus = getRecordStatus(rec);
-                    const isLate = (rec.menit_terlambat || rec.lateMinutes || 0) > 0 || (rec.status_masuk || "").toUpperCase() === "TERLAMBAT";
-                    const isEarlyDeparture = (rec.status_pulang || "").toUpperCase() === "PULANG_CEPAT";
+                    const isLate =
+                      (rec.menit_terlambat || rec.lateMinutes || 0) > 0 ||
+                      (rec.status_masuk || "").toUpperCase() === "TERLAMBAT";
+                    const isEarlyDeparture =
+                      (rec.status_pulang || "").toUpperCase() ===
+                      "PULANG_CEPAT";
 
                     return (
-                      <tr key={rec.id} className="hover:bg-muted/30 transition-colors group">
+                      <tr
+                        key={rec.id}
+                        className="hover:bg-muted/30 transition-colors group"
+                      >
                         <td className="py-3.5 px-4 text-center font-bold text-muted-foreground">
                           {index + 1}
                         </td>
@@ -406,7 +450,7 @@ export default function RekapKehadiranPage() {
                               src={
                                 rec.user_avatar ||
                                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                  rec.user_nama || rec.userName || "P"
+                                  rec.user_nama || rec.userName || "P",
                                 )}&background=f59e0b&color=000000&bold=true`
                               }
                               alt={rec.user_nama || "Avatar"}
@@ -417,7 +461,9 @@ export default function RekapKehadiranPage() {
                                 {rec.user_nama || rec.userName || "Peserta"}
                               </p>
                               <p className="text-[10px] text-muted-foreground truncate font-mono">
-                                {rec.user_identity_number || rec.userIdentityNumber || "-"}
+                                {rec.user_identity_number ||
+                                  rec.userIdentityNumber ||
+                                  "-"}
                               </p>
                             </div>
                           </div>
@@ -425,7 +471,9 @@ export default function RekapKehadiranPage() {
                         <td className="py-3.5 px-4">
                           <div className="space-y-0.5">
                             <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-muted text-foreground border border-border">
-                              {rec.user_role === "KARYAWAN_OS" ? "Pegawai OS" : "Anak Magang"}
+                              {rec.user_role === "KARYAWAN_OS"
+                                ? "Pegawai OS"
+                                : "Anak Magang"}
                             </span>
                             <p className="text-[10px] text-muted-foreground truncate max-w-[160px]">
                               {rec.user_institution || rec.user_sekolah || "—"}
@@ -435,19 +483,31 @@ export default function RekapKehadiranPage() {
                         <td className="py-3.5 px-4 font-bold text-foreground">
                           <div className="flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span>{formatTanggalIndo(rec.tanggal || rec.attendanceDate)}</span>
+                            <span>
+                              {formatTanggalIndo(
+                                rec.tanggal || rec.attendanceDate,
+                              )}
+                            </span>
                           </div>
                         </td>
                         <td className="py-3.5 px-4 font-mono font-extrabold text-foreground">
                           <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3 text-cyan-500 shrink-0" />
-                            <span>{formatWaktu(rec.jam_masuk || rec.checkIn)}</span>
+                            <span>
+                              {formatWaktu(rec.jam_masuk || rec.checkIn)}
+                            </span>
                           </div>
                         </td>
                         <td className="py-3.5 px-4 font-mono font-extrabold text-foreground">
                           <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3 text-indigo-500 shrink-0" />
-                            <span>{formatWaktu(rec.jam_keluar || rec.jam_pulang || rec.checkOut)}</span>
+                            <span>
+                              {formatWaktu(
+                                rec.jam_keluar ||
+                                  rec.jam_pulang ||
+                                  rec.checkOut,
+                              )}
+                            </span>
                           </div>
                         </td>
                         <td className="py-3.5 px-4">
@@ -455,7 +515,8 @@ export default function RekapKehadiranPage() {
                             <StatusBadge status={effectiveStatus} />
                             {isLate && (
                               <span className="block text-[10px] font-extrabold text-amber-600 dark:text-amber-400">
-                                +{rec.menit_terlambat || rec.lateMinutes || 1} mnt terlambat
+                                +{rec.menit_terlambat || rec.lateMinutes || 1}{" "}
+                                mnt terlambat
                               </span>
                             )}
                             {isEarlyDeparture && (
@@ -463,15 +524,22 @@ export default function RekapKehadiranPage() {
                                 Pulang Cepat
                               </span>
                             )}
-                            {(rec.keterangan || rec.alasan) && (rec.status === "IZIN" || rec.status === "SAKIT") && (
-                              <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
-                                &quot;{rec.keterangan || rec.alasan}&quot;
-                              </p>
-                            )}
+                            {(rec.keterangan || rec.alasan) &&
+                              (rec.status === "IZIN" ||
+                                rec.status === "SAKIT") && (
+                                <p className="text-[10px] text-muted-foreground line-clamp-1 italic">
+                                  &quot;{rec.keterangan || rec.alasan}&quot;
+                                </p>
+                              )}
                           </div>
                         </td>
                         <td className="py-3.5 px-4 text-center">
-                          {(rec.foto_masuk || rec.checkInPhoto || rec.foto_keluar || rec.fotoKeluar || rec.checkOutPhoto || rec.foto_pulang_cepat) ? (
+                          {rec.foto_masuk ||
+                          rec.checkInPhoto ||
+                          rec.foto_keluar ||
+                          rec.fotoKeluar ||
+                          rec.checkOutPhoto ||
+                          rec.foto_pulang_cepat ? (
                             <button
                               onClick={() => setSelectedPhoto(rec)}
                               title="Lihat Foto Bukti"
@@ -481,7 +549,9 @@ export default function RekapKehadiranPage() {
                               <span>Lihat</span>
                             </button>
                           ) : (
-                            <span className="text-muted-foreground text-[11px]">—</span>
+                            <span className="text-muted-foreground text-[11px]">
+                              —
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -499,16 +569,48 @@ export default function RekapKehadiranPage() {
         <PhotoModal
           isOpen={Boolean(selectedPhoto)}
           onClose={() => setSelectedPhoto(null)}
-          fotoMasuk={selectedPhoto.foto_masuk || selectedPhoto.fotoMasuk || selectedPhoto.checkInPhoto || null}
-          fotoPulang={selectedPhoto.foto_keluar || selectedPhoto.fotoKeluar || selectedPhoto.checkOutPhoto || selectedPhoto.foto_pulang_cepat || selectedPhoto.foto_pulang || selectedPhoto.fotoPulang || null}
-          jamMasuk={selectedPhoto.jam_masuk || selectedPhoto.jamMasuk || selectedPhoto.checkIn || null}
-          jamPulang={selectedPhoto.jam_pulang || selectedPhoto.jam_keluar || selectedPhoto.jamKeluar || selectedPhoto.checkOut || null}
+          fotoMasuk={
+            selectedPhoto.foto_masuk ||
+            selectedPhoto.fotoMasuk ||
+            selectedPhoto.checkInPhoto ||
+            null
+          }
+          fotoPulang={
+            selectedPhoto.foto_keluar ||
+            selectedPhoto.fotoKeluar ||
+            selectedPhoto.checkOutPhoto ||
+            selectedPhoto.foto_pulang_cepat ||
+            selectedPhoto.foto_pulang ||
+            selectedPhoto.fotoPulang ||
+            null
+          }
+          jamMasuk={
+            selectedPhoto.jam_masuk ||
+            selectedPhoto.jamMasuk ||
+            selectedPhoto.checkIn ||
+            null
+          }
+          jamPulang={
+            selectedPhoto.jam_pulang ||
+            selectedPhoto.jam_keluar ||
+            selectedPhoto.jamKeluar ||
+            selectedPhoto.checkOut ||
+            null
+          }
           initialType={selectedPhoto.foto_masuk ? "MASUK" : "PULANG"}
-          userName={selectedPhoto.user_nama || selectedPhoto.userName || "Peserta"}
-          userRole={selectedPhoto.user_role || selectedPhoto.userRole || "ANAK_MAGANG"}
-          attendanceDate={selectedPhoto.tanggal || selectedPhoto.attendanceDate || ""}
+          userName={
+            selectedPhoto.user_nama || selectedPhoto.userName || "Peserta"
+          }
+          userRole={
+            selectedPhoto.user_role || selectedPhoto.userRole || "ANAK_MAGANG"
+          }
+          attendanceDate={
+            selectedPhoto.tanggal || selectedPhoto.attendanceDate || ""
+          }
           status={selectedPhoto.status}
-          lateMinutes={selectedPhoto.menit_terlambat || selectedPhoto.lateMinutes || 0}
+          lateMinutes={
+            selectedPhoto.menit_terlambat || selectedPhoto.lateMinutes || 0
+          }
         />
       )}
 
@@ -527,7 +629,8 @@ export default function RekapKehadiranPage() {
                     Pratinjau & Cetak Laporan PDF Rekap Kehadiran
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    {sortedRecords.length} catatan presensi siap dicetak ke format laporan resmi A4.
+                    {sortedRecords.length} catatan presensi siap dicetak ke
+                    format laporan resmi A4.
                   </p>
                 </div>
               </div>
@@ -542,7 +645,9 @@ export default function RekapKehadiranPage() {
             {/* Print Controls Setting */}
             <div className="p-4 border-b border-border bg-muted/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div>
-                <label className="block font-bold text-foreground mb-1">Nama Pejabat / Pembimbing</label>
+                <label className="block font-bold text-foreground mb-1">
+                  Nama Pejabat / Pembimbing
+                </label>
                 <input
                   type="text"
                   value={printSupervisorName}
@@ -552,7 +657,9 @@ export default function RekapKehadiranPage() {
                 />
               </div>
               <div>
-                <label className="block font-bold text-foreground mb-1">NIP / Jabatan</label>
+                <label className="block font-bold text-foreground mb-1">
+                  NIP / Jabatan
+                </label>
                 <input
                   type="text"
                   value={printSupervisorNip}
@@ -562,7 +669,9 @@ export default function RekapKehadiranPage() {
                 />
               </div>
               <div>
-                <label className="block font-bold text-foreground mb-1">Kota / Lokasi Surat</label>
+                <label className="block font-bold text-foreground mb-1">
+                  Kota / Lokasi Surat
+                </label>
                 <input
                   type="text"
                   value={printLocation}
@@ -585,7 +694,9 @@ export default function RekapKehadiranPage() {
                     SISTEM INFORMASI PRESENSI & KEHADIRAN (HADIR.IN)
                   </h3>
                   <p className="text-[10px] text-neutral-600">
-                    Jl. Sultan Agung No.23 Gajah Timur, Magersari, Kec. Sidoarjo, Telp: (031) 8960188, Email: disdukcapil@layanan.go.id
+                    Jl. Sultan Agung No.23 Gajah Timur, Magersari, Kec.
+                    Sidoarjo, Telp: (031) 8960188, Email:
+                    disdukcapil@layanan.go.id
                   </p>
                 </div>
 
@@ -595,28 +706,46 @@ export default function RekapKehadiranPage() {
                     LEMBAR LAPORAN REKAPITULASI KEHADIRAN & PRESENSI
                   </h4>
                   <p className="text-[11px] text-neutral-700">
-                    Periode: {startDate ? formatTanggalIndo(startDate) : "Awal"} s/d {endDate ? formatTanggalIndo(endDate) : "Sekarang"}
-                    {roleFilter !== "ALL" && ` • Kategori: ${roleFilter === "KARYAWAN_OS" ? "Pegawai OS" : "Anak Magang"}`}
+                    Periode: {startDate ? formatTanggalIndo(startDate) : "Awal"}{" "}
+                    s/d {endDate ? formatTanggalIndo(endDate) : "Sekarang"}
+                    {roleFilter !== "ALL" &&
+                      ` • Kategori: ${roleFilter === "KARYAWAN_OS" ? "Pegawai OS" : "Anak Magang"}`}
                   </p>
                 </div>
 
                 {/* Rekapitulasi Statistik Box */}
                 <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
                   <div className="border border-neutral-300 p-2 rounded bg-neutral-50">
-                    <span className="block text-neutral-600 font-medium">Total Data</span>
-                    <strong className="text-sm text-black">{stats.total}</strong>
+                    <span className="block text-neutral-600 font-medium">
+                      Total Data
+                    </span>
+                    <strong className="text-sm text-black">
+                      {stats.total}
+                    </strong>
                   </div>
                   <div className="border border-neutral-300 p-2 rounded bg-neutral-50">
-                    <span className="block text-neutral-600 font-medium">Tepat Waktu</span>
-                    <strong className="text-sm text-emerald-600">{stats.hadirTepat}</strong>
+                    <span className="block text-neutral-600 font-medium">
+                      Tepat Waktu
+                    </span>
+                    <strong className="text-sm text-emerald-600">
+                      {stats.hadirTepat}
+                    </strong>
                   </div>
                   <div className="border border-neutral-300 p-2 rounded bg-neutral-50">
-                    <span className="block text-neutral-600 font-medium">Terlambat</span>
-                    <strong className="text-sm text-amber-600">{stats.terlambat}</strong>
+                    <span className="block text-neutral-600 font-medium">
+                      Terlambat
+                    </span>
+                    <strong className="text-sm text-amber-600">
+                      {stats.terlambat}
+                    </strong>
                   </div>
                   <div className="border border-neutral-300 p-2 rounded bg-neutral-50">
-                    <span className="block text-neutral-600 font-medium">Izin / Sakit / Alpa</span>
-                    <strong className="text-sm text-rose-600">{stats.izin + stats.sakit + stats.alpa}</strong>
+                    <span className="block text-neutral-600 font-medium">
+                      Izin / Sakit / Alpa
+                    </span>
+                    <strong className="text-sm text-rose-600">
+                      {stats.izin + stats.sakit + stats.alpa}
+                    </strong>
                   </div>
                 </div>
 
@@ -625,21 +754,35 @@ export default function RekapKehadiranPage() {
                   <thead>
                     <tr className="bg-neutral-200 border-b border-black text-black font-bold uppercase text-center">
                       <th className="border border-black p-1.5 w-8">No</th>
-                      <th className="border border-black p-1.5 min-w-[120px]">Nama Pegawai / Siswa</th>
-                      <th className="border border-black p-1.5 w-24">NIP / NIM</th>
-                      <th className="border border-black p-1.5 w-24">Role / Instansi</th>
-                      <th className="border border-black p-1.5 w-24">Tanggal</th>
+                      <th className="border border-black p-1.5 min-w-[120px]">
+                        Nama Pegawai / Siswa
+                      </th>
+                      <th className="border border-black p-1.5 w-24">
+                        NIP / NIM
+                      </th>
+                      <th className="border border-black p-1.5 w-24">
+                        Role / Instansi
+                      </th>
+                      <th className="border border-black p-1.5 w-24">
+                        Tanggal
+                      </th>
                       <th className="border border-black p-1.5 w-16">Masuk</th>
                       <th className="border border-black p-1.5 w-16">Pulang</th>
                       <th className="border border-black p-1.5 w-20">Status</th>
-                      <th className="border border-black p-1.5 text-left">Keterangan</th>
+                      <th className="border border-black p-1.5 text-left">
+                        Keterangan
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedRecords.map((item, idx) => {
                       const effectiveStatus = getRecordStatus(item);
-                      const isLate = (item.menit_terlambat || item.lateMinutes || 0) > 0 || (item.status_masuk || "").toUpperCase() === "TERLAMBAT";
-                      const isEarly = (item.status_pulang || "").toUpperCase() === "PULANG_CEPAT";
+                      const isLate =
+                        (item.menit_terlambat || item.lateMinutes || 0) > 0 ||
+                        (item.status_masuk || "").toUpperCase() === "TERLAMBAT";
+                      const isEarly =
+                        (item.status_pulang || "").toUpperCase() ===
+                        "PULANG_CEPAT";
 
                       let ketText = item.keterangan || item.alasan || "—";
                       if (isLate) {
@@ -649,31 +792,52 @@ export default function RekapKehadiranPage() {
                       }
 
                       return (
-                        <tr key={item.id} className="border-b border-neutral-400">
-                          <td className="border border-black p-1.5 text-center font-semibold">{idx + 1}</td>
+                        <tr
+                          key={item.id}
+                          className="border-b border-neutral-400"
+                        >
+                          <td className="border border-black p-1.5 text-center font-semibold">
+                            {idx + 1}
+                          </td>
                           <td className="border border-black p-1.5 font-bold text-black">
                             {item.user_nama || item.userName || "Peserta"}
                           </td>
                           <td className="border border-black p-1.5 text-center font-mono text-[9px]">
-                            {item.user_identity_number || item.userIdentityNumber || "—"}
+                            {item.user_identity_number ||
+                              item.userIdentityNumber ||
+                              "—"}
                           </td>
                           <td className="border border-black p-1.5 text-center">
-                            {item.user_role === "KARYAWAN_OS" ? "Pegawai OS" : "Magang"}
-                            <span className="block text-[9px] text-neutral-500">{item.user_institution || item.user_sekolah || ""}</span>
+                            {item.user_role === "KARYAWAN_OS"
+                              ? "Pegawai OS"
+                              : "Magang"}
+                            <span className="block text-[9px] text-neutral-500">
+                              {item.user_institution || item.user_sekolah || ""}
+                            </span>
                           </td>
                           <td className="border border-black p-1.5 text-center font-medium">
-                            {formatTanggalIndo(item.tanggal || item.attendanceDate)}
+                            {formatTanggalIndo(
+                              item.tanggal || item.attendanceDate,
+                            )}
                           </td>
                           <td className="border border-black p-1.5 text-center font-mono font-bold">
                             {formatWaktu(item.jam_masuk || item.checkIn)}
                           </td>
                           <td className="border border-black p-1.5 text-center font-mono font-bold">
-                            {formatWaktu(item.jam_keluar || item.jam_pulang || item.checkOut)}
+                            {formatWaktu(
+                              item.jam_keluar ||
+                                item.jam_pulang ||
+                                item.checkOut,
+                            )}
                           </td>
                           <td className="border border-black p-1.5 text-center font-bold">
-                            {effectiveStatus === "HADIR" ? "HADIR" : effectiveStatus}
+                            {effectiveStatus === "HADIR"
+                              ? "HADIR"
+                              : effectiveStatus}
                           </td>
-                          <td className="border border-black p-1.5 text-left text-[9px]">{ketText}</td>
+                          <td className="border border-black p-1.5 text-left text-[9px]">
+                            {ketText}
+                          </td>
                         </tr>
                       );
                     })}
@@ -687,20 +851,34 @@ export default function RekapKehadiranPage() {
                       Petugas Rekapitulasi Presensi,
                     </p>
                     <div>
-                      <p className="font-bold underline uppercase">( Administrator Presensi )</p>
-                      <p className="text-[10px] text-neutral-600">Admin Sistem Hadir.in</p>
+                      <p className="font-bold underline uppercase">
+                        ( Administrator Presensi )
+                      </p>
+                      <p className="text-[10px] text-neutral-600">
+                        Admin Sistem Hadir.in
+                      </p>
                     </div>
                   </div>
 
                   <div className="space-y-16">
                     <p className="font-semibold">
-                      {printLocation}, {new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date())}
+                      {printLocation},{" "}
+                      {new Intl.DateTimeFormat("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        timeZone: "Asia/Jakarta",
+                      }).format(new Date())}
                       <br />
                       Mengetahui, Penanggung Jawab / Pembimbing
                     </p>
                     <div>
-                      <p className="font-bold underline uppercase">{printSupervisorName}</p>
-                      <p className="text-[10px] text-neutral-600">NIP: {printSupervisorNip}</p>
+                      <p className="font-bold underline uppercase">
+                        {printSupervisorName}
+                      </p>
+                      <p className="text-[10px] text-neutral-600">
+                        NIP: {printSupervisorNip}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -710,7 +888,8 @@ export default function RekapKehadiranPage() {
             {/* Footer Modal Actions */}
             <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-3 shrink-0">
               <span className="text-xs text-muted-foreground">
-                Tip: Pilih opsi <strong>Save as PDF</strong> pada jendela cetak browser.
+                Tip: Pilih opsi <strong>Save as PDF</strong> pada jendela cetak
+                browser.
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -745,7 +924,8 @@ export default function RekapKehadiranPage() {
             SISTEM INFORMASI PRESENSI & KEHADIRAN (HADIR.IN)
           </h3>
           <p className="text-[10px] text-neutral-600">
-            Jl. Sultan Agung No.23 Gajah Timur, Magersari, Kec. Sidoarjo, Telp: (031) 8960188, Email: disdukcapil@layanan.go.id
+            Jl. Sultan Agung No.23 Gajah Timur, Magersari, Kec. Sidoarjo, Telp:
+            (031) 8960188, Email: disdukcapil@layanan.go.id
           </p>
         </div>
 
@@ -755,28 +935,44 @@ export default function RekapKehadiranPage() {
             LEMBAR LAPORAN REKAPITULASI KEHADIRAN & PRESENSI
           </h4>
           <p className="text-[11px] text-neutral-700">
-            Periode: {startDate ? formatTanggalIndo(startDate) : "Awal"} s/d {endDate ? formatTanggalIndo(endDate) : "Sekarang"}
-            {roleFilter !== "ALL" && ` • Kategori: ${roleFilter === "KARYAWAN_OS" ? "Pegawai OS" : "Anak Magang"}`}
+            Periode: {startDate ? formatTanggalIndo(startDate) : "Awal"} s/d{" "}
+            {endDate ? formatTanggalIndo(endDate) : "Sekarang"}
+            {roleFilter !== "ALL" &&
+              ` • Kategori: ${roleFilter === "KARYAWAN_OS" ? "Pegawai OS" : "Anak Magang"}`}
           </p>
         </div>
 
         {/* Rekapitulasi Statistik Box */}
         <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
           <div className="border border-neutral-300 p-2 rounded bg-neutral-50">
-            <span className="block text-neutral-600 font-medium">Total Data</span>
+            <span className="block text-neutral-600 font-medium">
+              Total Data
+            </span>
             <strong className="text-sm text-black">{stats.total}</strong>
           </div>
           <div className="border border-neutral-300 p-2 rounded bg-neutral-50">
-            <span className="block text-neutral-600 font-medium">Tepat Waktu</span>
-            <strong className="text-sm text-emerald-600">{stats.hadirTepat}</strong>
+            <span className="block text-neutral-600 font-medium">
+              Tepat Waktu
+            </span>
+            <strong className="text-sm text-emerald-600">
+              {stats.hadirTepat}
+            </strong>
           </div>
           <div className="border border-neutral-300 p-2 rounded bg-neutral-50">
-            <span className="block text-neutral-600 font-medium">Terlambat</span>
-            <strong className="text-sm text-amber-600">{stats.terlambat}</strong>
+            <span className="block text-neutral-600 font-medium">
+              Terlambat
+            </span>
+            <strong className="text-sm text-amber-600">
+              {stats.terlambat}
+            </strong>
           </div>
           <div className="border border-neutral-300 p-2 rounded bg-neutral-50">
-            <span className="block text-neutral-600 font-medium">Izin / Sakit / Alpa</span>
-            <strong className="text-sm text-rose-600">{stats.izin + stats.sakit + stats.alpa}</strong>
+            <span className="block text-neutral-600 font-medium">
+              Izin / Sakit / Alpa
+            </span>
+            <strong className="text-sm text-rose-600">
+              {stats.izin + stats.sakit + stats.alpa}
+            </strong>
           </div>
         </div>
 
@@ -785,21 +981,30 @@ export default function RekapKehadiranPage() {
           <thead>
             <tr className="bg-neutral-200 border-b border-black text-black font-bold uppercase text-center">
               <th className="border border-black p-1.5 w-8">No</th>
-              <th className="border border-black p-1.5 min-w-[120px]">Nama Pegawai / Siswa</th>
+              <th className="border border-black p-1.5 min-w-[120px]">
+                Nama Pegawai / Siswa
+              </th>
               <th className="border border-black p-1.5 w-24">NIP / NIM</th>
-              <th className="border border-black p-1.5 w-24">Role / Instansi</th>
+              <th className="border border-black p-1.5 w-24">
+                Role / Instansi
+              </th>
               <th className="border border-black p-1.5 w-24">Tanggal</th>
               <th className="border border-black p-1.5 w-16">Masuk</th>
               <th className="border border-black p-1.5 w-16">Pulang</th>
               <th className="border border-black p-1.5 w-20">Status</th>
-              <th className="border border-black p-1.5 text-left">Keterangan</th>
+              <th className="border border-black p-1.5 text-left">
+                Keterangan
+              </th>
             </tr>
           </thead>
           <tbody>
             {sortedRecords.map((item, idx) => {
               const effectiveStatus = getRecordStatus(item);
-              const isLate = (item.menit_terlambat || item.lateMinutes || 0) > 0 || (item.status_masuk || "").toUpperCase() === "TERLAMBAT";
-              const isEarly = (item.status_pulang || "").toUpperCase() === "PULANG_CEPAT";
+              const isLate =
+                (item.menit_terlambat || item.lateMinutes || 0) > 0 ||
+                (item.status_masuk || "").toUpperCase() === "TERLAMBAT";
+              const isEarly =
+                (item.status_pulang || "").toUpperCase() === "PULANG_CEPAT";
 
               let ketText = item.keterangan || item.alasan || "—";
               if (isLate) {
@@ -810,16 +1015,22 @@ export default function RekapKehadiranPage() {
 
               return (
                 <tr key={item.id} className="border-b border-neutral-400">
-                  <td className="border border-black p-1.5 text-center font-semibold">{idx + 1}</td>
+                  <td className="border border-black p-1.5 text-center font-semibold">
+                    {idx + 1}
+                  </td>
                   <td className="border border-black p-1.5 font-bold text-black">
                     {item.user_nama || item.userName || "Peserta"}
                   </td>
                   <td className="border border-black p-1.5 text-center font-mono text-[9px]">
-                    {item.user_identity_number || item.userIdentityNumber || "—"}
+                    {item.user_identity_number ||
+                      item.userIdentityNumber ||
+                      "—"}
                   </td>
                   <td className="border border-black p-1.5 text-center">
                     {item.user_role === "KARYAWAN_OS" ? "Pegawai OS" : "Magang"}
-                    <span className="block text-[9px] text-neutral-500">{item.user_institution || item.user_sekolah || ""}</span>
+                    <span className="block text-[9px] text-neutral-500">
+                      {item.user_institution || item.user_sekolah || ""}
+                    </span>
                   </td>
                   <td className="border border-black p-1.5 text-center font-medium">
                     {formatTanggalIndo(item.tanggal || item.attendanceDate)}
@@ -828,12 +1039,16 @@ export default function RekapKehadiranPage() {
                     {formatWaktu(item.jam_masuk || item.checkIn)}
                   </td>
                   <td className="border border-black p-1.5 text-center font-mono font-bold">
-                    {formatWaktu(item.jam_keluar || item.jam_pulang || item.checkOut)}
+                    {formatWaktu(
+                      item.jam_keluar || item.jam_pulang || item.checkOut,
+                    )}
                   </td>
                   <td className="border border-black p-1.5 text-center font-bold">
                     {effectiveStatus === "HADIR" ? "HADIR" : effectiveStatus}
                   </td>
-                  <td className="border border-black p-1.5 text-left text-[9px]">{ketText}</td>
+                  <td className="border border-black p-1.5 text-left text-[9px]">
+                    {ketText}
+                  </td>
                 </tr>
               );
             })}
@@ -843,24 +1058,36 @@ export default function RekapKehadiranPage() {
         {/* Lembar Tanda Tangan */}
         <div className="grid grid-cols-2 gap-8 pt-6 text-[11px] text-center">
           <div className="space-y-16">
-            <p className="font-semibold">
-              Petugas Rekapitulasi Presensi,
-            </p>
+            <p className="font-semibold">Petugas Rekapitulasi Presensi,</p>
             <div>
-              <p className="font-bold underline uppercase">( Administrator Presensi )</p>
-              <p className="text-[10px] text-neutral-600">Admin Sistem Hadir.in</p>
+              <p className="font-bold underline uppercase">
+                ( Administrator Presensi )
+              </p>
+              <p className="text-[10px] text-neutral-600">
+                Admin Sistem Hadir.in
+              </p>
             </div>
           </div>
 
           <div className="space-y-16">
             <p className="font-semibold">
-              {printLocation}, {new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date())}
+              {printLocation},{" "}
+              {new Intl.DateTimeFormat("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                timeZone: "Asia/Jakarta",
+              }).format(new Date())}
               <br />
               Mengetahui, Penanggung Jawab / Pembimbing
             </p>
             <div>
-              <p className="font-bold underline uppercase">{printSupervisorName}</p>
-              <p className="text-[10px] text-neutral-600">NIP: {printSupervisorNip}</p>
+              <p className="font-bold underline uppercase">
+                {printSupervisorName}
+              </p>
+              <p className="text-[10px] text-neutral-600">
+                NIP: {printSupervisorNip}
+              </p>
             </div>
           </div>
         </div>

@@ -7,7 +7,7 @@ import { ServerClock } from "@/components/ui/ServerClock";
 import { CameraCapture } from "@/components/attendance/CameraCapture";
 import { PhotoModal } from "@/components/attendance/PhotoModal";
 import { useAuth } from "@/lib/auth/context";
-import { Absensi } from "@/types";
+import { Absensi, TugasItem } from "@/types";
 import {
   CheckCircle2,
   Clock3,
@@ -22,7 +22,48 @@ import {
   ClipboardList,
   FileText,
   X,
+  Briefcase,
+  Code,
+  Image as ImageIcon,
+  UserPlus,
+  ArrowUpRight,
+  ArrowDownLeft,
+  NotebookPen,
+  BookOpen,
+  Calendar,
 } from "lucide-react";
+
+function getKategoriIcon(kategori: string) {
+  const k = (kategori || "").toLowerCase();
+  if (k === "programmer") return <Code className="w-3.5 h-3.5" />;
+  if (k === "media") return <ImageIcon className="w-3.5 h-3.5" />;
+  if (k === "tambah bio data") return <UserPlus className="w-3.5 h-3.5" />;
+  if (k === "pindah keluar") return <ArrowUpRight className="w-3.5 h-3.5" />;
+  if (k === "pindah datang") return <ArrowDownLeft className="w-3.5 h-3.5" />;
+  return <NotebookPen className="w-3.5 h-3.5" />;
+}
+
+function getKategoriBadgeClass(kategori: string): string {
+  const k = (kategori || "").toLowerCase();
+  switch (k) {
+    case "akta kelahiran":
+      return "bg-primary/15 text-primary border-primary/30";
+    case "akta kematian":
+      return "bg-destructive/15 text-destructive border-destructive/30";
+    case "tambah bio data":
+      return "status-izin";
+    case "pindah keluar":
+      return "status-terlambat";
+    case "pindah datang":
+      return "status-hadir";
+    case "media":
+      return "status-sakit";
+    case "programmer":
+      return "bg-primary/20 text-primary border-primary/40";
+    default:
+      return "bg-primary/15 text-primary border-primary/30";
+  }
+}
 
 export default function MagangDashboardPage() {
   const { user } = useAuth();
@@ -53,7 +94,9 @@ export default function MagangDashboardPage() {
     useState(false);
 
   const [userAttendances, setUserAttendances] = useState<Absensi[]>([]);
+  const [tugasList, setTugasList] = useState<TugasItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingTugas, setIsLoadingTugas] = useState(true);
 
   // Jam pulang normal.
   // Silakan ubah jika jam kerja di sistem kamu berbeda.
@@ -119,9 +162,54 @@ export default function MagangDashboardPage() {
     }
   }, [currentUserId]);
 
+  const fetchTugas = useCallback(async () => {
+    let targetUserId = currentUserId;
+    if (!targetUserId && typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("hadirin_user");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          targetUserId = parsed.id || "";
+        }
+      } catch (e) {
+        console.error("Error reading saved user:", e);
+      }
+    }
+
+    if (!targetUserId) {
+      setIsLoadingTugas(false);
+      return;
+    }
+
+    try {
+      setIsLoadingTugas(true);
+      const res = await fetch(
+        `/api/tugas?peserta_magang_id=${encodeURIComponent(targetUserId)}`,
+        { cache: "no-store" }
+      );
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setTugasList(json.data);
+        } else {
+          setTugasList([]);
+        }
+      } else {
+        setTugasList([]);
+      }
+    } catch (err) {
+      console.error("Gagal memuat data tugas magang:", err);
+      setTugasList([]);
+    } finally {
+      setIsLoadingTugas(false);
+    }
+  }, [currentUserId]);
+
   useEffect(() => {
     fetchAttendance();
-  }, [fetchAttendance]);
+    fetchTugas();
+  }, [fetchAttendance, fetchTugas]);
 
   const userName =
     user?.nama ||
@@ -429,113 +517,7 @@ export default function MagangDashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div
-          className={`grid grid-cols-2 sm:grid-cols-3 ${
-            pulangCepatCount > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"
-          } gap-3`}
-        >
-          {/* Hadir */}
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
-                Hadir
-              </span>
-              <CheckCircle2 className="w-4 h-4 text-status-hadir" />
-            </div>
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-hadir">
-                {hadirCount}
-              </p>
-            )}
-            <p className="text-[10px] font-semibold text-muted-foreground">
-              Total Hadir
-            </p>
-          </div>
-
-          {/* Terlambat */}
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
-                Terlambat
-              </span>
-              <Clock3 className="w-4 h-4 text-status-terlambat" />
-            </div>
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-terlambat">
-                {terlambatCount}
-              </p>
-            )}
-            <p className="text-[10px] font-semibold text-muted-foreground">
-              Total Terlambatan
-            </p>
-          </div>
-
-          {/* Izin */}
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
-                Izin
-              </span>
-              <CalendarDays className="w-4 h-4 text-status-izin" />
-            </div>
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-izin">
-                {izinCount}
-              </p>
-            )}
-            <p className="text-[10px] font-semibold text-muted-foreground">
-              Total Izin
-            </p>
-          </div>
-
-          {/* Tanpa Keterangan */}
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-alpa uppercase tracking-wider">
-                Tanpa Ket.
-              </span>
-              <XCircle className="w-4 h-4 text-status-alpa" />
-            </div>
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-alpa">
-                {alpaCount}
-              </p>
-            )}
-            <p className="text-[10px] font-semibold text-muted-foreground">
-              Total Tanpa Keterangan
-            </p>
-          </div>
-
-          {/* Pulang Cepat */}
-          {pulangCepatCount > 0 && (
-            <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
-                  Pulang Cepat
-                </span>
-                <AlertTriangle className="w-4 h-4 text-status-terlambat" />
-              </div>
-              {isLoading ? (
-                <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-              ) : (
-                <p className="text-2xl font-black text-status-terlambat">
-                  {pulangCepatCount}
-                </p>
-              )}
-              <p className="text-[10px] font-semibold text-muted-foreground">
-                Total pulang cepat
-              </p>
-            </div>
-          )}
-        </div>
+        <ServerClock />
 
         {/* {toastMsg && (
           <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 flex items-center justify-between gap-4">
@@ -558,8 +540,6 @@ export default function MagangDashboardPage() {
 
           </div>
         )} */}
-
-        <ServerClock />
 
         {showEarlyCheckoutForm && (
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card">
@@ -897,20 +877,132 @@ export default function MagangDashboardPage() {
           </section>
         )}
 
+        <div
+          className={`grid grid-cols-2 sm:grid-cols-3 ${
+            pulangCepatCount > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"
+          } gap-3`}
+        >
+          {/* Hadir */}
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
+                Hadir
+              </span>
+              <CheckCircle2 className="w-4 h-4 text-status-hadir" />
+            </div>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-hadir">
+                {hadirCount}
+              </p>
+            )}
+            <p className="text-[10px] font-semibold text-muted-foreground">
+              Total Hadir
+            </p>
+          </div>
+
+          {/* Terlambat */}
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
+                Terlambat
+              </span>
+              <Clock3 className="w-4 h-4 text-status-terlambat" />
+            </div>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-terlambat">
+                {terlambatCount}
+              </p>
+            )}
+            <p className="text-[10px] font-semibold text-muted-foreground">
+              Total Terlambatan
+            </p>
+          </div>
+
+          {/* Izin */}
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
+                Izin
+              </span>
+              <CalendarDays className="w-4 h-4 text-status-izin" />
+            </div>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-izin">
+                {izinCount}
+              </p>
+            )}
+            <p className="text-[10px] font-semibold text-muted-foreground">
+              Total Izin
+            </p>
+          </div>
+
+          {/* Tanpa Keterangan */}
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-alpa uppercase tracking-wider">
+                Tanpa Ket.
+              </span>
+              <XCircle className="w-4 h-4 text-status-alpa" />
+            </div>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-alpa">
+                {alpaCount}
+              </p>
+            )}
+            <p className="text-[10px] font-semibold text-muted-foreground">
+              Total Tanpa Keterangan
+            </p>
+          </div>
+
+          {/* Pulang Cepat */}
+          {pulangCepatCount > 0 && (
+            <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
+                  Pulang Cepat
+                </span>
+                <AlertTriangle className="w-4 h-4 text-status-terlambat" />
+              </div>
+              {isLoading ? (
+                <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+              ) : (
+                <p className="text-2xl font-black text-status-terlambat">
+                  {pulangCepatCount}
+                </p>
+              )}
+              <p className="text-[10px] font-semibold text-muted-foreground">
+                Total pulang cepat
+              </p>
+            </div>
+          )}
+        </div>
+
         <section className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
           <div className="p-5 flex items-center justify-between gap-4 border-b border-border">
-            <div>
-              <p className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">
-                Informasi
-              </p>
-
-              <h2 className="font-extrabold text-foreground mt-1 text-[15px] md:text-lg">
-                Riwayat Logbook & Tugas Terbaru
-              </h2>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <Briefcase className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">
+                  Daftar Penugasan
+                </p>
+                <h2 className="font-extrabold text-foreground mt-0.5 text-[15px] md:text-lg">
+                  Tugas & Jobdesk Terbaru
+                </h2>
+              </div>
             </div>
 
             <Link
-              href="/magang/log-book"
+              href="/magang/jobdesk"
               className="shrink-0 text-xs font-bold text-primary hover:underline flex items-center gap-1"
             >
               Lihat Semua
@@ -918,53 +1010,86 @@ export default function MagangDashboardPage() {
             </Link>
           </div>
 
-          {userAttendances.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              Belum ada riwayat presensi.
+          {isLoadingTugas ? (
+            <div className="p-8 flex flex-col items-center justify-center text-muted-foreground space-y-2">
+              <div className="h-6 w-6 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+              <p className="text-xs font-semibold">Memuat data tugas...</p>
+            </div>
+          ) : tugasList.length === 0 ? (
+            <div className="p-8 text-center space-y-2">
+              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
+                <Briefcase className="w-5 h-5" />
+              </div>
+              <p className="text-xs font-bold text-foreground">
+                Belum ada tugas yang didelegasikan
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Tugas yang diberikan oleh pembimbing lapangan akan otomatis tampil di sini.
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {userAttendances
-                .slice()
-                .sort((a, b) =>
-                  String(b.tanggal).localeCompare(String(a.tanggal)),
-                )
-                .slice(0, 5)
-                .map((record, index) => (
+              {tugasList.slice(0, 5).map((task) => {
+                const katLabel = task.kategori || "Umum";
+                return (
                   <div
-                    key={record.id || `${record.tanggal}-${index}`}
-                    className="p-4 flex items-center justify-between gap-4 hover:bg-muted/50 transition-colors"
+                    key={task.id}
+                    className="p-4.5 hover:bg-muted/40 transition-colors space-y-2.5"
                   >
-                    <div className="min-w-0">
-                      <p className="text-sm font-extrabold text-foreground">
-                        {formatDate(record.tanggal)}
-                      </p>
-
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
-                        <span>
-                          Masuk: {record.jam_masuk || record.checkIn || "--:--"}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
+                            katLabel,
+                          )}`}
+                        >
+                          {getKategoriIcon(katLabel)}
+                          <span className="capitalize">{katLabel}</span>
                         </span>
 
-                        <span>
-                          Pulang:{" "}
-                          {record.jam_pulang || record.checkOut || "--:--"}
+                        <span className="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border/60">
+                          #{task.id}
+                        </span>
+
+                        <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
+                          <Calendar className="w-3 h-3 text-muted-foreground" />
+                          {task.log_book_tanggal
+                            ? formatDate(task.log_book_tanggal)
+                            : formatDate(task.created_at || (task as any).createdAt)}
                         </span>
                       </div>
+
+                      <Link
+                        href="/magang/jobdesk"
+                        className="shrink-0 text-xs font-extrabold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1 rounded-xl border border-primary/20 transition flex items-center gap-1"
+                      >
+                        Detail
+                        <ChevronRight className="w-3 h-3" />
+                      </Link>
                     </div>
 
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold border ${getStatusClass(
-                        record.status,
-                      )}`}
-                    >
-                      {String(
-                        record.status_pulang || record.status || "",
-                      ).toUpperCase() === "PULANG_CEPAT"
-                        ? "Pulang Cepat"
-                        : record.status}
-                    </span>
+                    <h3 className="font-black text-sm text-foreground leading-snug">
+                      {task.judul_tugas || task.judulTugas || "—"}
+                    </h3>
+
+                    {task.deskripsi && (
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 bg-input/40 p-2.5 rounded-xl border border-border/40">
+                        {task.deskripsi}
+                      </p>
+                    )}
+
+                    {task.log_book_aktivitas && (
+                      <div className="flex items-start gap-1.5 text-[11px] text-primary bg-primary/5 border border-primary/20 rounded-xl px-2.5 py-1.5">
+                        <BookOpen className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        <span className="truncate">
+                          <span className="font-bold">Logbook Terkait: </span>
+                          {task.log_book_aktivitas}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                ))}
+                );
+              })}
             </div>
           )}
         </section>

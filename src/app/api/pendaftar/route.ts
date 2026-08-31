@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { mysqlPool } from "@/lib/db/prisma";
-import { saveBase64File } from "@/lib/storage";
+import { saveStorageFile, saveBase64File } from "@/lib/storage";
+import { hashPassword } from "@/lib/auth/password";
 
 // ============================================================
 // STATUS ENUM
@@ -75,6 +76,14 @@ async function ensurePendaftaranSchema() {
       await mysqlPool.query(
         `ALTER TABLE pendaftaran ADD COLUMN peserta_magang_id BIGINT(20) UNSIGNED NULL AFTER kode_pendaftaran`
       );
+    } else {
+      try {
+        await mysqlPool.query(
+          `ALTER TABLE pendaftaran MODIFY COLUMN peserta_magang_id BIGINT(20) UNSIGNED NULL DEFAULT NULL`
+        );
+      } catch {
+        // Abaikan jika sudah sesuai
+      }
     }
     isTableChecked = true;
   } catch (err) {
@@ -404,7 +413,24 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     await ensurePendaftaranSchema();
-    const body = await req.json();
+    
+    let body: any = {};
+    const contentType = req.headers.get("content-type") || "";
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      const rawObj: any = {};
+      for (const [key, value] of formData.entries()) {
+        rawObj[key] = value;
+      }
+      body = rawObj;
+    } else {
+      try {
+        body = await req.json();
+      } catch {
+        body = {};
+      }
+    }
 
     const nama = String(body.nama || body.name || "").trim().slice(0, 150);
     const email = String(body.email || "").trim().toLowerCase().slice(0, 150);
@@ -442,29 +468,27 @@ export async function POST(req: Request) {
 
     const rawKode = body.kode_pendaftaran || body.kodePendaftaran || null;
 
-    // Handle upload file CV (max 500 chars URL/path)
-    const fileCv = body.file_cv?.startsWith?.("/uploads")
-      ? body.file_cv.slice(0, 500)
-      : await saveBase64File(
-          body.file_cv || body.cv
-            ? String(body.file_cv || body.cv).trim()
-            : null,
-          "pendaftar",
-          "cv",
-          nama
-        );
+    // Handle upload file CV (File object or base64 or url string)
+    let fileCv: string | null = null;
+    const rawCv = body.file_cv || body.cv;
+    if (rawCv) {
+      if (typeof rawCv === "string" && rawCv.startsWith("/uploads")) {
+        fileCv = rawCv.slice(0, 500);
+      } else {
+        fileCv = await saveStorageFile(rawCv, "pendaftar", "cv", nama);
+      }
+    }
 
-    // Handle upload file Portfolio (max 500 chars URL/path)
-    const portfolioFile = body.portfolio_file?.startsWith?.("/uploads")
-      ? body.portfolio_file.slice(0, 500)
-      : await saveBase64File(
-          body.portfolio_file || body.portfolio
-            ? String(body.portfolio_file || body.portfolio).trim()
-            : null,
-          "pendaftar",
-          "portfolio",
-          nama
-        );
+    // Handle upload file Portfolio (File object or base64 or url string)
+    let portfolioFile: string | null = null;
+    const rawPortfolio = body.portfolio_file || body.portfolio;
+    if (rawPortfolio) {
+      if (typeof rawPortfolio === "string" && rawPortfolio.startsWith("/uploads")) {
+        portfolioFile = rawPortfolio.slice(0, 500);
+      } else {
+        portfolioFile = await saveStorageFile(rawPortfolio, "pendaftar", "portfolio", nama);
+      }
+    }
 
     const status = normalizeStatus(body.status);
     const catatanAdmin = body.catatan_admin
@@ -557,49 +581,112 @@ export async function POST(req: Request) {
     const finalKodePendaftaran = await generateUniqueKode(rawKode);
 
     // Insert 18 Kolom ke database sesuai tabel pendaftaran
-    const [insertResult]: any = await mysqlPool.query(
-      `
-        INSERT INTO pendaftaran (
-          pengaturan_id,
-          kode_pendaftaran,
-          peserta_magang_id,
+    let insertResult: any;
+    try {
+      const [res]: any = await mysqlPool.query(
+        `
+          INSERT INTO pendaftaran (
+            pengaturan_id,
+            kode_pendaftaran,
+            peserta_magang_id,
+            nama,
+            email,
+            no_hp,
+            sekolah_kampus,
+            study_program,
+            bagian,
+            alamat,
+            periode_mulai,
+            periode_selesai,
+            file_cv,
+            portfolio_file,
+            status,
+            catatan_admin,
+            tanggal_daftar
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          pengaturanId,
+          finalKodePendaftaran,
+          pesertaMagangId || null,
           nama,
           email,
-          no_hp,
-          sekolah_kampus,
-          study_program,
+          noHp,
+          sekolahKampus,
+          studyProgram,
           bagian,
           alamat,
-          periode_mulai,
-          periode_selesai,
-          file_cv,
-          portfolio_file,
+          periodeMulai ? formatDate(periodeMulai) : null,
+          periodeSelesai ? formatDate(periodeSelesai) : null,
+          fileCv ? fileCv.slice(0, 500) : null,
+          portfolioFile ? portfolioFile.slice(0, 500) : null,
           status,
-          catatan_admin,
-          tanggal_daftar
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        pengaturanId,
-        finalKodePendaftaran,
-        pesertaMagangId,
-        nama,
-        email,
-        noHp,
-        sekolahKampus,
-        studyProgram,
-        bagian,
-        alamat,
-        periodeMulai ? formatDate(periodeMulai) : null,
-        periodeSelesai ? formatDate(periodeSelesai) : null,
-        fileCv ? fileCv.slice(0, 500) : null,
-        portfolioFile ? portfolioFile.slice(0, 500) : null,
-        status,
-        catatanAdmin,
-        tanggalDaftar,
-      ]
-    );
+          catatanAdmin,
+          tanggalDaftar,
+        ]
+      );
+      insertResult = res;
+    } catch (insertErr: any) {
+      if (
+        insertErr?.code === "ER_BAD_NULL_ERROR" ||
+        insertErr?.message?.includes("peserta_magang_id")
+      ) {
+        try {
+          await mysqlPool.query(
+            `ALTER TABLE pendaftaran MODIFY COLUMN peserta_magang_id BIGINT(20) UNSIGNED NULL DEFAULT NULL`
+          );
+          const [res2]: any = await mysqlPool.query(
+            `
+              INSERT INTO pendaftaran (
+                pengaturan_id,
+                kode_pendaftaran,
+                peserta_magang_id,
+                nama,
+                email,
+                no_hp,
+                sekolah_kampus,
+                study_program,
+                bagian,
+                alamat,
+                periode_mulai,
+                periode_selesai,
+                file_cv,
+                portfolio_file,
+                status,
+                catatan_admin,
+                tanggal_daftar
+              )
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
+              pengaturanId,
+              finalKodePendaftaran,
+              null,
+              nama,
+              email,
+              noHp,
+              sekolahKampus,
+              studyProgram,
+              bagian,
+              alamat,
+              periodeMulai ? formatDate(periodeMulai) : null,
+              periodeSelesai ? formatDate(periodeSelesai) : null,
+              fileCv ? fileCv.slice(0, 500) : null,
+              portfolioFile ? portfolioFile.slice(0, 500) : null,
+              status,
+              catatanAdmin,
+              tanggalDaftar,
+            ]
+          );
+          insertResult = res2;
+        } catch {
+          throw insertErr;
+        }
+      } else {
+        throw insertErr;
+      }
+    }
 
     // Ambil data yang baru saja disimpan
     const [newRows]: any = await mysqlPool.query(
@@ -663,9 +750,67 @@ export async function PATCH(req: Request) {
     const updates: string[] = [];
     const values: any[] = [];
 
+    const targetStatus = body.status !== undefined ? normalizeStatus(body.status) : null;
+    let autoCreatedPmId: any = null;
+
+    // Jika admin mengubah status menjadi DITERIMA, otomatis buat record peserta_magang
+    if (targetStatus === "DITERIMA") {
+      try {
+        const [currRows]: any = await mysqlPool.query(
+          `SELECT id, nama, email, no_hp, sekolah_kampus, study_program, periode_mulai, periode_selesai, peserta_magang_id FROM pendaftaran WHERE id = ? LIMIT 1`,
+          [id]
+        );
+        if (currRows && currRows.length > 0) {
+          const p = currRows[0];
+          let pmId = p.peserta_magang_id;
+
+          // Cek apakah sudah ada peserta_magang dengan email ini
+          if (!pmId && p.email) {
+            const [exPm]: any = await mysqlPool.query(
+              `SELECT id FROM peserta_magang WHERE LOWER(email) = LOWER(?) LIMIT 1`,
+              [p.email.trim()]
+            );
+            if (exPm && exPm.length > 0) {
+              pmId = exPm[0].id;
+            }
+          }
+
+          // Jika belum ada, otomatis INSERT ke tabel peserta_magang
+          if (!pmId) {
+            const defaultPassword = await hashPassword("magang123");
+            const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nama)}&background=72e3ad&color=1e2723&bold=true`;
+            
+            const [insertPmRes]: any = await mysqlPool.query(
+              `INSERT INTO peserta_magang (name, email, password, status, phone, identity_number, institution, study_program, avatar, start_date, end_date)
+               VALUES (?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                p.nama,
+                p.email ? p.email.toLowerCase().trim() : "",
+                defaultPassword,
+                p.no_hp || null,
+                null,
+                p.sekolah_kampus || null,
+                p.study_program || null,
+                avatar,
+                p.periode_mulai ? formatDate(p.periode_mulai) : null,
+                p.periode_selesai ? formatDate(p.periode_selesai) : null,
+              ]
+            );
+            pmId = insertPmRes.insertId;
+          }
+
+          if (pmId) {
+            autoCreatedPmId = pmId;
+          }
+        }
+      } catch (pmErr) {
+        console.error("Gagal sinkronisasi peserta_magang saat status DITERIMA:", pmErr);
+      }
+    }
+
     if (body.status !== undefined) {
       updates.push("status = ?");
-      values.push(normalizeStatus(body.status));
+      values.push(targetStatus);
     }
 
     if (body.catatan_admin !== undefined) {
@@ -675,7 +820,10 @@ export async function PATCH(req: Request) {
       );
     }
 
-    if (body.peserta_magang_id !== undefined || body.pesertaMagangId !== undefined) {
+    if (autoCreatedPmId) {
+      updates.push("peserta_magang_id = ?");
+      values.push(autoCreatedPmId);
+    } else if (body.peserta_magang_id !== undefined || body.pesertaMagangId !== undefined) {
       const pmId = body.peserta_magang_id || body.pesertaMagangId;
       updates.push("peserta_magang_id = ?");
       values.push(pmId ? String(pmId).trim() : null);

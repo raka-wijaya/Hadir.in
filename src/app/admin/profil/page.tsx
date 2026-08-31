@@ -123,6 +123,7 @@ export default function AdminProfilPage() {
         `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Admin")}&background=f59e0b&color=000000&bold=true`,
     };
 
+    let serverAvatar = updatedData.avatar;
     try {
       if (user?.id) {
         const response = await fetch("/api/users/admin", {
@@ -131,13 +132,16 @@ export default function AdminProfilPage() {
           body: JSON.stringify({ id: user.id, ...updatedData }),
         });
 
+        const resData = await response.json().catch(() => ({}));
         if (!response.ok) {
-          const resData = await response.json().catch(() => ({}));
           throw new Error(resData.message || "Gagal menyimpan profil ke server.");
+        } else if (resData?.data?.avatar) {
+          serverAvatar = resData.data.avatar;
+          setAvatar(serverAvatar);
         }
       }
 
-      updateUser(updatedData);
+      updateUser({ ...updatedData, avatar: serverAvatar });
       setIsEditing(false);
       setSavedMsg("Profil berhasil diperbarui!");
       setTimeout(() => setSavedMsg(null), 3000);

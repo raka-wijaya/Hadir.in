@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { mysqlPool } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
+import { saveStorageFile } from "@/lib/storage";
 
 function normalizeStatus(statusInput?: string | null): "ACTIVE" | "INACTIVE" {
   if (!statusInput) return "ACTIVE";
@@ -16,76 +17,76 @@ export async function GET(req: Request) {
     const statusParam = searchParams.get("status");
     const search = searchParams.get("q");
 
-    let sql = `
-      SELECT
-        id,
-        email,
-        name,
-        phone,
-        identity_number,
-        avatar,
-        status,
-        last_login_at,
-        created_at,
-        updated_at
-      FROM users
-      WHERE role = 'KARYAWAN_OS'
-    `;
-    const params: any[] = [];
-
-    if (statusParam && statusParam !== "ALL") {
-      sql += " AND status = ?";
-      params.push(normalizeStatus(statusParam));
-    }
-
-    if (search) {
-      sql +=
-        " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR identity_number LIKE ?)";
-      const q = `%${search.trim()}%`;
-      params.push(q, q, q, q);
-    }
-
-    sql += " ORDER BY created_at DESC";
-
     let rows: any;
+    let usedTable = "karyawan_os";
+
     try {
-      [rows] = await mysqlPool.query(sql, params);
-    } catch (queryErr: any) {
-      if (
-        queryErr?.code === "ER_BAD_FIELD_ERROR" &&
-        queryErr?.message?.includes("role")
-      ) {
-        let fallbackSql = `
-          SELECT
-            id,
-            email,
-            name,
-            phone,
-            identity_number,
-            avatar,
-            status,
-            last_login_at,
-            created_at,
-            updated_at
-          FROM users
-          WHERE 1=1
-        `;
-        const fallbackParams: any[] = [];
-        if (statusParam && statusParam !== "ALL") {
-          fallbackSql += " AND status = ?";
-          fallbackParams.push(normalizeStatus(statusParam));
-        }
-        if (search) {
-          fallbackSql +=
-            " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR identity_number LIKE ?)";
-          const q = `%${search.trim()}%`;
-          fallbackParams.push(q, q, q, q);
-        }
-        fallbackSql += " ORDER BY created_at DESC";
-        [rows] = await mysqlPool.query(fallbackSql, fallbackParams);
-      } else {
-        throw queryErr;
+      let sql = `
+        SELECT
+          id,
+          email,
+          name,
+          phone,
+          identity_number,
+          avatar,
+          status,
+          last_login_at,
+          created_at,
+          updated_at
+        FROM karyawan_os
+        WHERE 1=1
+      `;
+      const params: any[] = [];
+
+      if (statusParam && statusParam !== "ALL") {
+        sql += " AND status = ?";
+        params.push(normalizeStatus(statusParam));
       }
+
+      if (search) {
+        sql +=
+          " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR identity_number LIKE ?)";
+        const q = `%${search.trim()}%`;
+        params.push(q, q, q, q);
+      }
+
+      sql += " ORDER BY created_at DESC";
+
+      [rows] = await mysqlPool.query(sql, params);
+    } catch (osErr: any) {
+      // Fallback ke tabel users jika tabel karyawan_os tidak ada
+      usedTable = "users";
+      let fallbackSql = `
+        SELECT
+          id,
+          email,
+          name,
+          phone,
+          identity_number,
+          avatar,
+          status,
+          last_login_at,
+          created_at,
+          updated_at
+        FROM users
+        WHERE (role = 'KARYAWAN_OS' OR role IS NULL)
+      `;
+      const fallbackParams: any[] = [];
+
+      if (statusParam && statusParam !== "ALL") {
+        fallbackSql += " AND status = ?";
+        fallbackParams.push(normalizeStatus(statusParam));
+      }
+
+      if (search) {
+        fallbackSql +=
+          " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR identity_number LIKE ?)";
+        const q = `%${search.trim()}%`;
+        fallbackParams.push(q, q, q, q);
+      }
+
+      fallbackSql += " ORDER BY created_at DESC";
+      [rows] = await mysqlPool.query(fallbackSql, fallbackParams);
     }
 
     const safeRows = (rows || []).map((row: any) => ({
@@ -96,7 +97,7 @@ export async function GET(req: Request) {
       phone: row.phone || null,
       identity_number: row.identity_number || null,
       avatar: row.avatar || null,
-      status: row.status,
+      status: row.status || "ACTIVE",
       last_login_at: row.last_login_at || null,
       created_at: row.created_at || null,
       updated_at: row.updated_at || null,
@@ -142,50 +143,37 @@ export async function POST(req: Request) {
       ? String(rawIdentityNumber).trim().slice(0, 50)
       : null;
 
-    const avatar = body.avatar
-      ? String(body.avatar).trim().slice(0, 500)
-      : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f59e0b&color=000000&bold=true`;
+    let finalAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f59e0b&color=000000&bold=true`;
+    if (body.avatar && typeof body.avatar === "string") {
+      if (body.avatar.startsWith("data:")) {
+        const saved = await saveStorageFile(body.avatar, "avatars", "avatar", identityNumber || email);
+        if (saved) finalAvatar = saved;
+      } else {
+        finalAvatar = String(body.avatar).trim().slice(0, 500);
+      }
+    }
 
     const hashedPassword = await hashPassword(rawPassword);
 
     let newId: any;
     try {
       const [insertRes]: any = await mysqlPool.query(
-        `INSERT INTO users (name, email, password, role, status, phone, identity_number, avatar)
-         VALUES (?, ?, ?, 'KARYAWAN_OS', ?, ?, ?, ?)`,
-        [name, email, hashedPassword, status, phone, identityNumber, avatar],
+        `INSERT INTO karyawan_os (name, email, password, status, phone, identity_number, avatar)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [name, email, hashedPassword, status, phone, identityNumber, finalAvatar],
       );
       newId = insertRes.insertId;
     } catch (insertErr: any) {
       if (
-        insertErr?.code === "ER_NO_DEFAULT_FOR_FIELD" ||
-        insertErr?.message?.includes("username")
+        insertErr?.code === "ER_NO_SUCH_TABLE" ||
+        insertErr?.message?.includes("karyawan_os")
       ) {
-        const [res2]: any = await mysqlPool.query(
-          `INSERT INTO users (username, name, email, password, role, status, phone, identity_number, avatar)
-           VALUES (?, ?, ?, ?, 'KARYAWAN_OS', ?, ?, ?, ?)`,
-          [
-            email,
-            name,
-            email,
-            hashedPassword,
-            status,
-            phone,
-            identityNumber,
-            avatar,
-          ],
+        const [resUsers]: any = await mysqlPool.query(
+          `INSERT INTO users (name, email, password, role, status, phone, identity_number, avatar)
+           VALUES (?, ?, ?, 'KARYAWAN_OS', ?, ?, ?, ?)`,
+          [name, email, hashedPassword, status, phone, identityNumber, finalAvatar],
         );
-        newId = res2.insertId;
-      } else if (
-        insertErr?.code === "ER_BAD_FIELD_ERROR" &&
-        insertErr?.message?.includes("role")
-      ) {
-        const [res3]: any = await mysqlPool.query(
-          `INSERT INTO users (name, email, password, status, phone, identity_number, avatar)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [name, email, hashedPassword, status, phone, identityNumber, avatar],
-        );
-        newId = res3.insertId;
+        newId = resUsers.insertId;
       } else {
         throw insertErr;
       }
@@ -248,17 +236,6 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const [existingRows]: any = await mysqlPool.query(
-      "SELECT id FROM users WHERE id = ?",
-      [id],
-    );
-    if (!existingRows || existingRows.length === 0) {
-      return NextResponse.json(
-        { success: false, message: "Karyawan OS tidak ditemukan." },
-        { status: 404 }
-      );
-    }
-
     const fields: string[] = [];
     const params: any[] = [];
 
@@ -299,8 +276,13 @@ export async function PATCH(req: Request) {
       );
     }
     if (avatar !== undefined) {
+      let finalAvatar = avatar;
+      if (avatar && typeof avatar === "string" && avatar.startsWith("data:")) {
+        const saved = await saveStorageFile(avatar, "avatars", "avatar", id);
+        if (saved) finalAvatar = saved;
+      }
       fields.push("avatar = ?");
-      params.push(avatar ? String(avatar).trim().slice(0, 500) : null);
+      params.push(finalAvatar ? String(finalAvatar).trim().slice(0, 500) : null);
     }
 
     if (fields.length === 0) {
@@ -313,19 +295,47 @@ export async function PATCH(req: Request) {
     fields.push("updated_at = CURRENT_TIMESTAMP");
     params.push(id);
 
-    const [result]: any = await mysqlPool.query(
-      `UPDATE users SET ${fields.join(", ")} WHERE id = ?`,
-      params
-    );
+    let updated = false;
+    try {
+      const [result]: any = await mysqlPool.query(
+        `UPDATE karyawan_os SET ${fields.join(", ")} WHERE id = ?`,
+        params,
+      );
+      if (result.affectedRows > 0) {
+        updated = true;
+      }
+    } catch {
+      // Fallback ke tabel users
+    }
 
-    if (result.affectedRows === 0) {
+    if (!updated) {
+      try {
+        const [resUsers]: any = await mysqlPool.query(
+          `UPDATE users SET ${fields.join(", ")} WHERE id = ?`,
+          params,
+        );
+        if (resUsers.affectedRows > 0) {
+          updated = true;
+        }
+      } catch {
+        // Abaikan
+      }
+    }
+
+    if (!updated) {
       return NextResponse.json(
         { success: false, message: "Karyawan OS tidak ditemukan." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    return NextResponse.json({ success: true, message: "Data karyawan OS berhasil diperbarui." });
+    return NextResponse.json({
+      success: true,
+      message: "Data karyawan OS berhasil diperbarui.",
+      data: {
+        avatar: avatar !== undefined ? params[fields.indexOf("avatar = ?")] : undefined,
+      },
+    });
   } catch (err: any) {
     console.error("PATCH /api/users/karyawan_os error:", err);
     if (err?.code === "ER_DUP_ENTRY") {
@@ -363,26 +373,37 @@ export async function DELETE(req: Request) {
       );
     }
 
-    const [existingRows]: any = await mysqlPool.query(
-      "SELECT id FROM users WHERE id = ?",
-      [id],
-    );
-    if (!existingRows || existingRows.length === 0) {
-      return NextResponse.json(
-        { success: false, message: "Karyawan OS tidak ditemukan." },
-        { status: 404 }
+    let deleted = false;
+    try {
+      const [result]: any = await mysqlPool.query(
+        "DELETE FROM karyawan_os WHERE id = ?",
+        [id],
       );
+      if (result.affectedRows > 0) {
+        deleted = true;
+      }
+    } catch {
+      // Fallback ke users
     }
 
-    const [result]: any = await mysqlPool.query(
-      "DELETE FROM users WHERE id = ?",
-      [id],
-    );
+    if (!deleted) {
+      try {
+        const [resUsers]: any = await mysqlPool.query(
+          "DELETE FROM users WHERE id = ?",
+          [id],
+        );
+        if (resUsers.affectedRows > 0) {
+          deleted = true;
+        }
+      } catch {
+        // Abaikan
+      }
+    }
 
-    if (result.affectedRows === 0) {
+    if (!deleted) {
       return NextResponse.json(
         { success: false, message: "Karyawan OS tidak ditemukan." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -395,3 +416,4 @@ export async function DELETE(req: Request) {
     );
   }
 }
+

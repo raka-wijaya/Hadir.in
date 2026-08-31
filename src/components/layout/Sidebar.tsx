@@ -297,11 +297,6 @@ export function Sidebar({
           href: "/magang/log-book",
           icon: <NotebookPen className="w-4 h-4" />,
         },
-        {
-          title: "Tugas",
-          href: "/magang/jobdesk",
-          icon: <ListTodo className="w-4 h-4" />,
-        },
       ],
     },
 
