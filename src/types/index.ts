@@ -234,6 +234,8 @@ export interface User {
 
   periode_selesai?: string;
 
+  batch?: number | string | null;
+
 
   // ----------------------------------------------------------
   // Profile
@@ -861,6 +863,9 @@ export interface TugasItem {
   deskripsi: string;
 
   kategori: string;
+
+  status_pengerjaan?: "BELUM_DIKERJAKAN" | "SELESAI" | string;
+  statusPengerjaan?: "BELUM_DIKERJAKAN" | "SELESAI" | string;
 
   created_at: string;
   createdAt?: string;

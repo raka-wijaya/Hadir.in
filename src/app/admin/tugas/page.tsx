@@ -29,6 +29,7 @@ import {
   ShieldAlert,
   ChevronDown,
   ChevronUp,
+  Clock,
 } from "lucide-react";
 
 const KATEGORI_OPTIONS = [
@@ -130,6 +131,7 @@ export default function AdminTugasPage() {
   const [debounceSearch, setDebounceSearch] = useState<string>("");
   const [selectedInternId, setSelectedInternId] = useState<string>("ALL");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [sortOrder, setSortOrder] = useState<"DESC" | "ASC">("DESC");
 
   // Modal state
@@ -147,6 +149,7 @@ export default function AdminTugasPage() {
     judul_tugas: "",
     deskripsi: "",
     kategori: "programmer",
+    status_pengerjaan: "BELUM_DIKERJAKAN",
   });
 
   const [selectedCreateInternIds, setSelectedCreateInternIds] = useState<
@@ -253,6 +256,10 @@ export default function AdminTugasPage() {
         params.append("kategori", selectedCategory);
       }
 
+      if (selectedStatus !== "ALL") {
+        params.append("status_pengerjaan", selectedStatus);
+      }
+
       if (debounceSearch) {
         params.append("q", debounceSearch);
       }
@@ -275,11 +282,52 @@ export default function AdminTugasPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedInternId, selectedCategory, debounceSearch]);
+  }, [selectedInternId, selectedCategory, selectedStatus, debounceSearch]);
 
   useEffect(() => {
     fetchTugasList();
   }, [fetchTugasList]);
+
+  // =========================================================
+  // TOGGLE STATUS PENGERJAAN
+  // =========================================================
+
+  const handleToggleStatus = async (task: TugasItem) => {
+    try {
+      const current = (
+        task.status_pengerjaan ||
+        task.statusPengerjaan ||
+        ""
+      ).toUpperCase();
+
+      const newStatus = current === "SELESAI" ? "BELUM_DIKERJAKAN" : "SELESAI";
+
+      const res = await fetch("/api/tugas", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: task.id,
+          status_pengerjaan: newStatus,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (res.ok && json.success) {
+        setSuccessMessage(
+          `Status tugas #${task.id} diperbarui menjadi ${
+            newStatus === "SELESAI" ? "Selesai" : "Belum Dikerjakan"
+          }.`,
+        );
+
+        fetchTugasList();
+
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+    } catch (err) {
+      console.error("Gagal memperbarui status tugas:", err);
+    }
+  };
 
   // =========================================================
   // SORT
@@ -306,21 +354,22 @@ export default function AdminTugasPage() {
   const stats = useMemo(() => {
     const total = tugasList.length;
 
+    const selesai = tugasList.filter((t) => {
+      const s = (t.status_pengerjaan || t.statusPengerjaan || "").toUpperCase();
+      return s === "SELESAI";
+    }).length;
+
+    const belum = total - selesai;
+
     const prog = tugasList.filter(
       (t) => (t.kategori || "").toLowerCase() === "programmer",
     ).length;
 
-    const media = tugasList.filter(
-      (t) => (t.kategori || "").toLowerCase() === "media",
-    ).length;
-
-    const lainnya = total - (prog + media);
-
     return {
       total,
+      selesai,
+      belum,
       prog,
-      media,
-      lainnya,
     };
   }, [tugasList]);
 
@@ -340,6 +389,7 @@ export default function AdminTugasPage() {
       judul_tugas: "",
       deskripsi: "",
       kategori: "programmer",
+      status_pengerjaan: "BELUM_DIKERJAKAN",
     });
 
     setErrorMessage(null);
@@ -373,6 +423,9 @@ export default function AdminTugasPage() {
       deskripsi: item.deskripsi || "",
 
       kategori: item.kategori || "programmer",
+
+      status_pengerjaan:
+        item.status_pengerjaan || item.statusPengerjaan || "BELUM_DIKERJAKAN",
     });
 
     setErrorMessage(null);
@@ -494,6 +547,8 @@ export default function AdminTugasPage() {
         deskripsi: formData.deskripsi.trim(),
 
         kategori: formData.kategori,
+
+        status_pengerjaan: formData.status_pengerjaan,
 
         peserta_magang_id: formData.peserta_magang_id
           ? Number(formData.peserta_magang_id)
@@ -688,6 +743,52 @@ export default function AdminTugasPage() {
             </span>
           </div>
 
+          {/* Belum Dikerjakan - Amber (status-terlambat) */}
+          <div className="bg-card border border-border hover:border-status-terlambat/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
+                Belum Dikerjakan
+              </span>
+
+              <Clock className="w-4 h-4 text-status-terlambat" />
+            </div>
+
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-terlambat">
+                {stats.belum}
+              </p>
+            )}
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Tugas dalam proses
+            </span>
+          </div>
+
+          {/* Selesai - Green (status-hadir) */}
+          <div className="bg-card border border-border hover:border-status-hadir/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
+                Selesai
+              </span>
+
+              <CheckCircle2 className="w-4 h-4 text-status-hadir" />
+            </div>
+
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-hadir">
+                {stats.selesai}
+              </p>
+            )}
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Tugas rampung
+            </span>
+          </div>
+
           {/* Programmer - Blue (status-izin) */}
           <div className="bg-card border border-border hover:border-status-izin/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
             <div className="flex items-center justify-between">
@@ -710,52 +811,6 @@ export default function AdminTugasPage() {
               Tugas koding &amp; IT
             </span>
           </div>
-
-          {/* Media & Desain - Purple / Violet */}
-          <div className="bg-card border border-border hover:border-purple-500/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
-                Media &amp; Desain
-              </span>
-
-              <ImageIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            </div>
-
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-purple-600 dark:text-purple-400">
-                {stats.media}
-              </p>
-            )}
-
-            <span className="text-[10px] font-semibold text-muted-foreground">
-              Tugas konten &amp; grafis
-            </span>
-          </div>
-
-          {/* Kategori Lain - Green (status-hadir) */}
-          <div className="bg-card border border-border hover:border-status-hadir/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
-                Kategori Lain
-              </span>
-
-              <Layers className="w-4 h-4 text-status-hadir" />
-            </div>
-
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-hadir">
-                {stats.lainnya}
-              </p>
-            )}
-
-            <span className="text-[10px] font-semibold text-muted-foreground">
-              Administrasi &amp; umum
-            </span>
-          </div>
         </div>
 
         {/* ========================================================= */}
@@ -763,14 +818,14 @@ export default function AdminTugasPage() {
         {/* ========================================================= */}
 
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             {/* Search */}
-            <div className="relative md:max-w-md w-full">
+            <div className="relative md:col-span-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
 
               <input
                 type="text"
-                placeholder="Cari judul tugas, deskripsi, nama peserta..."
+                placeholder="Cari tugas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-8 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -787,77 +842,93 @@ export default function AdminTugasPage() {
               )}
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Intern */}
-              <div className="flex items-center gap-1.5 bg-input border border-border rounded-xl px-2.5 py-1">
-                <Users className="w-3.5 h-3.5 text-muted-foreground" />
+            {/* Intern / Siswa Magang Filter */}
+            <div className="relative">
+              <select
+                value={selectedInternId}
+                onChange={(e) => setSelectedInternId(e.target.value)}
+                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer appearance-none"
+              >
+                <option value="ALL">Semua Peserta</option>
 
-                <select
-                  value={selectedInternId}
-                  onChange={(e) => setSelectedInternId(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-foreground outline-none cursor-pointer"
-                >
-                  <option value="ALL">Semua Peserta</option>
+                {interns.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name || i.nama || "Peserta"} (
+                    {i.institution || i.sekolah_kampus || "Magang"})
+                  </option>
+                ))}
+              </select>
 
-                  {interns.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name || i.nama || "Peserta"}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Users className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            </div>
 
-              {/* Category */}
-              <div className="flex items-center gap-1.5 bg-input border border-border rounded-xl px-2.5 py-1">
-                <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+            {/* Category Filter */}
+            <div className="relative">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer appearance-none capitalize"
+              >
+                <option value="ALL">Semua Kategori</option>
 
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-foreground outline-none cursor-pointer"
-                >
-                  <option value="ALL">Semua Kategori</option>
+                {KATEGORI_OPTIONS.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
 
-                  {KATEGORI_OPTIONS.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Filter className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            </div>
 
-              {/* Sort */}
+            {/* Status Pengerjaan Filter */}
+            <div className="relative">
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer appearance-none"
+              >
+                <option value="ALL">Semua Status</option>
+                <option value="BELUM_DIKERJAKAN">Belum Dikerjakan</option>
+                <option value="SELESAI">Selesai</option>
+              </select>
+
+              <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs">
+            <button
+              type="button"
+              onClick={() =>
+                setSortOrder(sortOrder === "DESC" ? "ASC" : "DESC")
+              }
+              className="inline-flex items-center gap-1.5 font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5 text-primary" />
+              <span>
+                Urutan:{" "}
+                {sortOrder === "DESC" ? "Terbaru (DESC)" : "Terlama (ASC)"}
+              </span>
+            </button>
+
+            {(searchQuery ||
+              selectedInternId !== "ALL" ||
+              selectedCategory !== "ALL" ||
+              selectedStatus !== "ALL") && (
               <button
                 type="button"
-                onClick={() =>
-                  setSortOrder(sortOrder === "DESC" ? "ASC" : "DESC")
-                }
-                className="flex items-center gap-1 px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-bold text-foreground hover:bg-muted cursor-pointer transition-all"
-                title="Urutkan Tanggal"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedInternId("ALL");
+                  setSelectedCategory("ALL");
+                  setSelectedStatus("ALL");
+                }}
+                className="text-primary hover:underline font-bold text-xs cursor-pointer"
               >
-                <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground" />
-
-                <span>{sortOrder === "DESC" ? "Terbaru" : "Terlama"}</span>
+                Reset Semua Filter
               </button>
-
-              {/* Reset */}
-              {(searchQuery ||
-                selectedInternId !== "ALL" ||
-                selectedCategory !== "ALL") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSelectedInternId("ALL");
-                    setSelectedCategory("ALL");
-                  }}
-                  className="px-2.5 py-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/30 rounded-xl text-xs font-bold cursor-pointer transition-all"
-                >
-                  Reset Filter
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
@@ -877,6 +948,8 @@ export default function AdminTugasPage() {
                   <th className="py-3.5 px-4">Judul & Deskripsi Tugas</th>
 
                   <th className="py-3.5 px-4">Kategori</th>
+
+                  <th className="py-3.5 px-4">Status Pengerjaan</th>
 
                   <th className="py-3.5 px-4">Logbook Terkait</th>
 
@@ -988,6 +1061,32 @@ export default function AdminTugasPage() {
                           </span>
                         </td>
 
+                        {/* Status Pengerjaan */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus(task)}
+                            title="Klik untuk ubah status pengerjaan"
+                            className="cursor-pointer"
+                          >
+                            {(
+                              task.status_pengerjaan ||
+                              task.statusPengerjaan ||
+                              ""
+                            ).toUpperCase() === "SELESAI" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                <span>Selesai</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-all">
+                                <Clock className="w-3 h-3 text-amber-500" />
+                                <span>Belum Dikerjakan</span>
+                              </span>
+                            )}
+                          </button>
+                        </td>
+
                         {/* Logbook */}
                         <td className="py-3.5 px-4 max-w-[180px]">
                           {task.log_book_aktivitas ? (
@@ -1076,12 +1175,18 @@ export default function AdminTugasPage() {
           <div
             className="
       fixed inset-0 z-50
-      bg-black/60 dark:bg-black/70
+      bg-black/60 dark:bg-black/60
       backdrop-blur-xs
       flex items-center justify-center
       p-3
       overflow-y-auto
       animate-in fade-in
+      fixed inset-0 z-50
+            flex items-center justify-center
+            p-4
+            bg-black/60
+            backdrop-blur-xs
+            animate-in fade-in
     "
           >
             <div
@@ -1723,19 +1828,19 @@ export default function AdminTugasPage() {
 
         {isEditModalOpen && selectedTugas && (
           <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
-              <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="bg-card border border-border rounded-2xl max-w-md w-full p-4 shadow-2xl space-y-3 my-8">
+              <div className="flex items-center justify-between border-b border-border pb-2.5">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                    <Edit3 className="w-4 h-4" />
+                  <div className="p-1.5 rounded-xl bg-primary/10 text-primary">
+                    <Edit3 className="w-3.5 h-3.5" />
                   </div>
 
                   <div>
-                    <h3 className="font-extrabold text-foreground text-base">
+                    <h3 className="font-extrabold text-foreground text-sm">
                       Ubah Data Tugas
                     </h3>
 
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground">
                       ID Tugas #{selectedTugas.id}
                     </p>
                   </div>
@@ -1750,17 +1855,17 @@ export default function AdminTugasPage() {
               </div>
 
               {errorMessage && (
-                <div className="p-3 rounded-xl bg-destructive/15 border border-destructive/30 text-destructive text-xs font-bold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="p-2.5 rounded-xl bg-destructive/15 border border-destructive/30 text-destructive text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
 
                   <span>{errorMessage}</span>
                 </div>
               )}
 
-              <form onSubmit={handleEditSubmit} className="space-y-4">
+              <form onSubmit={handleEditSubmit} className="space-y-3">
                 {/* Participant */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold text-foreground">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground">
                     Peserta Magang <span className="text-destructive">*</span>
                   </label>
 
@@ -1772,7 +1877,7 @@ export default function AdminTugasPage() {
                         peserta_magang_id: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
                     <option value="">Pilih Peserta Magang</option>
 
@@ -1785,33 +1890,55 @@ export default function AdminTugasPage() {
                   </select>
                 </div>
 
-                {/* Category */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold text-foreground">
-                    Kategori Tugas <span className="text-destructive">*</span>
-                  </label>
+                {/* Category & Status Pengerjaan */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground">
+                      Kategori Tugas <span className="text-destructive">*</span>
+                    </label>
 
-                  <select
-                    value={formData.kategori}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        kategori: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 capitalize"
-                  >
-                    {KATEGORI_OPTIONS.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                    <select
+                      value={formData.kategori}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          kategori: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 capitalize cursor-pointer"
+                    >
+                      {KATEGORI_OPTIONS.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground">
+                      Status Pengerjaan
+                    </label>
+
+                    <select
+                      value={formData.status_pengerjaan}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          status_pengerjaan: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                    >
+                      <option value="BELUM_DIKERJAKAN">Belum Dikerjakan</option>
+                      <option value="SELESAI">Selesai</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* Title */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold text-foreground">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground">
                     Judul Tugas <span className="text-destructive">*</span>
                   </label>
 
@@ -1824,19 +1951,19 @@ export default function AdminTugasPage() {
                         judul_tugas: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     required
                   />
                 </div>
 
                 {/* Description */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold text-foreground">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground">
                     Deskripsi & Rincian Instruksi
                   </label>
 
                   <textarea
-                    rows={3}
+                    rows={2}
                     value={formData.deskripsi}
                     onChange={(e) =>
                       setFormData({
@@ -1844,13 +1971,13 @@ export default function AdminTugasPage() {
                         deskripsi: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
                   />
                 </div>
 
                 {/* Logbook */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold text-foreground">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground">
                     Tautkan ke Logbook (Opsional)
                   </label>
 
@@ -1862,7 +1989,7 @@ export default function AdminTugasPage() {
                         log_book_id: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
                     <option value="">Tidak Dihubungkan ke Logbook</option>
 
@@ -1877,11 +2004,11 @@ export default function AdminTugasPage() {
                 </div>
 
                 {/* Buttons */}
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-border">
                   <button
                     type="button"
                     onClick={() => setIsEditModalOpen(false)}
-                    className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-all"
+                    className="px-3.5 py-1.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-all"
                   >
                     Batal
                   </button>
@@ -1889,7 +2016,7 @@ export default function AdminTugasPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:opacity-95 transition-all shadow-card cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:opacity-95 transition-all shadow-card cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
                     {isSubmitting && (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1909,19 +2036,19 @@ export default function AdminTugasPage() {
 
         {isDetailModalOpen && selectedTugas && (
           <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
-              <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="bg-card border border-border rounded-2xl max-w-md w-full p-4 shadow-2xl space-y-3 my-8">
+              <div className="flex items-center justify-between border-b border-border pb-2.5">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                    <Briefcase className="w-4 h-4" />
+                  <div className="p-1.5 rounded-xl bg-primary/10 text-primary">
+                    <Briefcase className="w-3.5 h-3.5" />
                   </div>
 
                   <div>
-                    <h3 className="font-extrabold text-foreground text-base">
+                    <h3 className="font-extrabold text-foreground text-sm">
                       Detail Penugasan
                     </h3>
 
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground">
                       ID Tugas #{selectedTugas.id}
                     </p>
                   </div>
@@ -1936,61 +2063,87 @@ export default function AdminTugasPage() {
               </div>
 
               {/* Participant */}
-              <div className="p-3.5 rounded-xl bg-muted/40 border border-border flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center gap-2.5">
                 {selectedTugas.user_avatar ? (
                   <img
                     src={selectedTugas.user_avatar}
                     alt={selectedTugas.user_nama || "Avatar"}
-                    className="w-10 h-10 rounded-full object-cover border border-border shrink-0"
+                    className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground border border-border shrink-0 flex items-center justify-center text-xs font-black">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground border border-border shrink-0 flex items-center justify-center text-xs font-black">
                     {getInitial(selectedTugas.user_nama)}
                   </div>
                 )}
 
                 <div className="min-w-0">
-                  <p className="font-black text-foreground text-sm">
+                  <p className="font-black text-foreground text-xs">
                     {selectedTugas.user_nama || "Belum Ditentukan"}
                   </p>
 
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground">
                     {selectedTugas.user_institution || "Peserta Magang"}
                   </p>
                 </div>
               </div>
 
               {/* Details */}
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <div>
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
                     Judul Tugas
                   </span>
 
-                  <p className="text-sm font-black text-foreground mt-0.5">
+                  <p className="text-xs font-black text-foreground mt-0.5">
                     {selectedTugas.judul_tugas ||
                       selectedTugas.judulTugas ||
                       "—"}
                   </p>
                 </div>
 
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                    Kategori Pekerjaan
-                  </span>
-
-                  <div className="mt-1">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                        selectedTugas.kategori,
-                      )}`}
-                    >
-                      {getKategoriIcon(selectedTugas.kategori)}
-
-                      <span className="capitalize">
-                        {selectedTugas.kategori}
-                      </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                      Kategori Pekerjaan
                     </span>
+
+                    <div className="mt-0.5">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
+                          selectedTugas.kategori,
+                        )}`}
+                      >
+                        {getKategoriIcon(selectedTugas.kategori)}
+
+                        <span className="capitalize">
+                          {selectedTugas.kategori}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                      Status Pengerjaan
+                    </span>
+
+                    <div className="mt-0.5">
+                      {(
+                        selectedTugas.status_pengerjaan ||
+                        selectedTugas.statusPengerjaan ||
+                        ""
+                      ).toUpperCase() === "SELESAI" ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                          <span>Selesai</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          <Clock className="w-3 h-3 text-amber-500" />
+                          <span>Belum Dikerjakan</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1999,7 +2152,7 @@ export default function AdminTugasPage() {
                     Deskripsi Tugas
                   </span>
 
-                  <p className="text-xs text-foreground/90 font-medium leading-relaxed bg-input/50 p-3 rounded-xl border border-border mt-1">
+                  <p className="text-xs text-foreground/90 font-medium leading-relaxed bg-input/50 p-2.5 rounded-xl border border-border mt-0.5">
                     {selectedTugas.deskripsi || "Tidak ada deskripsi rinci."}
                   </p>
                 </div>
@@ -2010,7 +2163,7 @@ export default function AdminTugasPage() {
                       Logbook Terkait
                     </span>
 
-                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 mt-1 space-y-1">
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 mt-0.5 space-y-1">
                       <div className="flex items-center gap-1 text-primary font-bold text-xs">
                         <BookOpen className="w-3.5 h-3.5" />
 
@@ -2024,7 +2177,7 @@ export default function AdminTugasPage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border">
+                <div className="flex items-center justify-between text-xs text-muted-foreground pt-1.5 border-t border-border">
                   <span>Waktu Dibuat:</span>
 
                   <span className="font-semibold text-foreground">
@@ -2033,11 +2186,11 @@ export default function AdminTugasPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2 border-t border-border">
+              <div className="flex justify-end pt-1.5 border-t border-border">
                 <button
                   type="button"
                   onClick={() => setIsDetailModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-card border border-border text-xs font-bold text-foreground hover:bg-muted cursor-pointer transition-all"
+                  className="px-3.5 py-1.5 rounded-xl bg-card border border-border text-xs font-bold text-foreground hover:bg-muted cursor-pointer transition-all"
                 >
                   Tutup
                 </button>

@@ -427,3 +427,14 @@ body {
     background-position: 468px 0;
   }
 }
+
+/* Input[type="date"] - dark mode fix
+   color-scheme memberi tahu browser untuk merender teks
+   placeholder (dd/mm/yyyy) dan ikon kalender sesuai tema */
+input[type="date"] {
+  color-scheme: light;
+}
+
+.dark input[type="date"] {
+  color-scheme: dark;
+}

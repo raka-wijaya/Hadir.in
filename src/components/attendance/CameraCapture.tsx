@@ -133,18 +133,12 @@ export function CameraCapture({
     setIsCameraLoading(true);
 
     try {
-      // --------------------------------------------------------
-      // CAMERA SUPPORT
-      // --------------------------------------------------------
-
       if (
         typeof window === "undefined" ||
         !navigator.mediaDevices ||
         !navigator.mediaDevices.getUserMedia
       ) {
-        throw new Error(
-          "Kamera tidak didukung oleh browser ini."
-        );
+        throw new Error("Kamera tidak didukung oleh browser ini.");
       }
 
       // --------------------------------------------------------
@@ -154,27 +148,25 @@ export function CameraCapture({
       let mediaStream: MediaStream;
 
       try {
-        mediaStream =
-          await navigator.mediaDevices.getUserMedia({
-            video: {
-              width: {
-                ideal: 1280,
-              },
-              height: {
-                ideal: 720,
-              },
-              facingMode: {
-                ideal: "user",
-              },
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: {
+              ideal: 1280,
             },
-            audio: false,
-          });
+            height: {
+              ideal: 720,
+            },
+            facingMode: {
+              ideal: "user",
+            },
+          },
+          audio: false,
+        });
       } catch {
-        mediaStream =
-          await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false,
-          });
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
       }
 
       // --------------------------------------------------------
@@ -212,9 +204,7 @@ export function CameraCapture({
 
         streamRef.current = null;
 
-        throw new Error(
-          "Element video belum tersedia."
-        );
+        throw new Error("Element video belum tersedia.");
       }
 
       // --------------------------------------------------------
@@ -236,10 +226,7 @@ export function CameraCapture({
       try {
         await video.play();
       } catch (playError) {
-        console.warn(
-          "[Camera] Video play warning:",
-          playError
-        );
+        console.warn("[Camera] Video play warning:", playError);
       }
 
       if (!mountedRef.current) {
@@ -252,57 +239,40 @@ export function CameraCapture({
       // SAFETY TIMEOUT
       // --------------------------------------------------------
 
-      startTimeoutRef.current =
-        setTimeout(() => {
-          if (mountedRef.current) {
-            setIsCameraLoading(false);
-          }
+      startTimeoutRef.current = setTimeout(() => {
+        if (mountedRef.current) {
+          setIsCameraLoading(false);
+        }
 
-          startTimeoutRef.current = null;
-        }, 3000);
+        startTimeoutRef.current = null;
+      }, 3000);
     } catch (err: unknown) {
-      console.error(
-        "[Camera] Access error:",
-        err
-      );
+      console.error("[Camera] Access error:", err);
 
       streamRef.current = null;
 
       if (mountedRef.current) {
         setIsCameraLoading(false);
 
-        if (
-          err instanceof DOMException &&
-          err.name === "NotAllowedError"
-        ) {
-          setError(
-            "Izin kamera ditolak. Izinkan akses kamera pada browser."
-          );
+        if (err instanceof DOMException && err.name === "NotAllowedError") {
+          setError("Izin kamera ditolak. Izinkan akses kamera pada browser.");
         } else if (
           err instanceof DOMException &&
           err.name === "NotFoundError"
         ) {
-          setError(
-            "Kamera tidak ditemukan pada perangkat ini."
-          );
+          setError("Kamera tidak ditemukan pada perangkat ini.");
         } else if (
           err instanceof DOMException &&
           err.name === "NotReadableError"
         ) {
-          setError(
-            "Kamera sedang digunakan aplikasi lain."
-          );
+          setError("Kamera sedang digunakan aplikasi lain.");
         } else if (
           err instanceof DOMException &&
           err.name === "SecurityError"
         ) {
-          setError(
-            "Browser memblokir kamera. Gunakan HTTPS atau localhost."
-          );
+          setError("Browser memblokir kamera. Gunakan HTTPS atau localhost.");
         } else {
-          setError(
-            "Kamera tidak tersedia atau tidak dapat digunakan."
-          );
+          setError("Kamera tidak tersedia atau tidak dapat digunakan.");
         }
       }
     } finally {

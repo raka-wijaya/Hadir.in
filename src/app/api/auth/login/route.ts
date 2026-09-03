@@ -109,68 +109,86 @@ export async function POST(req: Request) {
     let userTable: "admin" | "karyawan_os" | "peserta_magang" | null = null;
 
     // 1. Cari di tabel `admin`
-    const [adminRows]: any = await mysqlPool.query(
-      `
-        SELECT
-          id,
-          email,
-          password,
-          role,
-          name,
-          phone,
-          identity_number,
-          NULL AS institution,
-          NULL AS study_program,
-          avatar,
-          NULL AS start_date,
-          NULL AS end_date,
-          status,
-          last_login_at,
-          created_at,
-          updated_at
-        FROM admin
-        WHERE LOWER(email) = ? OR LOWER(identity_number) = ? OR phone = ?
-        LIMIT 1
-      `,
-      [cleanEmail, cleanEmail, cleanIdentifier]
-    );
-
-    if (adminRows && adminRows.length > 0) {
-      user = adminRows[0];
-      userTable = "admin";
-    }
-
-    // 2. Jika belum ketemu, cari di tabel `karyawan_os`
-    if (!user) {
-      const [osRows]: any = await mysqlPool.query(
+    try {
+      const [adminRows]: any = await mysqlPool.query(
         `
           SELECT
-            id,
-            email,
-            password,
-            'KARYAWAN_OS' AS role,
-            name,
-            phone,
-            identity_number,
-            NULL AS institution,
-            NULL AS study_program,
-            avatar,
-            NULL AS start_date,
-            NULL AS end_date,
-            status,
-            last_login_at,
-            created_at,
-            updated_at
-          FROM karyawan_os
+            id, email, password, role, name, phone, identity_number,
+            NULL AS institution, NULL AS study_program, avatar,
+            NULL AS start_date, NULL AS end_date, status, last_login_at,
+            created_at, updated_at, verification_status, rejection_reason
+          FROM admin
           WHERE LOWER(email) = ? OR LOWER(identity_number) = ? OR phone = ?
           LIMIT 1
         `,
         [cleanEmail, cleanEmail, cleanIdentifier]
       );
 
-      if (osRows && osRows.length > 0) {
-        user = osRows[0];
-        userTable = "karyawan_os";
+      if (adminRows && adminRows.length > 0) {
+        user = adminRows[0];
+        userTable = "admin";
+      }
+    } catch {
+      const [adminRows]: any = await mysqlPool.query(
+        `
+          SELECT
+            id, email, password, role, name, phone, identity_number,
+            NULL AS institution, NULL AS study_program, avatar,
+            NULL AS start_date, NULL AS end_date, status, last_login_at,
+            created_at, updated_at
+          FROM admin
+          WHERE LOWER(email) = ? OR LOWER(identity_number) = ? OR phone = ?
+          LIMIT 1
+        `,
+        [cleanEmail, cleanEmail, cleanIdentifier]
+      );
+
+      if (adminRows && adminRows.length > 0) {
+        user = adminRows[0];
+        userTable = "admin";
+      }
+    }
+
+    // 2. Jika belum ketemu, cari di tabel `karyawan_os`
+    if (!user) {
+      try {
+        const [osRows]: any = await mysqlPool.query(
+          `
+            SELECT
+              id, email, password, 'KARYAWAN_OS' AS role, name, phone, identity_number,
+              NULL AS institution, NULL AS study_program, avatar,
+              NULL AS start_date, NULL AS end_date, status, last_login_at,
+              created_at, updated_at, verification_status, rejection_reason
+            FROM karyawan_os
+            WHERE LOWER(email) = ? OR LOWER(identity_number) = ? OR phone = ?
+            LIMIT 1
+          `,
+          [cleanEmail, cleanEmail, cleanIdentifier]
+        );
+
+        if (osRows && osRows.length > 0) {
+          user = osRows[0];
+          userTable = "karyawan_os";
+        }
+      } catch {
+        const [osRows]: any = await mysqlPool.query(
+          `
+            SELECT
+              id, email, password, 'KARYAWAN_OS' AS role, name, phone, identity_number,
+              NULL AS institution, NULL AS study_program, avatar,
+              NULL AS start_date, NULL AS end_date, status, last_login_at,
+              created_at, updated_at
+            FROM karyawan_os
+            WHERE LOWER(email) = ? OR LOWER(identity_number) = ? OR phone = ?
+            LIMIT 1
+          `,
+          [cleanEmail, cleanEmail, cleanIdentifier]
+        );
+
+        if (osRows && osRows.length > 0) {
+          user = osRows[0];
+          userTable = "karyawan_os";
+        }
       }
     }
 
@@ -179,22 +197,10 @@ export async function POST(req: Request) {
       const [magangRows]: any = await mysqlPool.query(
         `
           SELECT
-            id,
-            email,
-            password,
-            'ANAK_MAGANG' AS role,
-            name,
-            phone,
-            identity_number,
-            institution,
-            study_program,
-            avatar,
-            start_date,
-            end_date,
-            status,
-            last_login_at,
-            created_at,
-            updated_at
+            id, email, password, 'ANAK_MAGANG' AS role, name, phone, identity_number,
+            institution, study_program, avatar, start_date, end_date,
+            status, last_login_at, created_at, updated_at,
+            'APPROVED' AS verification_status, NULL AS rejection_reason
           FROM peserta_magang
           WHERE LOWER(email) = ? OR LOWER(identity_number) = ? OR phone = ?
           LIMIT 1
@@ -252,6 +258,29 @@ export async function POST(req: Request) {
           message: "Email / No. Identitas atau password salah.",
         },
         { status: 401 }
+      );
+    }
+
+    // Cek status verifikasi akun
+    const verifStatus = String(user.verification_status || user.verificationStatus || "").toUpperCase();
+    if (verifStatus === "PENDING") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Akun Anda masih dalam proses verifikasi oleh Admin. Silakan tunggu persetujuan Admin sebelum dapat masuk.",
+        },
+        { status: 403 }
+      );
+    }
+
+    if (verifStatus === "REJECTED") {
+      const reason = user.rejection_reason || user.rejectionReason;
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Akun Anda telah ditolak oleh Admin.${reason ? ` Alasan: ${reason}` : ""}`,
+        },
+        { status: 403 }
       );
     }
 

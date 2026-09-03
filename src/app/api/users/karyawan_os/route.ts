@@ -30,6 +30,8 @@ export async function GET(req: Request) {
           identity_number,
           avatar,
           status,
+          verification_status,
+          rejection_reason,
           last_login_at,
           created_at,
           updated_at
@@ -65,6 +67,8 @@ export async function GET(req: Request) {
           identity_number,
           avatar,
           status,
+          verification_status,
+          rejection_reason,
           last_login_at,
           created_at,
           updated_at
@@ -98,6 +102,10 @@ export async function GET(req: Request) {
       identity_number: row.identity_number || null,
       avatar: row.avatar || null,
       status: row.status || "ACTIVE",
+      verification_status: row.verification_status || "APPROVED",
+      verificationStatus: row.verification_status || "APPROVED",
+      rejection_reason: row.rejection_reason || null,
+      rejectionReason: row.rejection_reason || null,
       last_login_at: row.last_login_at || null,
       created_at: row.created_at || null,
       updated_at: row.updated_at || null,
@@ -153,6 +161,24 @@ export async function POST(req: Request) {
       }
     }
 
+    // Cek duplikasi email di seluruh tabel pengguna (admin, karyawan_os, peserta_magang)
+    // Email dianggap sudah digunakan jika ditemukan di salah satu dari ketiga tabel.
+    const [emailCheckRows]: any = await mysqlPool.query(
+      `SELECT 1 FROM admin WHERE LOWER(email) = ?
+       UNION ALL
+       SELECT 1 FROM karyawan_os WHERE LOWER(email) = ?
+       UNION ALL
+       SELECT 1 FROM peserta_magang WHERE LOWER(email) = ?
+       LIMIT 1`,
+      [email, email, email]
+    );
+    if (emailCheckRows && emailCheckRows.length > 0) {
+      return NextResponse.json(
+        { success: false, message: "Email sudah terdaftar. Silakan gunakan email lain." },
+        { status: 409 }
+      );
+    }
+
     const hashedPassword = await hashPassword(rawPassword);
 
     let newId: any;
@@ -190,7 +216,7 @@ export async function POST(req: Request) {
           name,
           phone,
           identity_number: identityNumber,
-          avatar,
+          avatar: finalAvatar,
           status,
         },
       },
@@ -227,6 +253,10 @@ export async function PATCH(req: Request) {
       nip,
       avatar,
       status,
+      verification_status,
+      verificationStatus,
+      rejection_reason,
+      rejectionReason,
     } = body;
 
     if (!id) {
@@ -247,14 +277,37 @@ export async function PATCH(req: Request) {
         : identityNumber !== undefined
           ? identityNumber
           : nip;
+    const finalVerifStatus =
+      verification_status !== undefined
+        ? verification_status
+        : verificationStatus;
+    const finalRejection =
+      rejection_reason !== undefined ? rejection_reason : rejectionReason;
 
     if (finalName !== undefined) {
       fields.push("name = ?");
       params.push(String(finalName).trim().slice(0, 150));
     }
     if (email !== undefined) {
+      const newEmail = String(email).trim().toLowerCase().slice(0, 150);
+      // Cek duplikasi email di seluruh tabel, kecuali record karyawan_os yang sedang diedit
+      const [emailCheckRows]: any = await mysqlPool.query(
+        `SELECT 1 FROM admin WHERE LOWER(email) = ?
+         UNION ALL
+         SELECT 1 FROM karyawan_os WHERE LOWER(email) = ? AND id != ?
+         UNION ALL
+         SELECT 1 FROM peserta_magang WHERE LOWER(email) = ?
+         LIMIT 1`,
+        [newEmail, newEmail, id, newEmail]
+      );
+      if (emailCheckRows && emailCheckRows.length > 0) {
+        return NextResponse.json(
+          { success: false, message: "Email sudah digunakan oleh akun lain." },
+          { status: 409 }
+        );
+      }
       fields.push("email = ?");
-      params.push(String(email).trim().toLowerCase().slice(0, 150));
+      params.push(newEmail);
     }
     if (password !== undefined && password !== "") {
       const hashed = await hashPassword(password);
@@ -264,6 +317,16 @@ export async function PATCH(req: Request) {
     if (status !== undefined) {
       fields.push("status = ?");
       params.push(normalizeStatus(status));
+    }
+    if (finalVerifStatus !== undefined) {
+      fields.push("verification_status = ?");
+      params.push(String(finalVerifStatus).toUpperCase().trim());
+    }
+    if (finalRejection !== undefined) {
+      fields.push("rejection_reason = ?");
+      params.push(
+        finalRejection ? String(finalRejection).trim().slice(0, 500) : null,
+      );
     }
     if (finalPhone !== undefined) {
       fields.push("phone = ?");

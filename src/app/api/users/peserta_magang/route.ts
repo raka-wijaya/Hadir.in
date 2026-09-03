@@ -23,7 +23,29 @@ function formatDate(val: any): string | null {
   return String(val);
 }
 
+// ============================================================
+// AUTO-MIGRATION / VALIDASI SKEMA TABEL PESERTA MAGANG
+// ============================================================
+let isPesertaMagangTableChecked = false;
+async function ensurePesertaMagangSchema() {
+  if (isPesertaMagangTableChecked) return;
+  try {
+    const [cols]: any = await mysqlPool.query(`SHOW COLUMNS FROM peserta_magang`);
+    const existing = new Set(cols.map((c: any) => c.Field.toLowerCase()));
+
+    if (!existing.has("batch")) {
+      await mysqlPool.query(
+        `ALTER TABLE peserta_magang ADD COLUMN batch INT NULL AFTER institution`
+      );
+    }
+    isPesertaMagangTableChecked = true;
+  } catch (err) {
+    console.warn("Auto-migration check peserta_magang schema:", err);
+  }
+}
+
 export async function GET(req: Request) {
+  await ensurePesertaMagangSchema();
   try {
     const { searchParams } = new URL(req.url);
     const statusParam = searchParams.get("status");
@@ -42,6 +64,7 @@ export async function GET(req: Request) {
         start_date,
         end_date,
         status,
+        batch,
         last_login_at,
         created_at,
         updated_at
@@ -83,6 +106,10 @@ export async function GET(req: Request) {
         start_date: startDateFormatted,
         end_date: endDateFormatted,
         status: row.status,
+        verification_status: row.verification_status || "APPROVED",
+        verificationStatus: row.verification_status || "APPROVED",
+        rejection_reason: row.rejection_reason || null,
+        rejectionReason: row.rejection_reason || null,
         last_login_at: row.last_login_at || null,
         created_at: row.created_at || null,
         updated_at: row.updated_at || null,
@@ -97,6 +124,10 @@ export async function GET(req: Request) {
         periode_mulai: startDateFormatted,
         endDate: endDateFormatted,
         periode_selesai: endDateFormatted,
+        batch:
+          row.batch !== null && row.batch !== undefined && row.batch !== ""
+            ? Number(row.batch)
+            : "-",
       };
     });
 
@@ -114,6 +145,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  await ensurePesertaMagangSchema();
   try {
     const body = await req.json();
 
@@ -130,6 +162,7 @@ export async function POST(req: Request) {
     const rawStartDate =
       body.start_date || body.startDate || body.periode_mulai;
     const rawEndDate = body.end_date || body.endDate || body.periode_selesai;
+    const rawBatch = body.batch;
 
     if (!rawName || !rawEmail) {
       return NextResponse.json(
@@ -154,22 +187,52 @@ export async function POST(req: Request) {
       ? String(rawStartDate).trim().slice(0, 10)
       : null;
     const endDate = rawEndDate ? String(rawEndDate).trim().slice(0, 10) : null;
+    const batch =
+      rawBatch !== undefined &&
+      rawBatch !== null &&
+      rawBatch !== "" &&
+      rawBatch !== "-"
+        ? Number(rawBatch)
+        : null;
 
     let finalAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=72e3ad&color=1e2723&bold=true`;
     if (body.avatar && typeof body.avatar === "string") {
       if (body.avatar.startsWith("data:")) {
-        const saved = await saveStorageFile(body.avatar, "avatars", "avatar", identityNumber || email);
+        const saved = await saveStorageFile(
+          body.avatar,
+          "avatars",
+          "avatar",
+          identityNumber || email
+        );
         if (saved) finalAvatar = saved;
       } else {
         finalAvatar = String(body.avatar).trim().slice(0, 500);
       }
     }
 
+    // Cek duplikasi email di seluruh tabel pengguna (admin, karyawan_os, peserta_magang)
+    // Email dianggap sudah digunakan jika ditemukan di salah satu dari ketiga tabel.
+    const [emailCheckRows]: any = await mysqlPool.query(
+      `SELECT 1 FROM admin WHERE LOWER(email) = ?
+       UNION ALL
+       SELECT 1 FROM karyawan_os WHERE LOWER(email) = ?
+       UNION ALL
+       SELECT 1 FROM peserta_magang WHERE LOWER(email) = ?
+       LIMIT 1`,
+      [email, email, email]
+    );
+    if (emailCheckRows && emailCheckRows.length > 0) {
+      return NextResponse.json(
+        { success: false, message: "Email sudah terdaftar. Silakan gunakan email lain." },
+        { status: 409 }
+      );
+    }
+
     const hashedPassword = await hashPassword(rawPassword);
 
     const [insertRes]: any = await mysqlPool.query(
-      `INSERT INTO peserta_magang (name, email, password, status, phone, identity_number, institution, study_program, avatar, start_date, end_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO peserta_magang (name, email, password, status, phone, identity_number, institution, study_program, avatar, start_date, end_date, batch)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name,
         email,
@@ -182,6 +245,7 @@ export async function POST(req: Request) {
         finalAvatar,
         startDate,
         endDate,
+        batch,
       ]
     );
 
@@ -202,6 +266,7 @@ export async function POST(req: Request) {
           start_date: startDate,
           end_date: endDate,
           status,
+          batch: batch !== null ? batch : "-",
         },
       },
       { status: 201 }
@@ -225,6 +290,7 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  await ensurePesertaMagangSchema();
   try {
     const body = await req.json();
     const {
@@ -251,6 +317,11 @@ export async function PATCH(req: Request) {
       endDate,
       periode_selesai,
       status,
+      verification_status,
+      verificationStatus,
+      rejection_reason,
+      rejectionReason,
+      batch,
     } = body;
 
     if (!id) {
@@ -302,14 +373,41 @@ export async function PATCH(req: Request) {
         : endDate !== undefined
           ? endDate
           : periode_selesai;
+    const finalVerifStatus =
+      verification_status !== undefined ? verification_status : verificationStatus;
+    const finalRejection =
+      rejection_reason !== undefined ? rejection_reason : rejectionReason;
+    const finalBatch =
+      batch !== undefined
+        ? batch === "" || batch === null || batch === "-"
+          ? null
+          : Number(batch)
+        : undefined;
 
     if (finalName !== undefined) {
       fields.push("name = ?");
       params.push(String(finalName).trim().slice(0, 150));
     }
     if (email !== undefined) {
+      const newEmail = String(email).trim().toLowerCase().slice(0, 150);
+      // Cek duplikasi email di seluruh tabel, kecuali record peserta_magang yang sedang diedit
+      const [emailCheckRows]: any = await mysqlPool.query(
+        `SELECT 1 FROM admin WHERE LOWER(email) = ?
+         UNION ALL
+         SELECT 1 FROM karyawan_os WHERE LOWER(email) = ?
+         UNION ALL
+         SELECT 1 FROM peserta_magang WHERE LOWER(email) = ? AND id != ?
+         LIMIT 1`,
+        [newEmail, newEmail, newEmail, id]
+      );
+      if (emailCheckRows && emailCheckRows.length > 0) {
+        return NextResponse.json(
+          { success: false, message: "Email sudah digunakan oleh akun lain." },
+          { status: 409 }
+        );
+      }
       fields.push("email = ?");
-      params.push(String(email).trim().toLowerCase().slice(0, 150));
+      params.push(newEmail);
     }
     if (password !== undefined && password !== "") {
       const hashed = await hashPassword(password);
@@ -319,6 +417,14 @@ export async function PATCH(req: Request) {
     if (status !== undefined) {
       fields.push("status = ?");
       params.push(normalizeStatus(status));
+    }
+    if (finalVerifStatus !== undefined) {
+      fields.push("verification_status = ?");
+      params.push(String(finalVerifStatus).toUpperCase().trim());
+    }
+    if (finalRejection !== undefined) {
+      fields.push("rejection_reason = ?");
+      params.push(finalRejection ? String(finalRejection).trim().slice(0, 500) : null);
     }
     if (finalPhone !== undefined) {
       fields.push("phone = ?");
@@ -364,6 +470,10 @@ export async function PATCH(req: Request) {
       params.push(
         finalEndDate ? String(finalEndDate).trim().slice(0, 10) : null
       );
+    }
+    if (finalBatch !== undefined) {
+      fields.push("batch = ?");
+      params.push(finalBatch);
     }
 
     if (fields.length === 0) {
@@ -414,6 +524,7 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  await ensurePesertaMagangSchema();
   try {
     const { searchParams } = new URL(req.url);
     let id = searchParams.get("id");

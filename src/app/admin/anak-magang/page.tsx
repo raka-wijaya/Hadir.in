@@ -6,6 +6,8 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { User } from "@/types";
 import {
   Alert,
+  AlertTitle,
+  AlertDescription,
   AlertModal,
   ConfirmModal,
 } from "@/components/ui/Alert";
@@ -19,6 +21,9 @@ import {
   RefreshCw,
   Pencil,
   Trash2,
+  InfoIcon,
+  CheckCircle2Icon,
+  AlertTriangleIcon,
 } from "lucide-react";
 
 export default function AdminAnakMagangPage() {
@@ -36,6 +41,7 @@ export default function AdminAnakMagangPage() {
   const [newProgram, setNewProgram] = useState("");
   const [newStart, setNewStart] = useState("2026-07-01");
   const [newEnd, setNewEnd] = useState("2026-10-31");
+  const [newBatch, setNewBatch] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
   // EDIT
@@ -47,6 +53,7 @@ export default function AdminAnakMagangPage() {
   const [editProgram, setEditProgram] = useState("");
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
+  const [editBatch, setEditBatch] = useState<string>("");
   const [editStatus, setEditStatus] =
     useState<"ACTIVE" | "INACTIVE">("ACTIVE");
 
@@ -256,6 +263,7 @@ export default function AdminAnakMagangPage() {
           study_program: newProgram,
           start_date: newStart,
           end_date: newEnd,
+          batch: newBatch ? Number(newBatch) : null,
         }),
       });
 
@@ -273,6 +281,7 @@ export default function AdminAnakMagangPage() {
       setNewProgram("");
       setNewStart("2026-07-01");
       setNewEnd("2026-10-31");
+      setNewBatch("");
 
       setBannerAlert({
         title: "Berhasil ditambahkan.",
@@ -352,6 +361,8 @@ export default function AdminAnakMagangPage() {
         | "INACTIVE") ||
         "ACTIVE"
     );
+
+    setEditBatch(item.batch && item.batch !== "-" ? String(item.batch) : "");
   };
 
   const handleUpdateIntern = async (
@@ -379,6 +390,7 @@ export default function AdminAnakMagangPage() {
           start_date: editStart || null,
           end_date: editEnd || null,
           status: editStatus,
+          batch: editBatch ? Number(editBatch) : null,
         }),
       });
 
@@ -390,45 +402,36 @@ export default function AdminAnakMagangPage() {
 
       setInterns((prev) =>
         prev.map((u) =>
-          String(u.id) ===
-          String(editItem.id)
+          String(u.id) === String(editItem.id)
             ? ({
                 ...u,
                 name: editName,
                 nama: editName,
                 email: editEmail,
-                identityNumber:
-                  editIdentity,
-                institution:
-                  editInstitution,
-                sekolah_kampus:
-                  editInstitution,
-                studyProgram:
-                  editProgram,
-                unit_kerja:
-                  editProgram,
-                startDate:
-                  editStart,
-                periode_mulai:
-                  editStart,
-                endDate:
-                  editEnd,
-                periode_selesai:
-                  editEnd,
-                status:
-                  editStatus,
+                identityNumber: editIdentity,
+                institution: editInstitution,
+                sekolah_kampus: editInstitution,
+                studyProgram: editProgram,
+                unit_kerja: editProgram,
+                startDate: editStart,
+                periode_mulai: editStart,
+                endDate: editEnd,
+                periode_selesai: editEnd,
+                status: editStatus,
+                batch: editBatch ? Number(editBatch) : "-",
               } as User)
-            : u
-        )
+            : u,
+        ),
       );
 
       showAlert(
-        `Data peserta magang "${editName}" berhasil ditambahkan.`,
+        `Data peserta magang "${editName}" berhasil diperbarui.`,
         "Perubahan berhasil disimpan.",
-        "green"
+        "green",
       );
 
       setEditItem(null);
+      await loadInterns();
     } catch (err: any) {
       console.error(err);
 
@@ -501,11 +504,19 @@ export default function AdminAnakMagangPage() {
       <div className="space-y-6">
         <ConfirmModal
           isOpen={Boolean(deleteUserConfirm)}
-          title="Hapus Data Anak Magang"
-          message={`Apakah Anda yakin ingin menghapus data ${
-            deleteUserConfirm?.nama || deleteUserConfirm?.name || "peserta"
-          }? Data yang dihapus tidak dapat dipulihkan.`}
-          confirmLabel="Ya, Hapus Data"
+          title="Hapus Data Anak Magang?"
+          message={
+            <span>
+              Data peserta magang milik{" "}
+              <span className="font-bold text-foreground">
+                {deleteUserConfirm?.nama ||
+                  deleteUserConfirm?.name ||
+                  "peserta"}
+              </span>{" "}
+              akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.
+            </span>
+          }
+          confirmLabel="Ya, Hapus"
           cancelLabel="Batal"
           confirmColor="red"
           onConfirm={async () => {
@@ -534,14 +545,25 @@ export default function AdminAnakMagangPage() {
         />
 
         {bannerAlert && (
-          <Alert
-            variant="light"
-            color={bannerAlert.color}
-            title={bannerAlert.title}
-            withCloseButton
-            onClose={() => setBannerAlert(null)}
-          >
-            {bannerAlert.message}
+          <Alert className="mb-4 relative">
+            {bannerAlert.color === "green" ? (
+              <CheckCircle2Icon className="h-4 w-4" />
+            ) : bannerAlert.color === "red" ? (
+              <AlertTriangleIcon className="h-4 w-4" />
+            ) : (
+              <InfoIcon className="h-4 w-4" />
+            )}
+            <div className="flex-1">
+              <AlertTitle>{bannerAlert.title}</AlertTitle>
+              <AlertDescription>{bannerAlert.message}</AlertDescription>
+            </div>
+            <button
+              onClick={() => setBannerAlert(null)}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </button>
           </Alert>
         )}
 
@@ -658,6 +680,8 @@ export default function AdminAnakMagangPage() {
 
                   <th className="py-3.5 px-4">Periode</th>
 
+                  <th className="py-3.5 px-4 text-center">Batch</th>
+
                   <th className="py-3.5 px-4">Status</th>
 
                   <th className="py-3.5 px-4 text-right">Aksi</th>
@@ -665,7 +689,6 @@ export default function AdminAnakMagangPage() {
               </thead>
 
               <tbody className="divide-y divide-border">
-
                 {isLoading ? (
                   <tr>
                     <td
@@ -681,7 +704,6 @@ export default function AdminAnakMagangPage() {
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
-
                   <tr>
                     <td
                       colSpan={6}
@@ -858,6 +880,28 @@ export default function AdminAnakMagangPage() {
                         </div>
                       </td>
 
+                      {/* BATCH */}
+
+                      <td
+                        className="
+                        py-3.5 px-4
+                        text-xs
+                        font-extrabold
+                        text-center
+                        text-foreground
+                      "
+                      >
+                        {item.batch && item.batch !== "-" ? (
+                          <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                            {item.batch}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground font-normal">
+                            -
+                          </span>
+                        )}
+                      </td>
+
                       {/* STATUS */}
 
                       <td className="py-3.5 px-4">
@@ -952,10 +996,6 @@ export default function AdminAnakMagangPage() {
           </div>
         </div>
 
-        {/* ================================================= */}
-        {/* ADD MODAL */}
-        {/* ================================================= */}
-
         {showAddModal && (
           <div
             className="
@@ -964,7 +1004,7 @@ export default function AdminAnakMagangPage() {
       flex items-center justify-center
       p-4
       bg-black/60
-      backdrop-blur-sm
+      backdrop-blur-xs
       animate-in
       fade-in
     "
@@ -1037,8 +1077,8 @@ export default function AdminAnakMagangPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* NAME */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground">
-                    Nama Lengkap *
+                  <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
+                    Nama Lengkap<span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -1068,15 +1108,15 @@ export default function AdminAnakMagangPage() {
 
                 {/* EMAIL */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground">
-                    Email *
+                  <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
+                    Email <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="name@student.ac.id"
+                    placeholder="Masukan Email"
                     className="
               w-full
               rounded-xl
@@ -1099,15 +1139,16 @@ export default function AdminAnakMagangPage() {
 
                 {/* INSTITUTION */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground">
-                    Kampus / Instansi *
+                  <label className="text-[11px] font-extrabold text-foreground flex gap-1">
+                    Kampus / Sekolah
+                    <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
                     type="text"
                     value={newInstitution}
                     onChange={(e) => setNewInstitution(e.target.value)}
-                    placeholder="Universitas..."
+                    placeholder="Masukan Nama Kampus / Sekolah"
                     className="
               w-full
               rounded-xl
@@ -1130,15 +1171,15 @@ export default function AdminAnakMagangPage() {
 
                 {/* PROGRAM */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground">
-                    Program Studi *
+                  <label className="text-[11px] font-extrabold text-foreground flex gap-1">
+                    Program Studi<span className="text-status-tolak">*</span>
                   </label>
 
                   <input
                     type="text"
                     value={newProgram}
                     onChange={(e) => setNewProgram(e.target.value)}
-                    placeholder="Teknik Informatika..."
+                    placeholder="Masukan Prodi"
                     className="
               w-full
               rounded-xl
@@ -1216,6 +1257,36 @@ export default function AdminAnakMagangPage() {
                 </div>
               </div>
 
+              {/* BATCH */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-extrabold text-foreground flex gap-1">
+                  Batch
+                  <span className="text-status-tolak">*</span>
+                </label>
+
+                <input
+                  type="text"
+                  value={newBatch}
+                  onChange={(e) => setNewBatch(e.target.value)}
+                  placeholder="Misal: 1, 2, 3..."
+                  className="
+                    w-full
+                    rounded-xl
+                    border border-border
+                    bg-input
+                    px-3 py-2
+                    text-xs
+                    text-foreground
+                    placeholder:text-muted-foreground
+                    transition-all
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-primary/40
+                    focus:border-primary
+                  "
+                />
+              </div>
+
               {/* BUTTON */}
               <div className="flex justify-end gap-2 pt-2">
                 <button
@@ -1265,10 +1336,6 @@ export default function AdminAnakMagangPage() {
           </div>
         )}
 
-        {/* ================================================= */}
-        {/* EDIT MODAL */}
-        {/* ================================================= */}
-
         {editItem && (
           <div
             className="
@@ -1277,7 +1344,7 @@ export default function AdminAnakMagangPage() {
             flex items-center justify-center
             p-4
             bg-black/60
-            backdrop-blur-sm
+            backdrop-blur-xs
             animate-in
             fade-in
           "
@@ -1610,6 +1677,35 @@ export default function AdminAnakMagangPage() {
                     "
                   />
                 </div>
+              </div>
+
+              {/* BATCH */}
+              <div className="space-y-1">
+                <label className="text-xs font-extrabold text-foreground">
+                  Batch
+                </label>
+
+                <input
+                  type="text"
+                  value={editBatch}
+                  onChange={(e) => setEditBatch(e.target.value)}
+                  placeholder="Misal: 1, 2, 3..."
+                  className="
+                    w-full
+                    rounded-xl
+                    border border-border
+                    bg-input
+                    px-3 py-2.5
+                    text-xs
+                    text-foreground
+                    placeholder:text-muted-foreground
+                    transition-all
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-primary/40
+                    focus:border-primary
+                  "
+                />
               </div>
 
               {/* STATUS */}

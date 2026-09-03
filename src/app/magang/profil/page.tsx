@@ -226,10 +226,7 @@ export default function ProfilPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-2xl mx-auto">
-        {/* =====================================================
-            HEADER
-        ====================================================== */}
+      <div className="space-y-6">
         <div className="border-b border-border pb-4">
           <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
             Profil Saya
@@ -239,9 +236,6 @@ export default function ProfilPage() {
           </p>
         </div>
 
-        {/* =====================================================
-            SUCCESS MESSAGE
-        ====================================================== */}
         {savedMsg && (
           <div className="bg-primary/20 border border-primary/40 rounded-2xl p-4 flex items-center justify-between animate-in fade-in">
             <div className="flex items-center gap-2.5 text-sm font-bold text-primary-foreground dark:text-primary">
@@ -251,9 +245,6 @@ export default function ProfilPage() {
           </div>
         )}
 
-        {/* =====================================================
-            ERROR MESSAGE
-        ====================================================== */}
         {errorMsg && (
           <div className="bg-destructive/15 border border-destructive/30 rounded-2xl p-4 flex items-center justify-between animate-in fade-in">
             <div className="flex items-center gap-2.5 text-sm font-bold text-destructive">
@@ -263,65 +254,16 @@ export default function ProfilPage() {
           </div>
         )}
 
-        {/* =====================================================
-            PERJALANAN MAGANG (Hanya untuk ANAK_MAGANG)
-        ====================================================== */}
-        {isAnakMagang && (
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-            <div className="space-y-5">
-              <div>
-                <h2 className="text-lg font-extrabold text-foreground">
-                  Perjalanan Magang
-                </h2>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Pantau perkembangan periode magang kamu.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-muted-foreground">
-                    Hari Berjalan
-                  </span>
-                  <span className="font-extrabold text-foreground">
-                    {elapsedDays} / {totalDays} Hari
-                  </span>
-                </div>
-
-                <div className="h-3 bg-muted rounded-full overflow-hidden border border-border">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold">
-                  <span>Mulai: {formatDate(startDate)}</span>
-                  <span>Selesai: {formatDate(endDate)}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-border">
-                <span className="text-xs font-semibold text-muted-foreground">
-                  Progress Keseluruhan
-                </span>
-                <span className="text-sm font-extrabold text-primary">
-                  {Math.round(progress)}%
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* =====================================================
-            PROFILE CARD
-        ====================================================== */}
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
           {/* Avatar & Identitas Singkat */}
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="relative group">
               <img
-                src={isEditing ? avatar || defaultAvatar : user?.avatar || defaultAvatar}
+                src={
+                  isEditing
+                    ? avatar || defaultAvatar
+                    : user?.avatar || defaultAvatar
+                }
                 alt={user?.name || "Foto Profil"}
                 className="w-24 h-24 rounded-full object-cover border-4 border-primary shadow-md bg-muted"
               />
@@ -350,7 +292,9 @@ export default function ProfilPage() {
 
             <div>
               <h2 className="font-extrabold text-xl text-foreground">
-                {isEditing ? name || "Nama Pengguna" : user?.name || user?.nama || "-"}
+                {isEditing
+                  ? name || "Nama Pengguna"
+                  : user?.name || user?.nama || "-"}
               </h2>
               <span className="inline-block mt-1 px-3 py-1 rounded-full text-xs font-extrabold bg-primary/20 text-primary-foreground dark:text-primary border border-primary/30 uppercase tracking-wider">
                 {user?.role || "USER"}
@@ -358,9 +302,6 @@ export default function ProfilPage() {
             </div>
           </div>
 
-          {/* =====================================================
-              DETAILS & FORM
-          ====================================================== */}
           <div className="bg-input/50 rounded-2xl p-5 border border-border space-y-4 text-xs md:text-sm">
             <h3 className="font-bold text-sm text-foreground border-b border-border pb-2 flex items-center justify-between">
               <span>Informasi Pribadi & Akademik</span>
@@ -372,9 +313,6 @@ export default function ProfilPage() {
             </h3>
 
             {isEditing ? (
-              /* =================================================
-                 EDIT FORM
-              ================================================== */
               <form onSubmit={handleSave} className="space-y-4">
                 {/* Nama Lengkap */}
                 <div className="space-y-1">
@@ -500,9 +438,6 @@ export default function ProfilPage() {
                 </div>
               </form>
             ) : (
-              /* =================================================
-                 VIEW MODE
-              ================================================== */
               <div className="space-y-3">
                 {/* Nama Lengkap */}
                 <div className="flex justify-between items-center gap-4 pb-2 border-b border-border">
@@ -544,7 +479,9 @@ export default function ProfilPage() {
                     Nomor Identitas (NIM / NIP)
                   </span>
                   <span className="font-mono font-bold text-foreground text-right">
-                    {user?.identityNumber || (user as any)?.identity_number || "-"}
+                    {user?.identityNumber ||
+                      (user as any)?.identity_number ||
+                      "-"}
                   </span>
                 </div>
 
@@ -577,9 +514,6 @@ export default function ProfilPage() {
             )}
           </div>
 
-          {/* =====================================================
-              EDIT BUTTON
-          ====================================================== */}
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
@@ -590,6 +524,52 @@ export default function ProfilPage() {
             </button>
           )}
         </div>
+        {isAnakMagang && (
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="space-y-5">
+              <div>
+                <h2 className="text-lg font-extrabold text-foreground">
+                  Perjalanan Magang
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pantau perkembangan periode magang kamu.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-muted-foreground">
+                    Hari Berjalan
+                  </span>
+                  <span className="font-extrabold text-foreground">
+                    {elapsedDays} / {totalDays} Hari
+                  </span>
+                </div>
+
+                <div className="h-3 bg-muted rounded-full overflow-hidden border border-border">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold">
+                  <span>Mulai: {formatDate(startDate)}</span>
+                  <span>Selesai: {formatDate(endDate)}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Progress Keseluruhan
+                </span>
+                <span className="text-sm font-extrabold text-primary">
+                  {Math.round(progress)}%
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

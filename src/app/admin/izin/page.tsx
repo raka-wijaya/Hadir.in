@@ -2,7 +2,12 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Alert, AlertModal } from "@/components/ui/Alert";
+import {
+  Alert,
+  AlertTitle,
+  AlertDescription,
+  AlertModal,
+} from "@/components/ui/Alert";
 import {
   FileCheck,
   Calendar,
@@ -21,7 +26,10 @@ import {
   FileSpreadsheet,
   Users,
   CheckCircle2,
+  CheckCircle2Icon,
   AlertCircle,
+  AlertTriangleIcon,
+  InfoIcon,
   Clock,
   ExternalLink,
   ChevronRight,
@@ -566,14 +574,25 @@ export default function AdminIzinPage() {
         />
 
         {bannerAlert && (
-          <Alert
-            variant="light"
-            color={bannerAlert.color}
-            title={bannerAlert.title}
-            withCloseButton
-            onClose={() => setBannerAlert(null)}
-          >
-            {bannerAlert.message}
+          <Alert className="mb-4 relative">
+            {bannerAlert.color === "green" ? (
+              <CheckCircle2Icon className="h-4 w-4" />
+            ) : bannerAlert.color === "red" ? (
+              <AlertTriangleIcon className="h-4 w-4" />
+            ) : (
+              <InfoIcon className="h-4 w-4" />
+            )}
+            <div className="flex-1">
+              <AlertTitle>{bannerAlert.title}</AlertTitle>
+              <AlertDescription>{bannerAlert.message}</AlertDescription>
+            </div>
+            <button
+              onClick={() => setBannerAlert(null)}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </button>
           </Alert>
         )}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
@@ -876,45 +895,13 @@ export default function AdminIzinPage() {
                     </a>
                   </div>
                 )}
-                <div className="rounded-xl border border-border overflow-hidden">
-                  <div className="px-3.5 py-2.5 bg-muted/50 flex items-center justify-between gap-3">
-                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                      <MessageSquare className="w-3.5 h-3.5 text-primary" />
-                      Catatan Admin
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => openNoteModal(item)}
-                      className="text-xs font-bold text-primary hover:underline cursor-pointer"
-                    >
-                      {item.catatanAdmin ? "Ubah Catatan" : "+ Tambah Catatan"}
-                    </button>
-                  </div>
-                  <div className="p-3.5">
-                    {item.catatanAdmin ? (
-                      <p className="text-xs text-foreground font-medium leading-relaxed">
-                        {item.catatanAdmin}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground italic">
-                        Belum ada catatan admin.
-                      </p>
-                    )}
-                  </div>
-                </div>
+
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1 border-t border-border/60">
                   <div className="text-[11px] text-muted-foreground font-medium">
                     Diajukan pada {fmtDate(item.createdAt)}
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openNoteModal(item)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border bg-card text-foreground font-bold text-xs hover:bg-muted transition-all cursor-pointer"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 text-primary" />
-                      Catatan
-                    </button>
+
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(item)}

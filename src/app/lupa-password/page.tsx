@@ -188,7 +188,7 @@ export default function LupaPasswordPage() {
           <div className="space-y-1">
             <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
               <Mail className="w-3.5 h-3.5 text-primary" />
-              Alamat Email
+              Alamat Email<span className="text-destructive">*</span>
             </label>
 
             <input
@@ -207,7 +207,7 @@ export default function LupaPasswordPage() {
           <div className="space-y-1">
             <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
               <Lock className="w-3.5 h-3.5 text-primary" />
-              Password Baru
+              Password Baru<span className="text-destructive">*</span>
             </label>
 
             <div className="relative">
@@ -254,6 +254,7 @@ export default function LupaPasswordPage() {
             <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
               <Lock className="w-3.5 h-3.5 text-primary" />
               Konfirmasi Password Baru
+              <span className="text-destructive">*</span>
             </label>
 
             <div className="relative">

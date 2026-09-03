@@ -20,6 +20,7 @@ import {
   FileCheck,
   X,
   ShieldAlert,
+  ShieldCheck,
   MessageSquareText,
   NotebookPen,
   Briefcase,
@@ -69,8 +70,13 @@ export function Sidebar({
     },
 
     {
-      category: "PENDAFTARAN",
+      category: "PENDAFTARAN & VERIFIKASI",
       items: [
+        {
+          title: "Verifikasi Akun",
+          href: "/admin/verifikasi-akun",
+          icon: <ShieldCheck className="w-4 h-4" />,
+        },
         {
           title: "Pendaftaran Magang",
           href: "/admin/pendaftaran",

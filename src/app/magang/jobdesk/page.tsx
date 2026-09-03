@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/lib/auth/context";
-import { TugasItem, LOGBOOK_CATEGORY_LABELS, LogBookCategory } from "@/types";
+import { TugasItem } from "@/types";
 import {
   Briefcase,
   Calendar,
@@ -13,9 +13,9 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   NotebookPen,
-  Layers,
   BookOpen,
-  Sparkles,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 
 function getKategoriIcon(kategori: string) {
@@ -67,6 +67,7 @@ export default function JobdeskPage() {
   const [tugasList, setTugasList] = useState<TugasItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [kategoriFilter, setKategoriFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   const fetchTugas = useCallback(async () => {
     try {
@@ -94,9 +95,37 @@ export default function JobdeskPage() {
     fetchTugas();
   }, [fetchTugas]);
 
+  const handleToggleStatus = async (item: TugasItem) => {
+    try {
+      const current = (item.status_pengerjaan || item.statusPengerjaan || "").toUpperCase();
+      const newStatus = current === "SELESAI" ? "BELUM_DIKERJAKAN" : "SELESAI";
+
+      const res = await fetch("/api/tugas", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: item.id,
+          status_pengerjaan: newStatus,
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        fetchTugas();
+      }
+    } catch (e) {
+      console.error("Gagal memperbarui status tugas:", e);
+    }
+  };
+
   const filteredList = tugasList.filter((item) => {
-    if (kategoriFilter === "ALL") return true;
-    return item.kategori?.toLowerCase() === kategoriFilter.toLowerCase();
+    const matchKat =
+      kategoriFilter === "ALL" ||
+      item.kategori?.toLowerCase() === kategoriFilter.toLowerCase();
+    const currentStatus = (item.status_pengerjaan || item.statusPengerjaan || "").toUpperCase();
+    const matchStatus =
+      statusFilter === "ALL" || currentStatus === statusFilter;
+    return matchKat && matchStatus;
   });
 
   const uniqueCategories = Array.from(
@@ -118,11 +147,21 @@ export default function JobdeskPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded-xl border border-border bg-input px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-bold cursor-pointer"
+            >
+              <option value="ALL">Semua Status</option>
+              <option value="BELUM_DIKERJAKAN">Belum Dikerjakan</option>
+              <option value="SELESAI">Selesai</option>
+            </select>
+
             <select
               value={kategoriFilter}
               onChange={(e) => setKategoriFilter(e.target.value)}
-              className="rounded-xl border border-border bg-input px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-bold"
+              className="rounded-xl border border-border bg-input px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-bold cursor-pointer"
             >
               <option value="ALL">Semua Kategori ({tugasList.length})</option>
               {uniqueCategories.map((cat) => (
@@ -156,24 +195,47 @@ export default function JobdeskPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredList.map((item) => {
               const katLabel = item.kategori || "Umum";
+              const isSelesai = (item.status_pengerjaan || item.statusPengerjaan || "").toUpperCase() === "SELESAI";
+
               return (
                 <div
                   key={item.id}
                   className="bg-card border border-border rounded-2xl p-4.5 space-y-3 shadow-card hover:border-primary/50 transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-2.5">
-                    {/* Header: Kategori & ID */}
+                    {/* Header: Kategori, Status & ID */}
                     <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                          katLabel
-                        )}`}
-                      >
-                        {getKategoriIcon(katLabel)}
-                        <span className="capitalize">{katLabel}</span>
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
+                            katLabel
+                          )}`}
+                        >
+                          {getKategoriIcon(katLabel)}
+                          <span className="capitalize">{katLabel}</span>
+                        </span>
 
-                      <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border/60">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(item)}
+                          title="Klik untuk tandai selesai / belum"
+                          className="cursor-pointer"
+                        >
+                          {isSelesai ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              <span>Selesai</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-all">
+                              <Clock className="w-3 h-3 text-amber-500" />
+                              <span>Belum</span>
+                            </span>
+                          )}
+                        </button>
+                      </div>
+
+                      <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border/60 shrink-0">
                         #{item.id}
                       </span>
                     </div>
@@ -215,11 +277,17 @@ export default function JobdeskPage() {
                         : formatTanggalIndo(item.created_at)}
                     </span>
 
-                    {item.user_nama && (
-                      <span className="font-bold text-foreground text-[10px] truncate max-w-[120px]">
-                        {item.user_nama}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStatus(item)}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                        isSelesai
+                          ? "bg-muted text-muted-foreground border-border hover:bg-accent"
+                          : "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 shadow-xs"
+                      }`}
+                    >
+                      {isSelesai ? "Tandai Belum" : "Tandai Selesai"}
+                    </button>
                   </div>
                 </div>
               );
@@ -230,3 +298,4 @@ export default function JobdeskPage() {
     </DashboardLayout>
   );
 }
+

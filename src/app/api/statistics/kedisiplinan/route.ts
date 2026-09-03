@@ -44,15 +44,14 @@ export async function GET(request: NextRequest) {
       LEFT JOIN karyawan_os ko ON ko.id = a.karyawan_os_id
       ${whereClause}
       GROUP BY a.peserta_magang_id, a.karyawan_os_id, pm.name, ko.name, pm.institution, pm.avatar, ko.avatar
-      ORDER BY total_hadir DESC, total_terlambat ASC, total_presensi DESC
-      LIMIT ?
       `,
-      [...params, limit]
+      params
     );
 
     const peserta = (rows as any[]).map((row, index) => {
       const hadir = Number(row.total_hadir || 0);
       const terlambat = Number(row.total_terlambat || 0);
+      const izinSakit = Number(row.total_izin_sakit || 0);
       const alpa = Number(row.total_alpa || 0);
       const totalPresensi = Number(row.total_presensi || 0);
 
@@ -70,14 +69,13 @@ export async function GET(request: NextRequest) {
         id: String(row.id),
         peserta_magang_id: row.peserta_magang_id ? String(row.peserta_magang_id) : null,
         karyawan_os_id: row.karyawan_os_id ? String(row.karyawan_os_id) : null,
-        // id sudah merupakan peserta_magang_id atau karyawan_os_id
         nama: row.user_nama || "—",
         role: row.user_role || "—",
         sekolah: row.user_sekolah || "—",
         avatar: row.user_avatar || "",
         totalHadir: hadir,
         totalTerlambat: terlambat,
-        totalIzinSakit: Number(row.total_izin_sakit || 0),
+        totalIzinSakit: izinSakit,
         totalAlpa: alpa,
         totalPresensi: totalPresensi,
         skorKedisiplinan: skor,
@@ -85,9 +83,86 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Generate 4 categories data
+    const rajinItems = [...peserta]
+      .filter((p) => p.totalHadir > 0)
+      .sort((a, b) => b.totalHadir - a.totalHadir || a.totalTerlambat - b.totalTerlambat)
+      .slice(0, limit)
+      .map((p) => ({
+        id: p.id,
+        nama: p.nama,
+        role: p.role === "ANAK_MAGANG" ? "MAGANG" : "OS",
+        count: p.totalHadir,
+        avatar: p.avatar,
+      }));
+
+    const terlambatItems = [...peserta]
+      .filter((p) => p.totalTerlambat > 0)
+      .sort((a, b) => b.totalTerlambat - a.totalTerlambat)
+      .slice(0, limit)
+      .map((p) => ({
+        id: p.id,
+        nama: p.nama,
+        role: p.role === "ANAK_MAGANG" ? "MAGANG" : "OS",
+        count: p.totalTerlambat,
+        avatar: p.avatar,
+      }));
+
+    const izinSakitItems = [...peserta]
+      .filter((p) => p.totalIzinSakit > 0)
+      .sort((a, b) => b.totalIzinSakit - a.totalIzinSakit)
+      .slice(0, limit)
+      .map((p) => ({
+        id: p.id,
+        nama: p.nama,
+        role: p.role === "ANAK_MAGANG" ? "MAGANG" : "OS",
+        count: p.totalIzinSakit,
+        avatar: p.avatar,
+      }));
+
+    const alpaItems = [...peserta]
+      .filter((p) => p.totalAlpa > 0)
+      .sort((a, b) => b.totalAlpa - a.totalAlpa)
+      .slice(0, limit)
+      .map((p) => ({
+        id: p.id,
+        nama: p.nama,
+        role: p.role === "ANAK_MAGANG" ? "MAGANG" : "OS",
+        count: p.totalAlpa,
+        avatar: p.avatar,
+      }));
+
+    const categories = {
+      palingRajin: {
+        title: "PALING RAJIN",
+        totalOrang: rajinItems.length,
+        emptyText: "Belum ada data presensi tepat waktu bulan ini.",
+        items: rajinItems,
+      },
+      seringTerlambat: {
+        title: "SERING TERLAMBAT",
+        totalOrang: terlambatItems.length,
+        emptyText: "Tidak ada catatan terlambat bulan ini.",
+        items: terlambatItems,
+      },
+      seringIzinSakit: {
+        title: "SERING IZIN / SAKIT",
+        totalOrang: izinSakitItems.length,
+        emptyText: "Tidak ada catatan izin/sakit bulan ini.",
+        items: izinSakitItems,
+      },
+      tanpaKeterangan: {
+        title: "TANPA KETERANGAN",
+        totalOrang: alpaItems.length,
+        emptyText: "Tidak ada catatan alpa bulan ini.",
+        items: alpaItems,
+      },
+    };
+
     return NextResponse.json({
       success: true,
       peserta,
+      categories,
     });
   } catch (error: any) {
     console.error("GET /api/statistics/kedisiplinan error:", error);
@@ -97,3 +172,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

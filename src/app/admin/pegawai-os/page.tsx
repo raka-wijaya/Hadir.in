@@ -454,9 +454,17 @@ export default function AdminPegawaiOsPage() {
       <div className="space-y-6">
         <ConfirmModal
           isOpen={Boolean(deleteConfirm)}
-          title="Hapus Pegawai OS"
-          message={`Apakah Anda yakin ingin menghapus data pegawai OS "${deleteConfirm?.nama || deleteConfirm?.name}"? Data yang dihapus tidak dapat dipulihkan.`}
-          confirmLabel="Ya, Hapus Data"
+          title="Hapus Pegawai OS?"
+          message={
+            <span>
+              Data pegawai OS milik{" "}
+              <span className="font-bold text-foreground">
+                {deleteConfirm?.nama || deleteConfirm?.name || "pegawai"}
+              </span>{" "}
+              akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.
+            </span>
+          }
+          confirmLabel="Ya, Hapus"
           cancelLabel="Batal"
           confirmColor="red"
           onConfirm={async () => {

@@ -118,33 +118,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // Cek duplikasi email di tabel terkait
-    let existingRows: any[] = [];
-    if (
-      cleanRole === "SUPERADMIN" ||
-      cleanRole === "ADMIN_MAGANG" ||
-      cleanRole === "ADMIN_OS"
-    ) {
-      const [rows]: any = await mysqlPool.query(
-        "SELECT id FROM admin WHERE LOWER(email) = ? LIMIT 1",
-        [cleanEmail]
-      );
-      existingRows = rows;
-    } else if (cleanRole === "KARYAWAN_OS") {
-      const [rows]: any = await mysqlPool.query(
-        "SELECT id FROM karyawan_os WHERE LOWER(email) = ? LIMIT 1",
-        [cleanEmail]
-      );
-      existingRows = rows;
-    } else if (cleanRole === "ANAK_MAGANG") {
-      const [rows]: any = await mysqlPool.query(
-        "SELECT id FROM peserta_magang WHERE LOWER(email) = ? LIMIT 1",
-        [cleanEmail]
-      );
-      existingRows = rows;
-    }
+    // Cek duplikasi email di seluruh tabel pengguna (admin, karyawan_os, peserta_magang)
+    // Email dianggap sudah digunakan jika ditemukan di salah satu dari ketiga tabel.
+    const [emailCheckRows]: any = await mysqlPool.query(
+      `SELECT 1 FROM admin WHERE LOWER(email) = ?
+       UNION ALL
+       SELECT 1 FROM karyawan_os WHERE LOWER(email) = ?
+       UNION ALL
+       SELECT 1 FROM peserta_magang WHERE LOWER(email) = ?
+       LIMIT 1`,
+      [cleanEmail, cleanEmail, cleanEmail]
+    );
 
-    if (existingRows && existingRows.length > 0) {
+    if (emailCheckRows && emailCheckRows.length > 0) {
       return NextResponse.json(
         {
           success: false,
@@ -162,34 +148,67 @@ export async function POST(req: Request) {
       cleanRole === "ADMIN_MAGANG" ||
       cleanRole === "ADMIN_OS"
     ) {
-      const [insertRes]: any = await mysqlPool.query(
-        `INSERT INTO admin (email, password, role, name, phone, identity_number, avatar, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
-        [
-          cleanEmail,
-          hashedPassword,
-          cleanRole,
-          cleanName,
-          cleanPhone,
-          cleanIdentityNumber,
-          cleanAvatar,
-        ]
-      );
-      newUserId = insertRes.insertId;
+      try {
+        const [insertRes]: any = await mysqlPool.query(
+          `INSERT INTO admin (email, password, role, name, phone, identity_number, avatar, status, verification_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE', 'PENDING')`,
+          [
+            cleanEmail,
+            hashedPassword,
+            cleanRole,
+            cleanName,
+            cleanPhone,
+            cleanIdentityNumber,
+            cleanAvatar,
+          ]
+        );
+        newUserId = insertRes.insertId;
+      } catch {
+        const [insertRes]: any = await mysqlPool.query(
+          `INSERT INTO admin (email, password, role, name, phone, identity_number, avatar, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
+          [
+            cleanEmail,
+            hashedPassword,
+            cleanRole,
+            cleanName,
+            cleanPhone,
+            cleanIdentityNumber,
+            cleanAvatar,
+          ]
+        );
+        newUserId = insertRes.insertId;
+      }
     } else if (cleanRole === "KARYAWAN_OS") {
-      const [insertRes]: any = await mysqlPool.query(
-        `INSERT INTO karyawan_os (email, password, name, phone, identity_number, avatar, status)
-         VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')`,
-        [
-          cleanEmail,
-          hashedPassword,
-          cleanName,
-          cleanPhone,
-          cleanIdentityNumber,
-          cleanAvatar,
-        ]
-      );
-      newUserId = insertRes.insertId;
+      try {
+        const [insertRes]: any = await mysqlPool.query(
+          `INSERT INTO karyawan_os (email, password, name, phone, identity_number, avatar, status, verification_status)
+           VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', 'PENDING')`,
+          [
+            cleanEmail,
+            hashedPassword,
+            cleanName,
+            cleanPhone,
+            cleanIdentityNumber,
+            cleanAvatar,
+          ]
+        );
+        newUserId = insertRes.insertId;
+      } catch {
+        const [insertRes]: any = await mysqlPool.query(
+          `INSERT INTO karyawan_os (email, password, name, phone, identity_number, avatar, status)
+           VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')`,
+          [
+            cleanEmail,
+            hashedPassword,
+            cleanName,
+            cleanPhone,
+            cleanIdentityNumber,
+            cleanAvatar,
+          ]
+        );
+        newUserId = insertRes.insertId;
+      }
     } else if (cleanRole === "ANAK_MAGANG") {
       const [insertRes]: any = await mysqlPool.query(
         `INSERT INTO peserta_magang (email, password, name, phone, identity_number, institution, study_program, avatar, start_date, end_date, status)
@@ -210,12 +229,17 @@ export async function POST(req: Request) {
       newUserId = insertRes.insertId;
     }
 
+    const isPendingVerif = cleanRole !== "ANAK_MAGANG";
+
     return NextResponse.json(
       {
         success: true,
-        message: "Akun berhasil dibuat. Silakan masuk.",
+        message: isPendingVerif
+          ? "Akun berhasil mendaftar! Akun Anda saat ini dalam proses verifikasi oleh Admin. Silakan tunggu persetujuan sebelum dapat masuk."
+          : "Akun berhasil dibuat. Silakan masuk.",
         userId: String(newUserId),
         role: cleanRole,
+        verificationStatus: isPendingVerif ? "PENDING" : "APPROVED",
       },
       { status: 201 }
     );

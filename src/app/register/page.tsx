@@ -164,7 +164,9 @@ export default function RegisterPage() {
               </div>
 
               <p className="text-[10px] font-sans text-muted-foreground mt-1">
-                Akun internal telah aktif dan dapat langsung digunakan untuk masuk.
+                {selectedRole === ("ANAK_MAGANG" as any)
+                  ? "Akun telah aktif dan dapat langsung digunakan untuk masuk."
+                  : "Akun telah didaftarkan dan saat ini dalam proses verifikasi Admin. Anda dapat masuk setelah akun Anda disetujui."}
               </p>
             </div>
           </div>
@@ -252,7 +254,9 @@ export default function RegisterPage() {
 
               <select
                 value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value as InternalRole)}
+                onChange={(e) =>
+                  setSelectedRole(e.target.value as InternalRole)
+                }
                 className={`${inputClass} font-bold`}
               >
                 <option value="KARYAWAN_OS">
@@ -310,6 +314,7 @@ export default function RegisterPage() {
                 <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
                   <CreditCard className="w-3.5 h-3.5 text-primary" />
                   NIP / Nomor Identitas
+                  <span className="text-destructive">*</span>
                 </label>
                 <input
                   type="text"
@@ -323,7 +328,7 @@ export default function RegisterPage() {
               <div className="space-y-1">
                 <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
                   <Phone className="w-3.5 h-3.5 text-primary" />
-                  No. HP / WhatsApp
+                  No. HP / WhatsApp<span className="text-destructive">*</span>
                 </label>
                 <input
                   type="tel"
@@ -343,7 +348,7 @@ export default function RegisterPage() {
               <div className="space-y-1">
                 <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
                   <Lock className="w-3.5 h-3.5 text-primary" />
-                  Password <span className="text-destructive">*</span>
+                  Password<span className="text-destructive">*</span>
                 </label>
 
                 <div className="relative">
@@ -373,7 +378,8 @@ export default function RegisterPage() {
               <div className="space-y-1">
                 <label className="text-[11px] font-sans font-extrabold text-card-foreground flex items-center gap-1">
                   <Lock className="w-3.5 h-3.5 text-primary" />
-                  Konfirmasi Password <span className="text-destructive">*</span>
+                  Konfirmasi Password{" "}
+                  <span className="text-destructive">*</span>
                 </label>
 
                 <div className="relative">

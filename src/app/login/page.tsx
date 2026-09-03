@@ -32,7 +32,7 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [captchaVerified, setCaptchaVerified] = useState(false);
+  // const [captchaVerified, setCaptchaVerified] = useState(false);
 
   const isTimeoutLogout = searchParams.get("reason") === "timeout";
 
@@ -45,10 +45,10 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!captchaVerified) {
-      setErrorMsg("Silakan masukkan CAPTCHA dengan benar terlebih dahulu.");
-      return;
-    }
+    // if (!captchaVerified) {
+    //   setErrorMsg("Silakan masukkan CAPTCHA dengan benar terlebih dahulu.");
+    //   return;
+    // }
 
     setErrorMsg(null);
     setIsLoading(true);
@@ -77,7 +77,7 @@ function LoginForm() {
           data?.message ||
             (res.status === 404
               ? "Layanan login tidak tersedia. Mulai ulang server aplikasi lalu coba lagi."
-              : "Email / No. Identitas atau password salah.")
+              : "Email / No. Identitas atau password salah."),
         );
         return;
       }
@@ -137,16 +137,16 @@ function LoginForm() {
 
           {/* IDENTIFIER (EMAIL / NIP / NIM / NO. HP) */}
           <div className="space-y-1">
-            <label className="text-[11px] font-extrabold font-sans text-card-foreground flex items-center gap-1.5">
+            <label className="text-[11px] font-extrabold font-sans text-card-foreground flex items-center gap-1">
               <User className="w-3.5 h-3.5 text-primary" />
-              Email / Nomor Identitas (NIP / NIM)
+              Email <span className="text-destructive">*</span>
             </label>
 
             <input
               type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="Masukkan email, NIP, atau NIM"
+              placeholder="Masukkan email"
               autoComplete="username"
               required
               className="
@@ -176,7 +176,7 @@ function LoginForm() {
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-extrabold font-sans text-card-foreground flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-primary" />
-                Password
+                Password <span className="text-destructive">*</span>
               </label>
 
               <Link
@@ -253,14 +253,14 @@ function LoginForm() {
           </div>
 
           {/* CAPTCHA */}
-          <div className="pt-0.5">
+          {/* <div className="pt-0.5">
             <Captcha onVerify={setCaptchaVerified} />
-          </div>
+          </div> */}
 
           {/* LOGIN BUTTON */}
           <button
             type="submit"
-            disabled={isLoading || !captchaVerified}
+            // disabled={isLoading || !captchaVerified}
             className="
               w-full
               min-h-[44px]

@@ -4,11 +4,18 @@ import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Pendaftar, PendaftarStatus } from "@/types";
-import { Alert, AlertModal, ConfirmModal } from "@/components/ui/Alert";
+import {
+  Alert,
+  AlertTitle,
+  AlertDescription,
+  AlertModal,
+  ConfirmModal,
+} from "@/components/ui/Alert";
 import {
   ClipboardList,
   Search,
   CheckCircle2,
+  CheckCircle2Icon,
   XCircle,
   Clock,
   Eye,
@@ -19,6 +26,8 @@ import {
   FileText,
   Download,
   ExternalLink,
+  InfoIcon,
+  AlertTriangleIcon,
 } from "lucide-react";
 
 export default function AdminPendaftaranPage() {
@@ -364,9 +373,9 @@ export default function AdminPendaftaranPage() {
       <div className="space-y-6">
         <ConfirmModal
           isOpen={Boolean(deleteConfirmId)}
-          title="Hapus Data Pendaftar"
+          title="Hapus Data Pendaftar?"
           message="Apakah Anda yakin ingin menghapus data pendaftar ini? Data yang dihapus tidak dapat dikembalikan."
-          confirmLabel="Ya, Hapus Data"
+          confirmLabel="Ya, Hapus"
           cancelLabel="Batal"
           confirmColor="red"
           onConfirm={async () => {
@@ -395,14 +404,25 @@ export default function AdminPendaftaranPage() {
         />
 
         {bannerAlert && (
-          <Alert
-            variant="light"
-            color={bannerAlert.color}
-            title={bannerAlert.title}
-            withCloseButton
-            onClose={() => setBannerAlert(null)}
-          >
-            {bannerAlert.message}
+          <Alert className="mb-4 relative">
+            {bannerAlert.color === "green" ? (
+              <CheckCircle2Icon className="h-4 w-4" />
+            ) : bannerAlert.color === "red" ? (
+              <AlertTriangleIcon className="h-4 w-4" />
+            ) : (
+              <InfoIcon className="h-4 w-4" />
+            )}
+            <div className="flex-1">
+              <AlertTitle>{bannerAlert.title}</AlertTitle>
+              <AlertDescription>{bannerAlert.message}</AlertDescription>
+            </div>
+            <button
+              onClick={() => setBannerAlert(null)}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </button>
           </Alert>
         )}
 
@@ -721,7 +741,7 @@ export default function AdminPendaftaranPage() {
             fixed inset-0 z-50
             flex items-center justify-center
             p-4
-            bg-foreground/60
+            bg-black/60
             backdrop-blur-xs
             animate-in fade-in
           "
@@ -771,8 +791,8 @@ export default function AdminPendaftaranPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {/* Nama */}
                 <div className="space-y-1">
-                  <label className="font-extrabold text-foreground">
-                    Nama Lengkap *
+                  <label className="font-extrabold text-foreground gap-1 flex">
+                    Nama Lengkap<span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -780,7 +800,7 @@ export default function AdminPendaftaranPage() {
                     required
                     value={inputNama}
                     onChange={(e) => setInputNama(e.target.value)}
-                    placeholder="Nama calon peserta"
+                    placeholder="Masukan Nama Lengkap"
                     className="
                       w-full
                       rounded-default
@@ -800,7 +820,7 @@ export default function AdminPendaftaranPage() {
                 {/* Email */}
                 <div className="space-y-1">
                   <label className="font-extrabold text-foreground">
-                    Email *
+                    Email<span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -808,7 +828,7 @@ export default function AdminPendaftaranPage() {
                     required
                     value={inputEmail}
                     onChange={(e) => setInputEmail(e.target.value)}
-                    placeholder="email@kampus.ac.id"
+                    placeholder="Masukan Email"
                     className="
                       w-full
                       rounded-default
@@ -828,7 +848,8 @@ export default function AdminPendaftaranPage() {
                 {/* No HP */}
                 <div className="space-y-1">
                   <label className="font-extrabold text-foreground">
-                    No. HP / WhatsApp *
+                    No. HP / WhatsApp
+                    <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -836,7 +857,7 @@ export default function AdminPendaftaranPage() {
                     required
                     value={inputNoHp}
                     onChange={(e) => setInputNoHp(e.target.value)}
-                    placeholder="081234567890"
+                    placeholder="Masukan No. HP"
                     className="
                       w-full
                       rounded-default
@@ -856,7 +877,7 @@ export default function AdminPendaftaranPage() {
                 {/* Kampus */}
                 <div className="space-y-1">
                   <label className="font-extrabold text-foreground">
-                    Kampus / Sekolah *
+                    Kampus / Sekolah<span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -864,7 +885,7 @@ export default function AdminPendaftaranPage() {
                     required
                     value={inputKampus}
                     onChange={(e) => setInputKampus(e.target.value)}
-                    placeholder="Universitas..."
+                    placeholder="Masukan Nama Kampus / Sekolah"
                     className="
                       w-full
                       rounded-default
@@ -884,14 +905,14 @@ export default function AdminPendaftaranPage() {
                 {/* Jurusan */}
                 <div className="space-y-1">
                   <label className="font-extrabold text-foreground">
-                    Jurusan
+                    Program Studi<span className="text-status-tolak">*</span>
                   </label>
 
                   <input
                     type="text"
                     value={inputJurusan}
                     onChange={(e) => setInputJurusan(e.target.value)}
-                    placeholder="Teknik Informatika"
+                    placeholder="Masukan Program Studi"
                     className="
                       w-full
                       rounded-default
@@ -911,7 +932,7 @@ export default function AdminPendaftaranPage() {
                 {/* Divisi */}
                 <div className="space-y-1">
                   <label className="font-extrabold text-foreground">
-                    Divisi / Bagian *
+                    Divisi / Bagian<span className="text-status-tolak">*</span>
                   </label>
 
                   <select
@@ -933,13 +954,9 @@ export default function AdminPendaftaranPage() {
                   >
                     <option value="Programmer">Programmer</option>
 
-                    <option value="UI/UX Designer">UI/UX Designer</option>
+                    <option value="Operator">Operator</option>
 
-                    <option value="Network Engineer">Network Engineer</option>
-
-                    <option value="Administrasi">Administrasi</option>
-
-                    <option value="Humas & Media">Humas &amp; Media</option>
+                    <option value="Media">Media</option>
                   </select>
                 </div>
               </div>
@@ -947,14 +964,14 @@ export default function AdminPendaftaranPage() {
               {/* Alamat */}
               <div className="space-y-1 text-xs">
                 <label className="font-extrabold text-foreground">
-                  Alamat Domisili
+                  Alamat Domisili<span className="text-status-tolak">*</span>
                 </label>
 
                 <textarea
                   rows={2}
                   value={inputAlamat}
                   onChange={(e) => setInputAlamat(e.target.value)}
-                  placeholder="Alamat lengkap..."
+                  placeholder="Masukan Alamat"
                   className="
                     w-full
                     rounded-default
@@ -1387,7 +1404,9 @@ export default function AdminPendaftaranPage() {
                     setSelectedDetail(null);
 
                     // 2. Otomatis buat akun ANAK_MAGANG
-                    const userResult = await createUserFromPendaftar(pendaftarSnapshot as Pendaftar);
+                    const userResult = await createUserFromPendaftar(
+                      pendaftarSnapshot as Pendaftar,
+                    );
 
                     if (userResult.success) {
                       setBannerAlert({
@@ -1401,7 +1420,7 @@ export default function AdminPendaftaranPage() {
                       showAlert(
                         `Status berhasil diubah, namun gagal membuat akun: ${userResult.message}`,
                         "Perhatian",
-                        "yellow"
+                        "yellow",
                       );
                     }
                   }}

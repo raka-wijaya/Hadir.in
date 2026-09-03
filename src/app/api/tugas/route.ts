@@ -5,16 +5,26 @@ import { TugasItem } from "@/types";
 /**
  * ============================================================
  * API Route: /api/tugas
- * Tabel: `tugas` (7 Kolom sesuai skema database)
+ * Tabel: `tugas` (8 Kolom sesuai skema database)
  *  1. id (int(11) AUTO_INCREMENT PRIMARY KEY)
  *  2. peserta_magang_id (bigint(20) UNSIGNED NULL, FK)
  *  3. log_book_id (int(11) NULL, FK)
  *  4. judul_tugas (varchar(255) NOT NULL)
  *  5. deskripsi (text NOT NULL)
  *  6. kategori (varchar(50) NOT NULL DEFAULT 'Umum')
- *  7. created_at (timestamp DEFAULT CURRENT_TIMESTAMP)
+ *  7. status_pengerjaan (enum('BELUM_DIKERJAKAN', 'SELESAI') DEFAULT 'BELUM_DIKERJAKAN')
+ *  8. created_at (timestamp DEFAULT CURRENT_TIMESTAMP)
  * ============================================================
  */
+
+function normalizeStatusPengerjaan(
+  statusInput?: string | null
+): "BELUM_DIKERJAKAN" | "SELESAI" {
+  if (!statusInput) return "BELUM_DIKERJAKAN";
+  const s = statusInput.toUpperCase().trim();
+  if (s === "SELESAI" || s === "COMPLETED" || s === "DONE") return "SELESAI";
+  return "BELUM_DIKERJAKAN";
+}
 
 async function ensureTugasTableExists() {
   try {
@@ -26,34 +36,42 @@ async function ensureTugasTableExists() {
         \`judul_tugas\` VARCHAR(255) NOT NULL,
         \`deskripsi\` TEXT NOT NULL,
         \`kategori\` VARCHAR(50) NOT NULL DEFAULT 'Umum',
+        \`status_pengerjaan\` ENUM('BELUM_DIKERJAKAN', 'SELESAI') NOT NULL DEFAULT 'BELUM_DIKERJAKAN',
         \`created_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
         KEY \`idx_tugas_peserta_magang_id\` (\`peserta_magang_id\`),
         KEY \`idx_tugas_log_book_id\` (\`log_book_id\`),
-        KEY \`idx_tugas_kategori\` (\`kategori\`)
+        KEY \`idx_tugas_kategori\` (\`kategori\`),
+        KEY \`idx_tugas_status_pengerjaan\` (\`status_pengerjaan\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Migrasi aman agar log_book_id dan peserta_magang_id nullable (NULL DEFAULT NULL)
+    // Migrasi aman agar kolom dan enum selalu sinkron
     try {
       const [cols]: any = await mysqlPool.query(`SHOW COLUMNS FROM \`tugas\``);
       const existing = new Set(cols.map((c: any) => c.Field.toLowerCase()));
 
+      if (!existing.has("status_pengerjaan")) {
+        await mysqlPool.query(
+          `ALTER TABLE \`tugas\` ADD COLUMN \`status_pengerjaan\` ENUM('BELUM_DIKERJAKAN', 'SELESAI') NOT NULL DEFAULT 'BELUM_DIKERJAKAN' AFTER \`kategori\``
+        );
+      }
+
       if (existing.has("user_id") && !existing.has("peserta_magang_id")) {
         await mysqlPool.query(
-          `ALTER TABLE \`tugas\` ADD COLUMN \`peserta_magang_id\` BIGINT(20) UNSIGNED DEFAULT NULL AFTER \`id\``,
+          `ALTER TABLE \`tugas\` ADD COLUMN \`peserta_magang_id\` BIGINT(20) UNSIGNED DEFAULT NULL AFTER \`id\``
         );
       }
 
       if (existing.has("log_book_id")) {
         await mysqlPool.query(
-          `ALTER TABLE \`tugas\` MODIFY COLUMN \`log_book_id\` INT(11) NULL DEFAULT NULL`,
+          `ALTER TABLE \`tugas\` MODIFY COLUMN \`log_book_id\` INT(11) NULL DEFAULT NULL`
         );
       }
 
       if (existing.has("peserta_magang_id")) {
         await mysqlPool.query(
-          `ALTER TABLE \`tugas\` MODIFY COLUMN \`peserta_magang_id\` BIGINT(20) UNSIGNED NULL DEFAULT NULL`,
+          `ALTER TABLE \`tugas\` MODIFY COLUMN \`peserta_magang_id\` BIGINT(20) UNSIGNED NULL DEFAULT NULL`
         );
       }
     } catch (migErr) {
@@ -73,6 +91,7 @@ async function ensureTugasTableExists() {
  *  - peserta_magang_id / pesertaMagangId: filter berdasarkan peserta magang
  *  - log_book_id / logBookId: filter berdasarkan id logbook yang ditautkan
  *  - kategori: filter kategori ('Programmer', 'Media', dll)
+ *  - status_pengerjaan / statusPengerjaan: filter ('BELUM_DIKERJAKAN', 'SELESAI')
  *  - q / search: pencarian judul tugas, deskripsi, nama peserta
  */
 export async function GET(req: NextRequest) {
@@ -88,6 +107,9 @@ export async function GET(req: NextRequest) {
       searchParams.get("log_book_id") ||
       searchParams.get("logBookId");
     const kategori = searchParams.get("kategori");
+    const statusPengerjaan =
+      searchParams.get("status_pengerjaan") ||
+      searchParams.get("statusPengerjaan");
     const q = searchParams.get("q") || searchParams.get("search");
 
     const conditions: string[] = [];
@@ -113,6 +135,11 @@ export async function GET(req: NextRequest) {
       params.push(kategori);
     }
 
+    if (statusPengerjaan && statusPengerjaan !== "ALL") {
+      conditions.push("t.status_pengerjaan = ?");
+      params.push(normalizeStatusPengerjaan(statusPengerjaan));
+    }
+
     if (q && q.trim()) {
       conditions.push(
         "(t.judul_tugas LIKE ? OR t.deskripsi LIKE ? OR t.kategori LIKE ? OR pm.name LIKE ? OR pm.institution LIKE ?)"
@@ -133,6 +160,7 @@ export async function GET(req: NextRequest) {
         t.judul_tugas,
         t.deskripsi,
         t.kategori,
+        t.status_pengerjaan,
         t.created_at,
         pm.name          AS pm_name,
         pm.avatar        AS pm_avatar,
@@ -165,6 +193,8 @@ export async function GET(req: NextRequest) {
           judulTugas: r.judul_tugas || "",
           deskripsi: r.deskripsi || "",
           kategori: r.kategori || "Umum",
+          status_pengerjaan: r.status_pengerjaan || "BELUM_DIKERJAKAN",
+          statusPengerjaan: r.status_pengerjaan || "BELUM_DIKERJAKAN",
           created_at: r.created_at
             ? new Date(r.created_at).toISOString()
             : new Date().toISOString(),
@@ -225,6 +255,7 @@ export async function GET(req: NextRequest) {
  *  - judul_tugas / judulTugas: string (wajib)
  *  - deskripsi: string
  *  - kategori: string (default 'Umum')
+ *  - status_pengerjaan / statusPengerjaan: 'BELUM_DIKERJAKAN' | 'SELESAI'
  */
 export async function POST(req: NextRequest) {
   try {
@@ -248,6 +279,9 @@ export async function POST(req: NextRequest) {
     const judulTugas = (body.judul_tugas || body.judulTugas || "").trim();
     const deskripsi = (body.deskripsi || "").trim();
     const kategori = (body.kategori || "Umum").trim();
+    const statusPengerjaan = normalizeStatusPengerjaan(
+      body.status_pengerjaan || body.statusPengerjaan
+    );
 
     if (!judulTugas) {
       return NextResponse.json(
@@ -266,9 +300,10 @@ export async function POST(req: NextRequest) {
           \`log_book_id\`,
           \`judul_tugas\`,
           \`deskripsi\`,
-          \`kategori\`
+          \`kategori\`,
+          \`status_pengerjaan\`
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
         `,
         [
           pId ? Number(pId) : null,
@@ -276,7 +311,8 @@ export async function POST(req: NextRequest) {
           judulTugas,
           deskripsi,
           kategori,
-        ],
+          statusPengerjaan,
+        ]
       );
 
       const insertedId = result.insertId;
@@ -286,7 +322,7 @@ export async function POST(req: NextRequest) {
         try {
           const [pmRows]: any = await mysqlPool.query(
             "SELECT id, name, avatar, institution, study_program FROM peserta_magang WHERE id = ? LIMIT 1",
-            [pId],
+            [pId]
           );
           if (pmRows && pmRows.length > 0) userInfo = pmRows[0];
         } catch {
@@ -304,6 +340,8 @@ export async function POST(req: NextRequest) {
         judulTugas: judulTugas,
         deskripsi,
         kategori,
+        status_pengerjaan: statusPengerjaan,
+        statusPengerjaan: statusPengerjaan,
         created_at: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         user_nama: userInfo.name || null,
@@ -326,7 +364,7 @@ export async function POST(req: NextRequest) {
         items: insertedRecords,
         count: insertedRecords.length,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (err: any) {
     console.error("POST /api/tugas error:", err);
@@ -377,6 +415,16 @@ async function handleUpdate(req: NextRequest) {
     if (body.kategori !== undefined) {
       updates.push("`kategori` = ?");
       params.push(body.kategori);
+    }
+    if (
+      body.status_pengerjaan !== undefined ||
+      body.statusPengerjaan !== undefined
+    ) {
+      const sp = normalizeStatusPengerjaan(
+        body.status_pengerjaan || body.statusPengerjaan
+      );
+      updates.push("`status_pengerjaan` = ?");
+      params.push(sp);
     }
     if (
       body.peserta_magang_id !== undefined ||

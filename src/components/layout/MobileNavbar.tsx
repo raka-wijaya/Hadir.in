@@ -17,7 +17,8 @@ export function MobileNavbar() {
     return null;
   }
 
-  const basePath = role === "ANAK_OS" || role === "PEGAWAI_OS" || role === "KARYAWAN_OS" ? "/pegawai-os" : "/magang";
+  const isPegawaiOs = role === "ANAK_OS" || role === "PEGAWAI_OS" || role === "KARYAWAN_OS";
+  const basePath = isPegawaiOs ? "/pegawai-os" : "/magang";
 
   const navItems = [
     {
@@ -25,11 +26,15 @@ export function MobileNavbar() {
       href: `${basePath}/dashboard`,
       icon: <LayoutDashboard className="w-5 h-5" />,
     },
-    {
-      title: "Logbook",
-      href: `${basePath}/log-book`,
-      icon: <NotebookPen className="w-5 h-5" />,
-    },
+    ...(!isPegawaiOs
+      ? [
+          {
+            title: "Logbook",
+            href: `${basePath}/log-book`,
+            icon: <NotebookPen className="w-5 h-5" />,
+          },
+        ]
+      : []),
     {
       title: "Riwayat",
       href: `${basePath}/riwayat`,

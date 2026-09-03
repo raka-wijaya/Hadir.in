@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/Alert";
 import { ServerClock } from "@/components/ui/ServerClock";
 import { CameraCapture } from "@/components/attendance/CameraCapture";
 import { PhotoModal } from "@/components/attendance/PhotoModal";
@@ -31,6 +32,7 @@ import {
   NotebookPen,
   BookOpen,
   Calendar,
+  Loader2,
 } from "lucide-react";
 
 function getKategoriIcon(kategori: string) {
@@ -72,34 +74,64 @@ export default function MagangDashboardPage() {
     "IDLE" | "CAPTURE_IN" | "CAPTURE_OUT"
   >("IDLE");
 
-  const [previewRecord, setPreviewRecord] =
-    useState<Absensi | null>(null);
+  const [previewRecord, setPreviewRecord] = useState<Absensi | null>(null);
 
-  const [previewType, setPreviewType] =
-    useState<"MASUK" | "PULANG">("MASUK");
+  const [previewType, setPreviewType] = useState<"MASUK" | "PULANG">("MASUK");
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Form pulang cepat
-  const [showEarlyCheckoutForm, setShowEarlyCheckoutForm] =
-    useState(false);
+  const [showEarlyCheckoutForm, setShowEarlyCheckoutForm] = useState(false);
 
-  const [alasanPulangCepat, setAlasanPulangCepat] =
-    useState("");
+  const [alasanPulangCepat, setAlasanPulangCepat] = useState("");
 
-  const [tugasDikerjakan, setTugasDikerjakan] =
-    useState("");
+  const [tugasDikerjakan, setTugasDikerjakan] = useState("");
 
-  const [isSubmittingCheckout, setIsSubmittingCheckout] =
-    useState(false);
+  const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false);
 
   const [userAttendances, setUserAttendances] = useState<Absensi[]>([]);
   const [tugasList, setTugasList] = useState<TugasItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingTugas, setIsLoadingTugas] = useState(true);
+  const [updatingTugasId, setUpdatingTugasId] = useState<
+    number | string | null
+  >(null);
+
+  const handleUpdateStatusTugas = async (
+    tugasId: number | string,
+    newStatus: "BELUM_DIKERJAKAN" | "SELESAI",
+  ) => {
+    try {
+      setUpdatingTugasId(tugasId);
+      const res = await fetch("/api/tugas", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: tugasId,
+          status_pengerjaan: newStatus,
+        }),
+      });
+      if (res.ok) {
+        setTugasList((prev) =>
+          prev.map((t) =>
+            String(t.id) === String(tugasId)
+              ? {
+                  ...t,
+                  status_pengerjaan: newStatus,
+                  statusPengerjaan: newStatus,
+                }
+              : t,
+          ),
+        );
+      }
+    } catch (err) {
+      console.error("Gagal memperbarui status tugas:", err);
+    } finally {
+      setUpdatingTugasId(null);
+    }
+  };
 
   // Jam pulang normal.
-  // Silakan ubah jika jam kerja di sistem kamu berbeda.
   const JAM_PULANG_NORMAL = "16:00";
 
   const todayStr = new Intl.DateTimeFormat("sv-SE", {
@@ -111,7 +143,9 @@ export default function MagangDashboardPage() {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }).format(new Date()).replace(/\//g, "-");
+  })
+    .format(new Date())
+    .replace(/\//g, "-");
 
   const currentUserId = user?.id || "";
 
@@ -136,16 +170,21 @@ export default function MagangDashboardPage() {
 
     try {
       setIsLoading(true);
-      const absRes = await fetch(`/api/absensi?peserta_magang_id=${encodeURIComponent(targetUserId)}`, {
-        cache: "no-store",
-      });
+      const absRes = await fetch(
+        `/api/absensi?peserta_magang_id=${encodeURIComponent(targetUserId)}`,
+        {
+          cache: "no-store",
+        },
+      );
 
       if (absRes.ok) {
         const absData = await absRes.json();
         if (absData.success && Array.isArray(absData.data)) {
           // Pastikan hanya data yang peserta_magang_id-nya sesuai dengan ID user yang sedang login
           const myAttendances = absData.data.filter(
-            (a: any) => String(a.peserta_magang_id || a.pesertaMagangId) === String(targetUserId)
+            (a: any) =>
+              String(a.peserta_magang_id || a.pesertaMagangId) ===
+              String(targetUserId),
           );
           setUserAttendances(myAttendances);
         } else {
@@ -185,7 +224,7 @@ export default function MagangDashboardPage() {
       setIsLoadingTugas(true);
       const res = await fetch(
         `/api/tugas?peserta_magang_id=${encodeURIComponent(targetUserId)}`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
 
       if (res.ok) {
@@ -211,33 +250,20 @@ export default function MagangDashboardPage() {
     fetchTugas();
   }, [fetchAttendance, fetchTugas]);
 
-  const userName =
-    user?.nama ||
-    user?.name ||
-    "Peserta";
+  const userName = user?.nama || user?.name || "Peserta";
 
-  const institution =
-    user?.sekolah_kampus ||
-    user?.institution ||
-    "—";
+  const institution = user?.sekolah_kampus || user?.institution || "—";
 
-  const unitKerja =
-    user?.unit_kerja ||
-    user?.studyProgram ||
-    "—";
+  const unitKerja = user?.unit_kerja || user?.studyProgram || "—";
 
-  const startDate =
-    user?.periode_mulai ||
-    user?.startDate ||
-    "-";
+  const startDate = user?.periode_mulai || user?.startDate || "-";
 
-  const endDate =
-    user?.periode_selesai ||
-    user?.endDate ||
-    "-";
+  const endDate = user?.periode_selesai || user?.endDate || "-";
 
   const todayRecord = userAttendances.find((a) => {
-    const rawTgl = String(a.tanggal || a.attendanceDate || a.created_at || "").slice(0, 10);
+    const rawTgl = String(
+      a.tanggal || a.attendanceDate || a.created_at || "",
+    ).slice(0, 10);
     if (!rawTgl) return false;
     if (rawTgl === todayStr) return true;
     if (rawTgl.split("-").reverse().join("-") === todayStr) return true;
@@ -245,9 +271,10 @@ export default function MagangDashboardPage() {
   });
 
   const isRecordLate = (a: Absensi) =>
-    String(a.status_masuk || a.statusMasuk || "").toUpperCase() === "TERLAMBAT" ||
+    String(a.status_masuk || a.statusMasuk || "").toUpperCase() ===
+      "TERLAMBAT" ||
     String(a.status || "").toUpperCase() === "TERLAMBAT" ||
-    (Number(a.menit_terlambat ?? a.lateMinutes ?? 0) > 0);
+    Number(a.menit_terlambat ?? a.lateMinutes ?? 0) > 0;
 
   const hadirCount = userAttendances.filter((a) => {
     const st = String(a.status || "").toUpperCase();
@@ -267,11 +294,13 @@ export default function MagangDashboardPage() {
   }).length;
 
   const alpaCount = userAttendances.filter(
-    (a) => String(a.status || "").toUpperCase() === "ALPA"
+    (a) => String(a.status || "").toUpperCase() === "ALPA",
   ).length;
 
   const pulangCepatCount = userAttendances.filter((a) => {
-    const stPulang = String(a.status_pulang || a.statusPulang || "").toUpperCase();
+    const stPulang = String(
+      a.status_pulang || a.statusPulang || "",
+    ).toUpperCase();
     return stPulang === "PULANG_CEPAT";
   }).length;
 
@@ -294,9 +323,13 @@ export default function MagangDashboardPage() {
 
   const statusLabel = todayRecord
     ? String(todayRecord.status || "").toUpperCase() === "HADIR"
-      ? String(todayRecord.status_masuk || todayRecord.statusMasuk || "").toUpperCase() === "TERLAMBAT"
+      ? String(
+          todayRecord.status_masuk || todayRecord.statusMasuk || "",
+        ).toUpperCase() === "TERLAMBAT"
         ? "Terlambat"
-        : String(todayRecord.status_pulang || todayRecord.statusPulang || "").toUpperCase() === "PULANG_CEPAT"
+        : String(
+              todayRecord.status_pulang || todayRecord.statusPulang || "",
+            ).toUpperCase() === "PULANG_CEPAT"
           ? "Pulang Cepat"
           : "Hadir"
       : String(todayRecord.status || "").toUpperCase() === "IZIN"
@@ -318,15 +351,23 @@ export default function MagangDashboardPage() {
     if (typeof input === "string") {
       sUtama = input.toUpperCase();
     } else {
-      sMasuk = String(input.status_masuk || input.statusMasuk || "").toUpperCase();
-      sPulang = String(input.status_pulang || input.statusPulang || "").toUpperCase();
+      sMasuk = String(
+        input.status_masuk || input.statusMasuk || "",
+      ).toUpperCase();
+      sPulang = String(
+        input.status_pulang || input.statusPulang || "",
+      ).toUpperCase();
       sUtama = String(input.status || "").toUpperCase();
     }
 
     if (sUtama === "ALPA")
       return "text-status-alpa bg-status-alpa/10 border-status-alpa/20";
 
-    if (sMasuk === "TERLAMBAT" || sUtama === "TERLAMBAT" || sPulang === "PULANG_CEPAT")
+    if (
+      sMasuk === "TERLAMBAT" ||
+      sUtama === "TERLAMBAT" ||
+      sPulang === "PULANG_CEPAT"
+    )
       return "text-status-terlambat bg-status-terlambat/10 border-status-terlambat/20";
 
     if (sUtama === "HADIR" || sUtama === "TEPAT_WAKTU")
@@ -344,17 +385,11 @@ export default function MagangDashboardPage() {
   const isEarlyCheckout = () => {
     const now = new Date();
 
-    const [hour, minute] =
-      JAM_PULANG_NORMAL.split(":").map(Number);
+    const [hour, minute] = JAM_PULANG_NORMAL.split(":").map(Number);
 
     const normalCheckoutTime = new Date();
 
-    normalCheckoutTime.setHours(
-      hour,
-      minute,
-      0,
-      0
-    );
+    normalCheckoutTime.setHours(hour, minute, 0, 0);
 
     return now < normalCheckoutTime;
   };
@@ -370,16 +405,12 @@ export default function MagangDashboardPage() {
 
   const handleSubmitEarlyCheckout = () => {
     if (!alasanPulangCepat.trim()) {
-      setToastMsg(
-        "Alasan pulang cepat wajib diisi."
-      );
+      setToastMsg("Alasan pulang cepat wajib diisi.");
       return;
     }
 
     if (!tugasDikerjakan.trim()) {
-      setToastMsg(
-        "Tugas yang dikerjakan wajib diisi."
-      );
+      setToastMsg("Tugas yang dikerjakan wajib diisi.");
       return;
     }
 
@@ -401,24 +432,19 @@ export default function MagangDashboardPage() {
     return uid;
   };
 
-  const handleCaptureIn = async (
-    photoDataUrl: string
-  ) => {
+  const handleCaptureIn = async (photoDataUrl: string) => {
     try {
       const uid = getEffectiveUserId();
-      const res = await fetch(
-        "/api/attendance/check-in",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            peserta_magang_id: uid,
-            photo: photoDataUrl,
-          }),
-        }
-      );
+      const res = await fetch("/api/attendance/check-in", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          peserta_magang_id: uid,
+          photo: photoDataUrl,
+        }),
+      });
 
       const data = await res.json();
 
@@ -429,58 +455,39 @@ export default function MagangDashboardPage() {
         setPreviewRecord(data.record);
         fetchAttendance();
       } else {
-        setToastMsg(
-          data.message ||
-            "Gagal melakukan absen masuk."
-        );
+        setToastMsg(data.message || "Gagal melakukan absen masuk.");
       }
     } catch (err) {
       console.error(err);
 
-      setToastMsg(
-        "Gagal menyimpan presensi."
-      );
+      setToastMsg("Gagal menyimpan presensi.");
     }
   };
 
-  const handleCaptureOut = async (
-    photoDataUrl: string
-  ) => {
+  const handleCaptureOut = async (photoDataUrl: string) => {
     try {
       setIsSubmittingCheckout(true);
 
       const earlyCheckout = isEarlyCheckout();
       const uid = getEffectiveUserId();
 
-      const res = await fetch(
-        "/api/attendance/check-out",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            peserta_magang_id: uid,
-            photo: photoDataUrl,
+      const res = await fetch("/api/attendance/check-out", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          peserta_magang_id: uid,
+          photo: photoDataUrl,
 
-            // Data pulang cepat
-            status:
-              earlyCheckout
-                ? "pulang_cepat"
-                : "hadir",
+          // Data pulang cepat
+          status: earlyCheckout ? "pulang_cepat" : "hadir",
 
-            alasan_pulang_cepat:
-              earlyCheckout
-                ? alasanPulangCepat.trim()
-                : null,
+          alasan_pulang_cepat: earlyCheckout ? alasanPulangCepat.trim() : null,
 
-            tugas_dikerjakan:
-              earlyCheckout
-                ? tugasDikerjakan.trim()
-                : null,
-          }),
-        }
-      );
+          tugas_dikerjakan: earlyCheckout ? tugasDikerjakan.trim() : null,
+        }),
+      });
 
       const data = await res.json();
 
@@ -498,17 +505,12 @@ export default function MagangDashboardPage() {
         setShowEarlyCheckoutForm(false);
         fetchAttendance();
       } else {
-        setToastMsg(
-          data.message ||
-            "Gagal melakukan absen pulang."
-        );
+        setToastMsg(data.message || "Gagal melakukan absen pulang.");
       }
     } catch (err) {
       console.error(err);
 
-      setToastMsg(
-        "Gagal melakukan absen pulang."
-      );
+      setToastMsg("Gagal melakukan absen pulang.");
     } finally {
       setIsSubmittingCheckout(false);
     }
@@ -519,15 +521,12 @@ export default function MagangDashboardPage() {
       <div className="space-y-6">
         <ServerClock />
 
-        {/* {toastMsg && (
-          <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 flex items-center justify-between gap-4">
-
+        {toastMsg && (
+          <div className="bg-status-tolak/10 border border-status-tolak/30 rounded-2xl p-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2.5 text-sm font-bold text-foreground">
-              <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+              <X className="w-5 h-5 text-status-tolak shrink-0" />
 
-              <span>
-                {toastMsg}
-              </span>
+              <span>{toastMsg}</span>
             </div>
 
             <button
@@ -537,9 +536,8 @@ export default function MagangDashboardPage() {
             >
               Tutup
             </button>
-
           </div>
-        )} */}
+        )}
 
         {showEarlyCheckoutForm && (
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card">
@@ -877,222 +875,93 @@ export default function MagangDashboardPage() {
           </section>
         )}
 
-        <div
-          className={`grid grid-cols-2 sm:grid-cols-3 ${
-            pulangCepatCount > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"
-          } gap-3`}
-        >
-          {/* Hadir */}
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
-                Hadir
-              </span>
-              <CheckCircle2 className="w-4 h-4 text-status-hadir" />
-            </div>
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-hadir">
-                {hadirCount}
-              </p>
-            )}
-            <p className="text-[10px] font-semibold text-muted-foreground">
-              Total Hadir
-            </p>
-          </div>
+        {!isLoadingTugas &&
+          tugasList.filter(
+            (task) =>
+              (task.status_pengerjaan || "BELUM_DIKERJAKAN") ===
+              "BELUM_DIKERJAKAN",
+          ).length > 0 && (
+            <Alert className="border-primary/30 bg-primary/5 text-foreground shadow-card">
+              <Briefcase className="text-primary mt-1" />
 
-          {/* Terlambat */}
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
-                Terlambat
-              </span>
-              <Clock3 className="w-4 h-4 text-status-terlambat" />
-            </div>
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-terlambat">
-                {terlambatCount}
-              </p>
-            )}
-            <p className="text-[10px] font-semibold text-muted-foreground">
-              Total Terlambatan
-            </p>
-          </div>
+              <div className="col-start-2 flex-1 space-y-3">
+                <div>
+                  <AlertTitle className="text-sm font-extrabold text-foreground">
+                    Ada Tugas Baru
+                  </AlertTitle>
 
-          {/* Izin */}
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
-                Izin
-              </span>
-              <CalendarDays className="w-4 h-4 text-status-izin" />
-            </div>
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-izin">
-                {izinCount}
-              </p>
-            )}
-            <p className="text-[10px] font-semibold text-muted-foreground">
-              Total Izin
-            </p>
-          </div>
+                  <AlertDescription className="text-xs text-muted-foreground mt-0.5">
+                    Kamu memiliki{" "}
+                    <span className="font-bold text-primary">
+                      {
+                        tugasList.filter(
+                          (task) =>
+                            (task.status_pengerjaan || "BELUM_DIKERJAKAN") ===
+                            "BELUM_DIKERJAKAN",
+                        ).length
+                      }{" "}
+                      tugas
+                    </span>{" "}
+                    yang perlu dikerjakan.
+                  </AlertDescription>
+                </div>
 
-          {/* Tanpa Keterangan */}
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-alpa uppercase tracking-wider">
-                Tanpa Ket.
-              </span>
-              <XCircle className="w-4 h-4 text-status-alpa" />
-            </div>
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-alpa">
-                {alpaCount}
-              </p>
-            )}
-            <p className="text-[10px] font-semibold text-muted-foreground">
-              Total Tanpa Keterangan
-            </p>
-          </div>
+                {/* Daftar tugas yang belum dikerjakan */}
+                <div className="space-y-2">
+                  {tugasList
+                    .filter(
+                      (task) =>
+                        (task.status_pengerjaan || "BELUM_DIKERJAKAN") ===
+                        "BELUM_DIKERJAKAN",
+                    )
+                    .map((task) => {
+                      const katLabel = task.kategori || "Umum";
+                      const isUpdating = updatingTugasId === task.id;
 
-          {/* Pulang Cepat */}
-          {pulangCepatCount > 0 && (
-            <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
-                  Pulang Cepat
-                </span>
-                <AlertTriangle className="w-4 h-4 text-status-terlambat" />
-              </div>
-              {isLoading ? (
-                <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-              ) : (
-                <p className="text-2xl font-black text-status-terlambat">
-                  {pulangCepatCount}
-                </p>
-              )}
-              <p className="text-[10px] font-semibold text-muted-foreground">
-                Total pulang cepat
-              </p>
-            </div>
-          )}
-        </div>
-
-        <section className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
-          <div className="p-5 flex items-center justify-between gap-4 border-b border-border">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <Briefcase className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">
-                  Daftar Penugasan
-                </p>
-                <h2 className="font-extrabold text-foreground mt-0.5 text-[15px] md:text-lg">
-                  Tugas & Jobdesk Terbaru
-                </h2>
-              </div>
-            </div>
-
-            <Link
-              href="/magang/jobdesk"
-              className="shrink-0 text-xs font-bold text-primary hover:underline flex items-center gap-1"
-            >
-              Lihat Semua
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          {isLoadingTugas ? (
-            <div className="p-8 flex flex-col items-center justify-center text-muted-foreground space-y-2">
-              <div className="h-6 w-6 border-2 border-primary border-t-transparent animate-spin rounded-full" />
-              <p className="text-xs font-semibold">Memuat data tugas...</p>
-            </div>
-          ) : tugasList.length === 0 ? (
-            <div className="p-8 text-center space-y-2">
-              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
-                <Briefcase className="w-5 h-5" />
-              </div>
-              <p className="text-xs font-bold text-foreground">
-                Belum ada tugas yang didelegasikan
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Tugas yang diberikan oleh pembimbing lapangan akan otomatis tampil di sini.
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {tugasList.slice(0, 5).map((task) => {
-                const katLabel = task.kategori || "Umum";
-                return (
-                  <div
-                    key={task.id}
-                    className="p-4.5 hover:bg-muted/40 transition-colors space-y-2.5"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2 flex-wrap min-w-0">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                            katLabel,
-                          )}`}
+                      return (
+                        <div
+                          key={task.id}
+                          className="flex items-center justify-between gap-3 bg-card border border-border/80 rounded-xl px-3 py-2.5"
                         >
-                          {getKategoriIcon(katLabel)}
-                          <span className="capitalize">{katLabel}</span>
-                        </span>
+                          {/* Kategori + Judul */}
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span
+                              className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
+                                katLabel,
+                              )}`}
+                            >
+                              {getKategoriIcon(katLabel)}
 
-                        <span className="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border/60">
-                          #{task.id}
-                        </span>
+                              <span className="capitalize">{katLabel}</span>
+                            </span>
 
-                        <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
-                          <Calendar className="w-3 h-3 text-muted-foreground" />
-                          {task.log_book_tanggal
-                            ? formatDate(task.log_book_tanggal)
-                            : formatDate(task.created_at || (task as any).createdAt)}
-                        </span>
-                      </div>
+                            <span className="text-xs font-extrabold text-foreground truncate">
+                              {task.judul_tugas || task.judulTugas || "—"}
+                            </span>
+                          </div>
 
-                      <Link
-                        href="/magang/jobdesk"
-                        className="shrink-0 text-xs font-extrabold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1 rounded-xl border border-primary/20 transition flex items-center gap-1"
-                      >
-                        Detail
-                        <ChevronRight className="w-3 h-3" />
-                      </Link>
-                    </div>
-
-                    <h3 className="font-black text-sm text-foreground leading-snug">
-                      {task.judul_tugas || task.judulTugas || "—"}
-                    </h3>
-
-                    {task.deskripsi && (
-                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 bg-input/40 p-2.5 rounded-xl border border-border/40">
-                        {task.deskripsi}
-                      </p>
-                    )}
-
-                    {task.log_book_aktivitas && (
-                      <div className="flex items-start gap-1.5 text-[11px] text-primary bg-primary/5 border border-primary/20 rounded-xl px-2.5 py-1.5">
-                        <BookOpen className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <span className="truncate">
-                          <span className="font-bold">Logbook Terkait: </span>
-                          {task.log_book_aktivitas}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                          {/* Tombol selesai */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleUpdateStatusTugas(task.id, "SELESAI")
+                            }
+                            disabled={isUpdating}
+                            className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border border-destructive/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                          >
+                            {isUpdating ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <X className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </Alert>
           )}
-        </section>
 
         {previewRecord && (
           <PhotoModal
@@ -1207,6 +1076,114 @@ export default function MagangDashboardPage() {
             }
           />
         )}
+
+        <div
+          className={`grid grid-cols-2 sm:grid-cols-3 ${
+            pulangCepatCount > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"
+          } gap-3`}
+        >
+          {/* Hadir */}
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
+                Hadir
+              </span>
+              <CheckCircle2 className="w-4 h-4 text-status-hadir" />
+            </div>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-hadir">
+                {hadirCount}
+              </p>
+            )}
+            <p className="text-[10px] font-semibold text-muted-foreground">
+              Total Hadir
+            </p>
+          </div>
+
+          {/* Terlambat */}
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
+                Terlambat
+              </span>
+              <Clock3 className="w-4 h-4 text-status-terlambat" />
+            </div>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-terlambat">
+                {terlambatCount}
+              </p>
+            )}
+            <p className="text-[10px] font-semibold text-muted-foreground">
+              Total Terlambatan
+            </p>
+          </div>
+
+          {/* Izin */}
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
+                Izin
+              </span>
+              <CalendarDays className="w-4 h-4 text-status-izin" />
+            </div>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-izin">
+                {izinCount}
+              </p>
+            )}
+            <p className="text-[10px] font-semibold text-muted-foreground">
+              Total Izin
+            </p>
+          </div>
+
+          {/* Tanpa Keterangan */}
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-alpa uppercase tracking-wider">
+                Tanpa Ket.
+              </span>
+              <XCircle className="w-4 h-4 text-status-alpa" />
+            </div>
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-alpa">
+                {alpaCount}
+              </p>
+            )}
+            <p className="text-[10px] font-semibold text-muted-foreground">
+              Total Tanpa Keterangan
+            </p>
+          </div>
+
+          {/* Pulang Cepat */}
+          {pulangCepatCount > 0 && (
+            <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
+                  Pulang Cepat
+                </span>
+                <AlertTriangle className="w-4 h-4 text-status-terlambat" />
+              </div>
+              {isLoading ? (
+                <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+              ) : (
+                <p className="text-2xl font-black text-status-terlambat">
+                  {pulangCepatCount}
+                </p>
+              )}
+              <p className="text-[10px] font-semibold text-muted-foreground">
+                Total pulang cepat
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );

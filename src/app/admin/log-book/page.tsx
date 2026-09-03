@@ -529,13 +529,18 @@ export default function AdminLogBookPage() {
 
         {/* Data Table */}
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
-          <div className="p-4 border-b border-border flex items-center justify-between gap-4">
-            <h2 className="text-sm md:text-base font-extrabold text-foreground flex items-center gap-2">
-              Daftar Logbook Mahasiswa Magang
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
-                {logbooks.length} data
-              </span>
-            </h2>
+          <div className="p-5 flex items-center justify-between gap-4 border-b border-border">
+            <div className="flex items-center gap-2.5">
+              <div>
+                <h2 className="font-extrabold text-foreground mt-0.5 text-[15px] md:text-lg">
+                  Daftar Logbook Mahasiswa Magang
+                </h2>
+              </div>
+            </div>
+
+            <span className="px-3 py-1 rounded-full text-xs font-black bg-primary/10 text-primary border border-primary/20 shrink-0">
+              {logbooks.length} Data
+            </span>
           </div>
 
           {isLoading ? (

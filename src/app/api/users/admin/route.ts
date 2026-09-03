@@ -6,6 +6,9 @@ import { saveStorageFile } from "@/lib/storage";
 const ADMIN_ROLES = ["SUPERADMIN", "ADMIN_MAGANG", "ADMIN_OS"] as const;
 type AdminRole = (typeof ADMIN_ROLES)[number];
 
+const VERIFICATION_STATUSES = ["PENDING", "APPROVED", "REJECTED"] as const;
+type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
+
 function normalizeAdminRole(roleInput?: string | null): AdminRole | null {
   if (!roleInput) return "ADMIN_MAGANG";
   const r = roleInput.toUpperCase().trim();
@@ -24,11 +27,25 @@ function normalizeStatus(statusInput?: string | null): "ACTIVE" | "INACTIVE" {
   return "ACTIVE";
 }
 
+function normalizeVerificationStatus(
+  statusInput?: string | null
+): VerificationStatus {
+  if (!statusInput) return "APPROVED";
+  const s = statusInput.toUpperCase().trim();
+  if (VERIFICATION_STATUSES.includes(s as VerificationStatus)) {
+    return s as VerificationStatus;
+  }
+  return "APPROVED";
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const roleParam = searchParams.get("role");
     const statusParam = searchParams.get("status");
+    const verificationStatusParam =
+      searchParams.get("verification_status") ||
+      searchParams.get("verificationStatus");
     const search = searchParams.get("q");
 
     let sql = `
@@ -43,7 +60,11 @@ export async function GET(req: Request) {
         status,
         last_login_at,
         created_at,
-        updated_at
+        updated_at,
+        verification_status,
+        verified_at,
+        verified_by,
+        rejection_reason
       FROM admin
       WHERE 1=1
     `;
@@ -62,6 +83,11 @@ export async function GET(req: Request) {
       params.push(normalizeStatus(statusParam));
     }
 
+    if (verificationStatusParam && verificationStatusParam !== "ALL") {
+      sql += " AND verification_status = ?";
+      params.push(normalizeVerificationStatus(verificationStatusParam));
+    }
+
     if (search) {
       sql +=
         " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR identity_number LIKE ?)";
@@ -78,17 +104,25 @@ export async function GET(req: Request) {
       email: row.email,
       role: row.role,
       name: row.name,
+      nama: row.name,
       phone: row.phone || null,
+      no_hp: row.phone || null,
       identity_number: row.identity_number || null,
+      identityNumber: row.identity_number || null,
+      nip: row.identity_number || null,
       avatar: row.avatar || null,
       status: row.status,
       last_login_at: row.last_login_at || null,
       created_at: row.created_at || null,
       updated_at: row.updated_at || null,
-      nama: row.name,
-      no_hp: row.phone || null,
-      identityNumber: row.identity_number || null,
-      nip: row.identity_number || null,
+      verification_status: row.verification_status || "APPROVED",
+      verificationStatus: row.verification_status || "APPROVED",
+      verified_at: row.verified_at || null,
+      verifiedAt: row.verified_at || null,
+      verified_by: row.verified_by ? String(row.verified_by) : null,
+      verifiedBy: row.verified_by ? String(row.verified_by) : null,
+      rejection_reason: row.rejection_reason || null,
+      rejectionReason: row.rejection_reason || null,
     }));
 
     return NextResponse.json({ success: true, data: safeRows });
@@ -113,6 +147,14 @@ export async function POST(req: Request) {
     const rawPhone = body.phone || body.no_hp;
     const rawIdentityNumber =
       body.identity_number || body.identityNumber || body.nip;
+
+    const verificationStatus = normalizeVerificationStatus(
+      body.verification_status || body.verificationStatus
+    );
+    const verifiedAt =
+      body.verified_at || body.verifiedAt || (verificationStatus === "APPROVED" ? new Date() : null);
+    const verifiedBy = body.verified_by || body.verifiedBy || null;
+    const rejectionReason = body.rejection_reason || body.rejectionReason || null;
 
     const normalizedRole = normalizeAdminRole(rawRole) || "ADMIN_MAGANG";
 
@@ -150,12 +192,45 @@ export async function POST(req: Request) {
       }
     }
 
+    // Cek duplikasi email di seluruh tabel pengguna (admin, karyawan_os, peserta_magang)
+    // Email dianggap sudah digunakan jika ditemukan di salah satu dari ketiga tabel.
+    const [emailCheckRows]: any = await mysqlPool.query(
+      `SELECT 1 FROM admin WHERE LOWER(email) = ?
+       UNION ALL
+       SELECT 1 FROM karyawan_os WHERE LOWER(email) = ?
+       UNION ALL
+       SELECT 1 FROM peserta_magang WHERE LOWER(email) = ?
+       LIMIT 1`,
+      [email, email, email]
+    );
+    if (emailCheckRows && emailCheckRows.length > 0) {
+      return NextResponse.json(
+        { success: false, message: "Email sudah terdaftar. Silakan gunakan email lain." },
+        { status: 409 }
+      );
+    }
+
     const hashedPassword = await hashPassword(rawPassword);
 
     const [insertRes]: any = await mysqlPool.query(
-      `INSERT INTO admin (name, email, password, role, status, phone, identity_number, avatar)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, email, hashedPassword, normalizedRole, status, phone, identityNumber, finalAvatar]
+      `INSERT INTO admin (
+        name, email, password, role, status, phone, identity_number, avatar,
+        verification_status, verified_at, verified_by, rejection_reason
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        name,
+        email,
+        hashedPassword,
+        normalizedRole,
+        status,
+        phone,
+        identityNumber,
+        finalAvatar,
+        verificationStatus,
+        verifiedAt,
+        verifiedBy,
+        rejectionReason,
+      ]
     );
 
     return NextResponse.json(
@@ -169,8 +244,12 @@ export async function POST(req: Request) {
           name,
           phone,
           identity_number: identityNumber,
-          avatar,
+          avatar: finalAvatar,
           status,
+          verification_status: verificationStatus,
+          verified_at: verifiedAt,
+          verified_by: verifiedBy,
+          rejection_reason: rejectionReason,
         },
       },
       { status: 201 }
@@ -206,6 +285,14 @@ export async function PATCH(req: Request) {
       identityNumber,
       avatar,
       status,
+      verification_status,
+      verificationStatus,
+      verified_at,
+      verifiedAt,
+      verified_by,
+      verifiedBy,
+      rejection_reason,
+      rejectionReason,
     } = body;
 
     if (!id) {
@@ -233,14 +320,37 @@ export async function PATCH(req: Request) {
     const finalPhone = phone !== undefined ? phone : no_hp;
     const finalIdentity =
       identity_number !== undefined ? identity_number : identityNumber;
+    const finalVerifStatus =
+      verification_status !== undefined ? verification_status : verificationStatus;
+    const finalVerifiedAt = verified_at !== undefined ? verified_at : verifiedAt;
+    const finalVerifiedBy = verified_by !== undefined ? verified_by : verifiedBy;
+    const finalRejection =
+      rejection_reason !== undefined ? rejection_reason : rejectionReason;
 
     if (finalName !== undefined) {
       fields.push("name = ?");
       params.push(String(finalName).trim().slice(0, 150));
     }
     if (email !== undefined) {
+      const newEmail = String(email).trim().toLowerCase().slice(0, 150);
+      // Cek duplikasi email di seluruh tabel, kecuali record admin yang sedang diedit
+      const [emailCheckRows]: any = await mysqlPool.query(
+        `SELECT 1 FROM admin WHERE LOWER(email) = ? AND id != ?
+         UNION ALL
+         SELECT 1 FROM karyawan_os WHERE LOWER(email) = ?
+         UNION ALL
+         SELECT 1 FROM peserta_magang WHERE LOWER(email) = ?
+         LIMIT 1`,
+        [newEmail, id, newEmail, newEmail]
+      );
+      if (emailCheckRows && emailCheckRows.length > 0) {
+        return NextResponse.json(
+          { success: false, message: "Email sudah digunakan oleh akun lain." },
+          { status: 409 }
+        );
+      }
       fields.push("email = ?");
-      params.push(String(email).trim().toLowerCase().slice(0, 150));
+      params.push(newEmail);
     }
     if (password !== undefined && password !== "") {
       const hashed = await hashPassword(password);
@@ -282,6 +392,24 @@ export async function PATCH(req: Request) {
       fields.push("avatar = ?");
       params.push(finalAvatar ? String(finalAvatar).trim().slice(0, 500) : null);
     }
+    if (finalVerifStatus !== undefined) {
+      fields.push("verification_status = ?");
+      params.push(normalizeVerificationStatus(finalVerifStatus));
+    }
+    if (finalVerifiedAt !== undefined) {
+      fields.push("verified_at = ?");
+      params.push(finalVerifiedAt);
+    } else if (finalVerifStatus === "APPROVED") {
+      fields.push("verified_at = NOW()");
+    }
+    if (finalVerifiedBy !== undefined) {
+      fields.push("verified_by = ?");
+      params.push(finalVerifiedBy);
+    }
+    if (finalRejection !== undefined) {
+      fields.push("rejection_reason = ?");
+      params.push(finalRejection ? String(finalRejection).trim().slice(0, 500) : null);
+    }
 
     if (fields.length === 0) {
       return NextResponse.json(
@@ -308,9 +436,6 @@ export async function PATCH(req: Request) {
     return NextResponse.json({
       success: true,
       message: "Data admin berhasil diperbarui.",
-      data: {
-        avatar: avatar !== undefined ? params[fields.indexOf("avatar = ?")] : undefined,
-      },
     });
   } catch (err: any) {
     console.error("PATCH /api/users/admin error:", err);
@@ -325,6 +450,10 @@ export async function PATCH(req: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function PUT(req: Request) {
+  return PATCH(req);
 }
 
 export async function DELETE(req: Request) {
