@@ -97,28 +97,22 @@ function LoginForm() {
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-card text-card-foreground border border-border rounded-2xl p-5 md:p-6 space-y-5 shadow-card">
-        {/* LOGO & HEADER */}
         <div className="text-center space-y-1.5">
           <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground font-black text-lg flex items-center justify-center mx-auto shadow-card">
             H
           </div>
-
           <h1 className="text-xl font-black tracking-tight font-sans text-card-foreground">
             Hadir.in
           </h1>
-
           <p className="text-[11px] font-semibold font-sans text-muted-foreground">
             Presensi Karyawan & Magang Disdukcapil Sidoarjo
           </p>
         </div>
 
-        {/* FORM LOGIN */}
         <form onSubmit={handleSubmit} className="space-y-3.5">
-          {/* TIMEOUT MESSAGE */}
           {isTimeoutLogout && (
             <div className="bg-accent border border-primary/30 rounded-xl p-2.5 flex items-start gap-2 animate-in fade-in">
               <Clock className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-
               <p className="text-[11px] font-bold font-sans text-accent-foreground leading-relaxed">
                 Sesi Anda telah berakhir karena tidak ada aktivitas selama 10
                 menit. Silakan masuk kembali.
@@ -126,16 +120,13 @@ function LoginForm() {
             </div>
           )}
 
-          {/* ERROR MESSAGE */}
           {errorMsg && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-2.5 flex items-center justify-center gap-2 text-[11px] font-bold text-destructive text-center animate-in fade-in">
               <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-
               <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* IDENTIFIER (EMAIL / NIP / NIM / NO. HP) */}
           <div className="space-y-1">
             <label className="text-[11px] font-extrabold font-sans text-card-foreground flex items-center gap-1">
               <User className="w-3.5 h-3.5 text-primary" />
@@ -171,7 +162,6 @@ function LoginForm() {
             />
           </div>
 
-          {/* PASSWORD */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-extrabold font-sans text-card-foreground flex items-center gap-1.5">
@@ -257,7 +247,6 @@ function LoginForm() {
             <Captcha onVerify={setCaptchaVerified} />
           </div> */}
 
-          {/* LOGIN BUTTON */}
           <button
             type="submit"
             // disabled={isLoading || !captchaVerified}
@@ -299,7 +288,6 @@ function LoginForm() {
           </button>
         </form>
 
-        {/* REGISTER */}
         <div className="text-center pt-4 border-t border-border space-y-1.5">
           <p className="text-[11px] text-muted-foreground font-semibold font-sans">
             Belum punya akun?{" "}
@@ -323,8 +311,7 @@ function LoginForm() {
           </p>
         </div>
 
-        {/* SECURITY BADGES */}
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5 font-semibold">
+        {/* <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5 font-semibold">
           <span className="flex items-center gap-1 font-sans">
             <ShieldCheck className="w-3 h-3 text-primary" />
             CAPTCHA Protected
@@ -334,7 +321,7 @@ function LoginForm() {
             <Lock className="w-3 h-3 text-primary" />
             Session Security
           </span>
-        </div>
+        </div> */}
       </div>
     </div>
   );

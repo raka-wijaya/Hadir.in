@@ -90,6 +90,16 @@ export function AlertModal({
   color?: "red" | "blue" | "green" | "yellow" | "orange";
   onClose: () => void;
 }) {
+  React.useEffect(() => {
+    if (isOpen) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const getIconBadge = () => {
@@ -124,8 +134,36 @@ export function AlertModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-card border border-border rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 text-center">
+    <div
+      className="
+        fixed inset-0
+        w-screen h-screen min-h-screen
+        z-50
+        flex items-center justify-center
+        p-4
+        bg-black/60
+        backdrop-blur-xs
+        animate-in
+        fade-in
+      "
+    >
+      <div
+        className="
+          bg-card
+          border border-border
+          rounded-2xl
+          max-w-sm
+          w-full
+          p-5 md:p-6
+          shadow-elevated
+          space-y-4
+          animate-in
+          zoom-in-95
+          max-h-[90vh]
+          overflow-y-auto
+          text-center
+        "
+      >
         {getIconBadge()}
         <div>
           <h3 className="text-base font-black text-foreground">{title}</h3>
@@ -138,7 +176,7 @@ export function AlertModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-black text-xs hover:opacity-90 shadow-card transition-all cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-card hover:brightness-95 active:scale-[0.98] transition-all cursor-pointer"
           >
             Mengerti
           </button>
@@ -171,6 +209,16 @@ export function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  React.useEffect(() => {
+    if (isOpen) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const isDeleteAction =
@@ -217,19 +265,47 @@ export function ConfirmModal({
       case "green":
         return "bg-emerald-600 hover:bg-emerald-700 text-white";
       case "blue":
-        return "bg-primary hover:bg-primary/90 text-primary-foreground";
+        return "bg-primary hover:brightness-95 text-primary-foreground";
       case "yellow":
       case "orange":
         return "bg-amber-600 hover:bg-amber-700 text-white";
       case "red":
       default:
-        return "bg-destructive hover:bg-destructive/90 text-destructive-foreground";
+        return "bg-destructive hover:brightness-95 text-destructive-foreground";
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-card border border-border rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 text-center">
+    <div
+      className="
+        fixed inset-0
+        w-screen h-screen min-h-screen
+        z-50
+        flex items-center justify-center
+        p-4
+        bg-black/60
+        backdrop-blur-xs
+        animate-in
+        fade-in
+      "
+    >
+      <div
+        className="
+          bg-card
+          border border-border
+          rounded-2xl
+          max-w-sm
+          w-full
+          p-5 md:p-6
+          shadow-elevated
+          space-y-4
+          animate-in
+          zoom-in-95
+          max-h-[90vh]
+          overflow-y-auto
+          text-center
+        "
+      >
         {getIconBadge()}
         <div>
           <h3 className="text-base font-black text-foreground">{title}</h3>
@@ -242,14 +318,39 @@ export function ConfirmModal({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold cursor-pointer transition-all"
+            className="
+              px-5
+              py-2.5
+              rounded-xl
+              border border-border
+              bg-secondary
+              text-secondary-foreground
+              font-extrabold
+              text-xs
+              hover:bg-accent
+              hover:text-accent-foreground
+              transition-colors
+              cursor-pointer
+            "
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className={`px-4 py-2 rounded-xl font-bold text-xs shadow-md cursor-pointer transition-all ${getConfirmButtonClasses()}`}
+            className={`
+              px-5
+              py-2.5
+              rounded-xl
+              font-black
+              text-xs
+              shadow-card
+              hover:brightness-95
+              active:scale-[0.98]
+              transition-all
+              cursor-pointer
+              ${getConfirmButtonClasses()}
+            `}
           >
             {confirmLabel}
           </button>

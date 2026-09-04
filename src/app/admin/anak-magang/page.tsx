@@ -78,8 +78,17 @@ export default function AdminAnakMagangPage() {
     color: "red",
   });
 
-  const [deleteUserConfirm, setDeleteUserConfirm] =
-    useState<User | null>(null);
+  const [deleteUserConfirm, setDeleteUserConfirm] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (showAddModal || Boolean(editItem)) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [showAddModal, editItem]);
 
   const showAlert = (
     message: string,
@@ -279,8 +288,8 @@ export default function AdminAnakMagangPage() {
       setNewEmail("");
       setNewInstitution("");
       setNewProgram("");
-      setNewStart("2026-07-01");
-      setNewEnd("2026-10-31");
+      setNewStart("yyyy-yy-yy");
+      setNewEnd("yyyy-yy-yy");
       setNewBatch("");
 
       setBannerAlert({
@@ -659,7 +668,7 @@ export default function AdminAnakMagangPage() {
 
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[900px]">
               <thead>
                 <tr
                   className="
@@ -670,21 +679,22 @@ export default function AdminAnakMagangPage() {
                   text-[11px]
                   uppercase
                   tracking-wider
+                  whitespace-nowrap
                 "
                 >
-                  <th className="py-3.5 px-4">NIM</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">NIM / NPM</th>
 
-                  <th className="py-3.5 px-4">Nama</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">Nama</th>
 
-                  <th className="py-3.5 px-4">Kampus</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[220px]">Kampus</th>
 
-                  <th className="py-3.5 px-4">Periode</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[240px]">Periode</th>
 
-                  <th className="py-3.5 px-4 text-center">Batch</th>
+                  <th className="py-3.5 px-4 text-center whitespace-nowrap">Batch</th>
 
-                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Status</th>
 
-                  <th className="py-3.5 px-4 text-right">Aksi</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
 
@@ -692,7 +702,7 @@ export default function AdminAnakMagangPage() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       className="
                         py-14
                         text-center
@@ -706,7 +716,7 @@ export default function AdminAnakMagangPage() {
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       className="
                         py-14
                         text-center
@@ -714,7 +724,7 @@ export default function AdminAnakMagangPage() {
                         font-semibold
                       "
                     >
-                      Tidak ada data anak magang.
+                      Tidak ada data anak magang yang cocok
                     </td>
                   </tr>
                 ) : (
@@ -737,6 +747,7 @@ export default function AdminAnakMagangPage() {
                         text-xs
                         font-extrabold
                         text-primary
+                        whitespace-nowrap
                       "
                       >
                         {item.identityNumber || "-"}
@@ -749,6 +760,7 @@ export default function AdminAnakMagangPage() {
                         py-3.5 px-4
                         font-extrabold
                         text-foreground
+                        whitespace-nowrap
                       "
                       >
                         <div className="flex items-center gap-3">
@@ -761,6 +773,7 @@ export default function AdminAnakMagangPage() {
                                 rounded-full
                                 object-cover
                                 border border-border
+                                shrink-0
                               "
                             />
                           ) : (
@@ -773,6 +786,7 @@ export default function AdminAnakMagangPage() {
                               flex items-center justify-center
                               text-primary
                               font-black
+                              shrink-0
                             "
                             >
                               {(item.nama || item.name || "?")
@@ -816,9 +830,10 @@ export default function AdminAnakMagangPage() {
                         text-xs
                         font-bold
                         text-foreground
+                        whitespace-nowrap
                       "
                       >
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
                           <GraduationCap
                             className="
                               w-4 h-4
@@ -837,8 +852,9 @@ export default function AdminAnakMagangPage() {
                           text-[11px]
                           text-muted-foreground
                           font-normal
-                          pl-5
+                          pl-5.5
                           mt-0.5
+                          whitespace-nowrap
                         "
                         >
                           {item.unit_kerja ||
@@ -855,11 +871,13 @@ export default function AdminAnakMagangPage() {
                         text-xs
                         font-semibold
                         text-foreground
+                        whitespace-nowrap
                       "
                       >
                         <div
                           className="
                           flex items-center gap-1.5
+                          whitespace-nowrap
                         "
                         >
                           <Calendar
@@ -889,6 +907,7 @@ export default function AdminAnakMagangPage() {
                         font-extrabold
                         text-center
                         text-foreground
+                        whitespace-nowrap
                       "
                       >
                         {item.batch && item.batch !== "-" ? (
@@ -904,7 +923,7 @@ export default function AdminAnakMagangPage() {
 
                       {/* STATUS */}
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <StatusBadge status={item.status} />
                       </td>
 
@@ -913,6 +932,7 @@ export default function AdminAnakMagangPage() {
                       <td
                         className="
                         py-3.5 px-4
+                        whitespace-nowrap
                       "
                       >
                         <div
@@ -1000,6 +1020,7 @@ export default function AdminAnakMagangPage() {
           <div
             className="
       fixed inset-0
+      w-screen h-screen min-h-screen
       z-50
       flex items-center justify-center
       p-4
@@ -1340,6 +1361,7 @@ export default function AdminAnakMagangPage() {
           <div
             className="
             fixed inset-0
+            w-screen h-screen min-h-screen
             z-50
             flex items-center justify-center
             p-4
@@ -1424,7 +1446,7 @@ export default function AdminAnakMagangPage() {
                   text-foreground
                 "
                 >
-                  Nama Lengkap *
+                  Nama Lengkap <span className="text-destructive">*</span>
                 </label>
 
                 <input
@@ -1469,14 +1491,14 @@ export default function AdminAnakMagangPage() {
                     text-foreground
                   "
                   >
-                    NIM / No. Identitas
+                    NIM / NPM <span className="text-destructive">*</span>
                   </label>
 
                   <input
                     type="text"
                     value={editIdentity}
                     onChange={(e) => setEditIdentity(e.target.value)}
-                    placeholder="21081010001"
+                    placeholder="Masukkan NIM/NPM"
                     className="
                       w-full
                       rounded-xl
@@ -1503,7 +1525,7 @@ export default function AdminAnakMagangPage() {
                     text-foreground
                   "
                   >
-                    Email *
+                    Email <span className="text-destructive">*</span>
                   </label>
 
                   <input
@@ -1541,7 +1563,7 @@ export default function AdminAnakMagangPage() {
                   text-foreground
                 "
                 >
-                  Kampus / Instansi *
+                  Kampus / Instansi <span className="text-destructive">*</span>
                 </label>
 
                 <input
@@ -1578,7 +1600,8 @@ export default function AdminAnakMagangPage() {
                   text-foreground
                 "
                 >
-                  Program Studi / Divisi *
+                  Program Studi / Divisi{" "}
+                  <span className="text-destructive">*</span>
                 </label>
 
                 <input
@@ -1682,7 +1705,7 @@ export default function AdminAnakMagangPage() {
               {/* BATCH */}
               <div className="space-y-1">
                 <label className="text-xs font-extrabold text-foreground">
-                  Batch
+                  Batch <span className="text-destructive">*</span>
                 </label>
 
                 <input
