@@ -11,6 +11,7 @@ import {
   AlertModal,
   ConfirmModal,
 } from "@/components/ui/Alert";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 import {
   Plus,
@@ -24,6 +25,7 @@ import {
   InfoIcon,
   CheckCircle2Icon,
   AlertTriangleIcon,
+  Filter,
 } from "lucide-react";
 
 export default function AdminAnakMagangPage() {
@@ -32,11 +34,14 @@ export default function AdminAnakMagangPage() {
 
   const [search, setSearch] = useState("");
   const [debounceSearch, setDebounceSearch] = useState("");
+  const [selectedBatch, setSelectedBatch] = useState<string>("ALL");
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [newIdentity, setNewIdentity] = useState("");
   const [newInstitution, setNewInstitution] = useState("");
   const [newProgram, setNewProgram] = useState("");
   const [newStart, setNewStart] = useState("2026-07-01");
@@ -44,7 +49,6 @@ export default function AdminAnakMagangPage() {
   const [newBatch, setNewBatch] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // EDIT
   const [editItem, setEditItem] = useState<User | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -54,12 +58,10 @@ export default function AdminAnakMagangPage() {
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
   const [editBatch, setEditBatch] = useState<string>("");
-  const [editStatus, setEditStatus] =
-    useState<"ACTIVE" | "INACTIVE">("ACTIVE");
+  const [editStatus, setEditStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
 
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // ALERT
   const [bannerAlert, setBannerAlert] = useState<{
     title: string;
     message: string;
@@ -93,7 +95,7 @@ export default function AdminAnakMagangPage() {
   const showAlert = (
     message: string,
     title = "Peringatan",
-    color: "red" | "green" | "blue" | "yellow" = "red"
+    color: "red" | "green" | "blue" | "yellow" = "red",
   ) => {
     setModalAlert({
       isOpen: true,
@@ -103,9 +105,7 @@ export default function AdminAnakMagangPage() {
     });
   };
 
-  const formatDate = (
-    date: string | Date | null | undefined
-  ) => {
+  const formatDate = (date: string | Date | null | undefined) => {
     if (!date) return "-";
 
     const d = new Date(date);
@@ -124,9 +124,7 @@ export default function AdminAnakMagangPage() {
     try {
       setIsLoading(true);
 
-      const res = await fetch(
-        "/api/users/peserta_magang"
-      );
+      const res = await fetch("/api/users/peserta_magang");
 
       const data = await res.json();
 
@@ -140,7 +138,7 @@ export default function AdminAnakMagangPage() {
             identityNumber: u.identity_number,
             periode_mulai: u.start_date,
             periode_selesai: u.end_date,
-          }))
+          })),
         );
       }
     } catch (err) {
@@ -162,43 +160,54 @@ export default function AdminAnakMagangPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  const availableBatches = Array.from(
+    new Set(
+      interns
+        .map((i) =>
+          i.batch !== null &&
+          i.batch !== undefined &&
+          i.batch !== "" &&
+          i.batch !== "-"
+            ? String(i.batch)
+            : null,
+        )
+        .filter(Boolean) as string[],
+    ),
+  ).sort((a, b) => Number(a) - Number(b));
+
   const filtered = interns.filter((i) => {
+    if (selectedBatch !== "ALL") {
+      const b =
+        i.batch !== null && i.batch !== undefined && i.batch !== ""
+          ? String(i.batch)
+          : "-";
+      if (b !== selectedBatch) return false;
+    }
+
     const q = debounceSearch.trim().toLowerCase();
 
     if (!q) return true;
 
-    const nameStr = (
-      i.nama ||
-      i.name ||
-      ""
-    ).toLowerCase();
+    const nameStr = (i.nama || i.name || "").toLowerCase();
 
-    const instStr = (
-      i.sekolah_kampus ||
-      i.institution ||
-      ""
-    ).toLowerCase();
+    const instStr = (i.sekolah_kampus || i.institution || "").toLowerCase();
 
-    const nimStr = (
-      i.identityNumber ||
-      ""
-    ).toLowerCase();
+    const nimStr = (i.identityNumber || "").toLowerCase();
+
+    const batchStr = String(i.batch || "");
 
     return (
       nameStr.includes(q) ||
       instStr.includes(q) ||
-      nimStr.includes(q)
+      nimStr.includes(q) ||
+      batchStr.includes(q)
     );
   });
 
-  const toggleStatus = async (
-    id: string | number,
-    currentStatus: string
-  ) => {
-    const newStatus =
-      currentStatus === "ACTIVE"
-        ? "INACTIVE"
-        : "ACTIVE";
+  const paginatedInterns = filtered.slice(0, itemsPerPage);
+
+  const toggleStatus = async (id: string | number, currentStatus: string) => {
+    const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
 
     try {
       const res = await fetch("/api/users/peserta_magang", {
@@ -222,8 +231,8 @@ export default function AdminAnakMagangPage() {
                   ...u,
                   status: newStatus,
                 }
-              : u
-          )
+              : u,
+          ),
         );
 
         setBannerAlert({
@@ -249,10 +258,22 @@ export default function AdminAnakMagangPage() {
     }
   };
 
-  const handleAddIntern = async (
-    e: React.FormEvent
-  ) => {
+  const handleAddIntern = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const savedName = newName;
+
+    const closeAndResetForm = () => {
+      setShowAddModal(false);
+      setNewName("");
+      setNewEmail("");
+      setNewIdentity("");
+      setNewInstitution("");
+      setNewProgram("");
+      setNewStart("2026-07-01");
+      setNewEnd("2026-10-31");
+      setNewBatch("");
+    };
 
     try {
       setIsSaving(true);
@@ -265,6 +286,7 @@ export default function AdminAnakMagangPage() {
         body: JSON.stringify({
           name: newName,
           email: newEmail,
+          identity_number: newIdentity.trim() || null,
           password: "123456",
           role: "ANAK_MAGANG",
           status: "ACTIVE",
@@ -282,24 +304,18 @@ export default function AdminAnakMagangPage() {
         throw new Error(data.message || "Gagal menyimpan data.");
       }
 
-      setShowAddModal(false);
+      closeAndResetForm();
 
-      setNewName("");
-      setNewEmail("");
-      setNewInstitution("");
-      setNewProgram("");
-      setNewStart("yyyy-yy-yy");
-      setNewEnd("yyyy-yy-yy");
-      setNewBatch("");
-
-      setBannerAlert({
-        title: "Berhasil ditambahkan.",
-        message: `Data peserta magang "${newName}" berhasil ditambahkan.`,
-        color: "green",
-      });
+      showAlert(
+        `Data peserta magang "${savedName}" berhasil ditambahkan.`,
+        "Berhasil Ditambahkan",
+        "green",
+      );
 
       await loadInterns();
     } catch (err: any) {
+      closeAndResetForm();
+
       showAlert(
         err?.message || "Gagal menambahkan data peserta magang.",
         "Gagal menambahkan data peserta magang.",
@@ -313,70 +329,34 @@ export default function AdminAnakMagangPage() {
   const handleEdit = (item: User) => {
     setEditItem(item);
 
-    setEditName(
-      item.nama ||
-        item.name ||
-        ""
-    );
+    setEditName(item.nama || item.name || "");
 
     setEditEmail(item.email || "");
 
-    setEditIdentity(
-      item.identityNumber ||
-        (item as any).identity_number ||
-        ""
-    );
+    setEditIdentity(item.identityNumber || (item as any).identity_number || "");
 
-    setEditInstitution(
-      item.sekolah_kampus ||
-        item.institution ||
-        ""
-    );
+    setEditInstitution(item.sekolah_kampus || item.institution || "");
 
     setEditProgram(
-      item.unit_kerja ||
-        item.studyProgram ||
-        (item as any).study_program ||
-        ""
+      item.unit_kerja || item.studyProgram || (item as any).study_program || "",
     );
 
     const sDate =
-      item.periode_mulai ||
-      item.startDate ||
-      (item as any).start_date ||
-      "";
+      item.periode_mulai || item.startDate || (item as any).start_date || "";
 
     const eDate =
-      item.periode_selesai ||
-      item.endDate ||
-      (item as any).end_date ||
-      "";
+      item.periode_selesai || item.endDate || (item as any).end_date || "";
 
-    setEditStart(
-      typeof sDate === "string"
-        ? sDate.slice(0, 10)
-        : ""
-    );
+    setEditStart(typeof sDate === "string" ? sDate.slice(0, 10) : "");
 
-    setEditEnd(
-      typeof eDate === "string"
-        ? eDate.slice(0, 10)
-        : ""
-    );
+    setEditEnd(typeof eDate === "string" ? eDate.slice(0, 10) : "");
 
-    setEditStatus(
-      (item.status as
-        | "ACTIVE"
-        | "INACTIVE") ||
-        "ACTIVE"
-    );
+    setEditStatus((item.status as "ACTIVE" | "INACTIVE") || "ACTIVE");
 
     setEditBatch(item.batch && item.batch !== "-" ? String(item.batch) : "");
   };
 
-  const handleUpdateIntern = async (
-    e: React.FormEvent
-  ) => {
+  const handleUpdateIntern = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!editItem) return;
@@ -445,23 +425,17 @@ export default function AdminAnakMagangPage() {
       console.error(err);
 
       showAlert(
-        err?.message ||
-          "Gagal memperbarui data peserta magang.",
+        err?.message || "Gagal memperbarui data peserta magang.",
         "Gagal Memperbarui Data.",
-        "red"
+        "red",
       );
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleDelete = async (
-    item: User
-  ) => {
-    const name =
-      item.nama ||
-      item.name ||
-      "data ini";
+  const handleDelete = async (item: User) => {
+    const name = item.nama || item.name || "data ini";
 
     try {
       const res = await fetch("/api/users/peserta_magang", {
@@ -479,16 +453,12 @@ export default function AdminAnakMagangPage() {
       if (!res.ok || !data.success) {
         throw new Error(
           data.message ||
-            "Terjadi kesalahan saat menghapus data. Silakan coba lagi."
+            "Terjadi kesalahan saat menghapus data. Silakan coba lagi.",
         );
       }
 
       setInterns((prev) =>
-        prev.filter(
-          (u) =>
-            String(u.id) !==
-            String(item.id)
-        )
+        prev.filter((u) => String(u.id) !== String(item.id)),
       );
 
       setBannerAlert({
@@ -503,7 +473,7 @@ export default function AdminAnakMagangPage() {
         err?.message ||
           "Terjadi kesalahan saat menghapus data. Silakan coba lagi.",
         "Gagal Hapus Data",
-        "red"
+        "red",
       );
     }
   };
@@ -611,8 +581,8 @@ export default function AdminAnakMagangPage() {
           </button>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl p-4 shadow-card">
-          <div className="relative md:max-w-md w-full">
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-card flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-md w-full">
             <Search
               className="
                 w-4 h-4
@@ -624,7 +594,7 @@ export default function AdminAnakMagangPage() {
 
             <input
               type="text"
-              placeholder="Cari NIM, nama, atau kampus..."
+              placeholder="Cari NIM, nama, kampus, atau batch..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="
@@ -664,6 +634,37 @@ export default function AdminAnakMagangPage() {
               </button>
             )}
           </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground whitespace-nowrap shrink-0">
+              <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>Filter Batch:</span>
+            </div>
+
+            <select
+              value={selectedBatch}
+              onChange={(e) => setSelectedBatch(e.target.value)}
+              className="
+                h-8 pl-3 pr-8
+                rounded-xl border border-border
+                bg-card text-foreground
+                text-xs font-semibold
+                cursor-pointer
+                focus:outline-none focus:ring-2 focus:ring-primary/40
+                transition-colors
+                appearance-none
+                bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')]
+                bg-no-repeat bg-[right_0.6rem_center]
+              "
+            >
+              <option value="ALL">Semua Batch</option>
+              {availableBatches.map((b) => (
+                <option key={b} value={b}>
+                  Batch {b}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
@@ -684,17 +685,27 @@ export default function AdminAnakMagangPage() {
                 >
                   <th className="py-3.5 px-4 whitespace-nowrap">NIM / NPM</th>
 
-                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">Nama</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">
+                    Nama
+                  </th>
 
-                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[220px]">Kampus</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[220px]">
+                    Kampus
+                  </th>
 
-                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[240px]">Periode</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[240px]">
+                    Periode
+                  </th>
 
-                  <th className="py-3.5 px-4 text-center whitespace-nowrap">Batch</th>
+                  <th className="py-3.5 px-4 text-center whitespace-nowrap">
+                    Batch
+                  </th>
 
                   <th className="py-3.5 px-4 whitespace-nowrap">Status</th>
 
-                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Aksi</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
 
@@ -728,9 +739,7 @@ export default function AdminAnakMagangPage() {
                     </td>
                   </tr>
                 ) : (
-                  /* DATA */
-
-                  filtered.map((item) => (
+                  paginatedInterns.map((item) => (
                     <tr
                       key={item.id}
                       className="
@@ -738,8 +747,6 @@ export default function AdminAnakMagangPage() {
                         transition-colors
                       "
                     >
-                      {/* NIM */}
-
                       <td
                         className="
                         py-3.5 px-4
@@ -752,8 +759,6 @@ export default function AdminAnakMagangPage() {
                       >
                         {item.identityNumber || "-"}
                       </td>
-
-                      {/* NAMA */}
 
                       <td
                         className="
@@ -822,8 +827,6 @@ export default function AdminAnakMagangPage() {
                         </div>
                       </td>
 
-                      {/* KAMPUS */}
-
                       <td
                         className="
                         py-3.5 px-4
@@ -863,8 +866,6 @@ export default function AdminAnakMagangPage() {
                         </div>
                       </td>
 
-                      {/* PERIODE */}
-
                       <td
                         className="
                         py-3.5 px-4
@@ -898,8 +899,6 @@ export default function AdminAnakMagangPage() {
                         </div>
                       </td>
 
-                      {/* BATCH */}
-
                       <td
                         className="
                         py-3.5 px-4
@@ -921,13 +920,9 @@ export default function AdminAnakMagangPage() {
                         )}
                       </td>
 
-                      {/* STATUS */}
-
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <StatusBadge status={item.status} />
                       </td>
-
-                      {/* AKSI */}
 
                       <td
                         className="
@@ -943,8 +938,6 @@ export default function AdminAnakMagangPage() {
                           gap-1
                         "
                         >
-                          {/* EDIT */}
-
                           <button
                             type="button"
                             onClick={() => handleEdit(item)}
@@ -962,8 +955,6 @@ export default function AdminAnakMagangPage() {
                             <Pencil className="w-4 h-4" />
                           </button>
 
-                          {/* DELETE */}
-
                           <button
                             type="button"
                             onClick={() => setDeleteUserConfirm(item)}
@@ -980,8 +971,6 @@ export default function AdminAnakMagangPage() {
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-
-                          {/* TOGGLE */}
 
                           <button
                             type="button"
@@ -1014,22 +1003,56 @@ export default function AdminAnakMagangPage() {
               </tbody>
             </table>
           </div>
+
+          {!isLoading && filtered.length > 0 && (
+            <div className="p-4 border-t border-border flex items-center justify-between gap-4 bg-muted/20">
+              <div className="text-xs text-muted-foreground font-semibold">
+                Menampilkan{" "}
+                <strong className="text-foreground font-bold">
+                  {filtered.length}
+                </strong>{" "}
+                data peserta magang
+                {selectedBatch !== "ALL" && (
+                  <span className="ml-1 text-primary font-bold">
+                    (Batch {selectedBatch})
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">
+                  Number of rows:
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="
+                    bg-card
+                    border border-border
+                    rounded-lg
+                    px-2.5 py-1.5
+                    text-xs font-bold
+                    text-foreground
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-primary/40
+                    transition-all
+                    cursor-pointer
+                  "
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         {showAddModal && (
-          <div
-            className="
-      fixed inset-0
-      w-screen h-screen min-h-screen
-      z-50
-      flex items-center justify-center
-      p-4
-      bg-black/60
-      backdrop-blur-xs
-      animate-in
-      fade-in
-    "
-          >
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
             <form
               onSubmit={handleAddIntern}
               className="
@@ -1043,11 +1066,10 @@ export default function AdminAnakMagangPage() {
         space-y-5
         animate-in
         zoom-in-95
-        max-h-[90vh]
+        max-h-[calc(100vh-2rem)]
         overflow-y-auto
       "
             >
-              {/* HEADER */}
               <div
                 className="
           flex items-center justify-between
@@ -1094,9 +1116,7 @@ export default function AdminAnakMagangPage() {
                 </button>
               </div>
 
-              {/* FORM GRID */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* NAME */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
                     Nama Lengkap<span className="text-status-tolak">*</span>
@@ -1127,7 +1147,36 @@ export default function AdminAnakMagangPage() {
                   />
                 </div>
 
-                {/* EMAIL */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
+                    Nomor Identitas (NIM / NPM){" "}
+                    <span className="text-status-tolak">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    value={newIdentity}
+                    onChange={(e) => setNewIdentity(e.target.value)}
+                    placeholder="Masukkan NIM/NPM"
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3
+              py-2
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              transition-all
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary/40
+              focus:border-primary
+            "
+                  />
+                </div>
+
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
                     Email <span className="text-status-tolak">*</span>
@@ -1158,7 +1207,6 @@ export default function AdminAnakMagangPage() {
                   />
                 </div>
 
-                {/* INSTITUTION */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-foreground flex gap-1">
                     Kampus / Sekolah
@@ -1190,7 +1238,6 @@ export default function AdminAnakMagangPage() {
                   />
                 </div>
 
-                {/* PROGRAM */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-foreground flex gap-1">
                     Program Studi<span className="text-status-tolak">*</span>
@@ -1200,7 +1247,7 @@ export default function AdminAnakMagangPage() {
                     type="text"
                     value={newProgram}
                     onChange={(e) => setNewProgram(e.target.value)}
-                    placeholder="Masukan Prodi"
+                    placeholder="Masukan Program studi"
                     className="
               w-full
               rounded-xl
@@ -1221,7 +1268,36 @@ export default function AdminAnakMagangPage() {
                   />
                 </div>
 
-                {/* START DATE */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-extrabold text-foreground flex gap-1">
+                    Batch
+                    <span className="text-status-tolak">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    value={newBatch}
+                    onChange={(e) => setNewBatch(e.target.value)}
+                    placeholder="Misal: 1, 2, 3..."
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3
+              py-2
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              transition-all
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary/40
+              focus:border-primary
+            "
+                  />
+                </div>
+
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-foreground">
                     Periode Mulai
@@ -1249,7 +1325,6 @@ export default function AdminAnakMagangPage() {
                   />
                 </div>
 
-                {/* END DATE */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-foreground">
                     Periode Selesai
@@ -1278,37 +1353,6 @@ export default function AdminAnakMagangPage() {
                 </div>
               </div>
 
-              {/* BATCH */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-extrabold text-foreground flex gap-1">
-                  Batch
-                  <span className="text-status-tolak">*</span>
-                </label>
-
-                <input
-                  type="text"
-                  value={newBatch}
-                  onChange={(e) => setNewBatch(e.target.value)}
-                  placeholder="Misal: 1, 2, 3..."
-                  className="
-                    w-full
-                    rounded-xl
-                    border border-border
-                    bg-input
-                    px-3 py-2
-                    text-xs
-                    text-foreground
-                    placeholder:text-muted-foreground
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-primary/40
-                    focus:border-primary
-                  "
-                />
-              </div>
-
-              {/* BUTTON */}
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -1355,22 +1399,12 @@ export default function AdminAnakMagangPage() {
               </div>
             </form>
           </div>
-        )}
+        </ModalPortal>
+      )}
 
-        {editItem && (
-          <div
-            className="
-            fixed inset-0
-            w-screen h-screen min-h-screen
-            z-50
-            flex items-center justify-center
-            p-4
-            bg-black/60
-            backdrop-blur-xs
-            animate-in
-            fade-in
-          "
-          >
+      {editItem && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
             <form
               onSubmit={handleUpdateIntern}
               className="
@@ -1378,18 +1412,16 @@ export default function AdminAnakMagangPage() {
                 border border-border
                 rounded-2xl
                 w-full
-                max-w-md
+                max-w-2xl
                 p-6
                 shadow-elevated
                 space-y-4
                 animate-in
                 zoom-in-95
-                max-h-[90vh]
+                max-h-[calc(100vh-2rem)]
                 overflow-y-auto
               "
             >
-              {/* HEADER */}
-
               <div
                 className="
                 flex items-center justify-between
@@ -1436,53 +1468,42 @@ export default function AdminAnakMagangPage() {
                 </button>
               </div>
 
-              {/* NAME */}
-
-              <div className="space-y-1">
-                <label
-                  className="
-                  text-xs
-                  font-extrabold
-                  text-foreground
-                "
-                >
-                  Nama Lengkap <span className="text-destructive">*</span>
-                </label>
-
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Masukkan nama lengkap"
-                  className="
-                    w-full
-                    rounded-xl
-                    border border-border
-                    bg-input
-                    px-3.5 py-2.5
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label
+                    className="
                     text-xs
+                    font-extrabold
                     text-foreground
-                    placeholder:text-muted-foreground
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-primary/40
-                    focus:border-primary
                   "
-                  required
-                />
-              </div>
+                  >
+                    Nama Lengkap <span className="text-destructive">*</span>
+                  </label>
 
-              {/* ID + EMAIL */}
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Masukkan nama lengkap"
+                    className="
+                      w-full
+                      rounded-xl
+                      border border-border
+                      bg-input
+                      px-3.5 py-2.5
+                      text-xs
+                      text-foreground
+                      placeholder:text-muted-foreground
+                      transition-all
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-primary/40
+                      focus:border-primary
+                    "
+                    required
+                  />
+                </div>
 
-              <div
-                className="
-                grid
-                grid-cols-1
-                sm:grid-cols-2
-                gap-2
-              "
-              >
                 <div className="space-y-1">
                   <label
                     className="
@@ -1514,6 +1535,7 @@ export default function AdminAnakMagangPage() {
                       focus:ring-primary/40
                       focus:border-primary
                     "
+                    required
                   />
                 </div>
 
@@ -1551,92 +1573,107 @@ export default function AdminAnakMagangPage() {
                     required
                   />
                 </div>
-              </div>
 
-              {/* INSTITUTION */}
-
-              <div className="space-y-1">
-                <label
-                  className="
-                  text-xs
-                  font-extrabold
-                  text-foreground
-                "
-                >
-                  Kampus / Instansi <span className="text-destructive">*</span>
-                </label>
-
-                <input
-                  type="text"
-                  value={editInstitution}
-                  onChange={(e) => setEditInstitution(e.target.value)}
-                  placeholder="Universitas..."
-                  className="
-                    w-full
-                    rounded-xl
-                    border border-border
-                    bg-input
-                    px-3.5 py-2.5
+                <div className="space-y-1">
+                  <label
+                    className="
                     text-xs
+                    font-extrabold
                     text-foreground
-                    placeholder:text-muted-foreground
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-primary/40
-                    focus:border-primary
                   "
-                  required
-                />
-              </div>
+                  >
+                    Kampus / Instansi{" "}
+                    <span className="text-destructive">*</span>
+                  </label>
 
-              {/* PROGRAM */}
+                  <input
+                    type="text"
+                    value={editInstitution}
+                    onChange={(e) => setEditInstitution(e.target.value)}
+                    placeholder="Universitas..."
+                    className="
+                      w-full
+                      rounded-xl
+                      border border-border
+                      bg-input
+                      px-3.5 py-2.5
+                      text-xs
+                      text-foreground
+                      placeholder:text-muted-foreground
+                      transition-all
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-primary/40
+                      focus:border-primary
+                    "
+                    required
+                  />
+                </div>
 
-              <div className="space-y-1">
-                <label
-                  className="
-                  text-xs
-                  font-extrabold
-                  text-foreground
-                "
-                >
-                  Program Studi / Divisi{" "}
-                  <span className="text-destructive">*</span>
-                </label>
-
-                <input
-                  type="text"
-                  value={editProgram}
-                  onChange={(e) => setEditProgram(e.target.value)}
-                  placeholder="Teknik Informatika..."
-                  className="
-                    w-full
-                    rounded-xl
-                    border border-border
-                    bg-input
-                    px-3.5 py-2.5
+                <div className="space-y-1">
+                  <label
+                    className="
                     text-xs
+                    font-extrabold
                     text-foreground
-                    placeholder:text-muted-foreground
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-primary/40
-                    focus:border-primary
                   "
-                  required
-                />
-              </div>
+                  >
+                    Program Studi / Divisi{" "}
+                    <span className="text-destructive">*</span>
+                  </label>
 
-              {/* DATE */}
+                  <input
+                    type="text"
+                    value={editProgram}
+                    onChange={(e) => setEditProgram(e.target.value)}
+                    placeholder="Teknik Informatika..."
+                    className="
+                      w-full
+                      rounded-xl
+                      border border-border
+                      bg-input
+                      px-3.5 py-2.5
+                      text-xs
+                      text-foreground
+                      placeholder:text-muted-foreground
+                      transition-all
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-primary/40
+                      focus:border-primary
+                    "
+                    required
+                  />
+                </div>
 
-              <div
-                className="
-                grid
-                grid-cols-2
-                gap-2
-              "
-              >
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    Batch <span className="text-destructive">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    value={editBatch}
+                    onChange={(e) => setEditBatch(e.target.value)}
+                    placeholder="Misal: 1, 2, 3..."
+                    className="
+                      w-full
+                      rounded-xl
+                      border border-border
+                      bg-input
+                      px-3.5 py-2.5
+                      text-xs
+                      text-foreground
+                      placeholder:text-muted-foreground
+                      transition-all
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-primary/40
+                      focus:border-primary
+                    "
+                  />
+                </div>
+
                 <div className="space-y-1">
                   <label
                     className="
@@ -1657,7 +1694,7 @@ export default function AdminAnakMagangPage() {
                       rounded-xl
                       border border-border
                       bg-input
-                      px-3 py-2.5
+                      px-3.5 py-2.5
                       text-xs
                       text-foreground
                       transition-all
@@ -1689,7 +1726,7 @@ export default function AdminAnakMagangPage() {
                       rounded-xl
                       border border-border
                       bg-input
-                      px-3 py-2.5
+                      px-3.5 py-2.5
                       text-xs
                       text-foreground
                       transition-all
@@ -1700,82 +1737,49 @@ export default function AdminAnakMagangPage() {
                     "
                   />
                 </div>
-              </div>
 
-              {/* BATCH */}
-              <div className="space-y-1">
-                <label className="text-xs font-extrabold text-foreground">
-                  Batch <span className="text-destructive">*</span>
-                </label>
-
-                <input
-                  type="text"
-                  value={editBatch}
-                  onChange={(e) => setEditBatch(e.target.value)}
-                  placeholder="Misal: 1, 2, 3..."
-                  className="
-                    w-full
-                    rounded-xl
-                    border border-border
-                    bg-input
-                    px-3 py-2.5
+                <div className="space-y-1 md:col-span-2">
+                  <label
+                    className="
                     text-xs
+                    font-extrabold
                     text-foreground
-                    placeholder:text-muted-foreground
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-primary/40
-                    focus:border-primary
                   "
-                />
+                  >
+                    Status Keaktifan
+                  </label>
+
+                  <select
+                    value={editStatus}
+                    onChange={(e) =>
+                      setEditStatus(e.target.value as "ACTIVE" | "INACTIVE")
+                    }
+                    className="
+                      w-full
+                      rounded-xl
+                      border border-border
+                      bg-input
+                      px-3.5 py-2.5
+                      text-xs
+                      font-bold
+                      text-foreground
+                      transition-all
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-primary/40
+                      focus:border-primary
+                    "
+                  >
+                    <option value="ACTIVE">Aktif (ACTIVE)</option>
+
+                    <option value="INACTIVE">Nonaktif (INACTIVE)</option>
+                  </select>
+                </div>
               </div>
-
-              {/* STATUS */}
-
-              <div className="space-y-1">
-                <label
-                  className="
-                  text-xs
-                  font-extrabold
-                  text-foreground
-                "
-                >
-                  Status Keaktifan
-                </label>
-
-                <select
-                  value={editStatus}
-                  onChange={(e) =>
-                    setEditStatus(e.target.value as "ACTIVE" | "INACTIVE")
-                  }
-                  className="
-                    w-full
-                    rounded-xl
-                    border border-border
-                    bg-input
-                    px-3 py-2.5
-                    text-xs
-                    font-bold
-                    text-foreground
-                    transition-all
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-primary/40
-                    focus:border-primary
-                  "
-                >
-                  <option value="ACTIVE">Aktif (ACTIVE)</option>
-
-                  <option value="INACTIVE">Nonaktif (INACTIVE)</option>
-                </select>
-              </div>
-
-              {/* BUTTON */}
 
               <div
                 className="
-                flex gap-2
+                flex justify-end gap-2
                 pt-2
               "
               >
@@ -1783,7 +1787,7 @@ export default function AdminAnakMagangPage() {
                   type="button"
                   onClick={() => setEditItem(null)}
                   className="
-                    flex-1
+                    px-6
                     py-2.5
                     rounded-xl
                     border border-border
@@ -1804,7 +1808,7 @@ export default function AdminAnakMagangPage() {
                   type="submit"
                   disabled={isUpdating}
                   className="
-                    flex-1
+                    px-6
                     py-2.5
                     rounded-xl
                     bg-primary
@@ -1813,9 +1817,9 @@ export default function AdminAnakMagangPage() {
                     text-xs
                     shadow-card
                     hover:brightness-95
-                    active:scale-[0.98]
                     transition-all
                     disabled:opacity-50
+                    disabled:cursor-not-allowed
                     cursor-pointer
                   "
                 >
@@ -1824,7 +1828,8 @@ export default function AdminAnakMagangPage() {
               </div>
             </form>
           </div>
-        )}
+        </ModalPortal>
+      )}
       </div>
     </DashboardLayout>
   );

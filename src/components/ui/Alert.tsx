@@ -8,6 +8,7 @@ import {
   Info as InfoIcon,
   XCircle,
 } from "lucide-react";
+import { ModalPortal } from "./ModalPortal";
 
 // ─── Shadcn-style Alert ─────────────────────────────────────────────────────
 // Usage:
@@ -127,62 +128,67 @@ export function AlertModal({
       default:
         return (
           <div className="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
-            <AlertTriangle className="w-6 h-6" />
+            <XCircle className="w-6 h-6" />
           </div>
         );
     }
   };
 
+  const getButtonClass = () => {
+    switch (color) {
+      case "green":
+        return "bg-emerald-600 hover:bg-emerald-700 text-white";
+      case "red":
+        return "bg-destructive hover:brightness-95 text-destructive-foreground";
+      case "yellow":
+      case "orange":
+        return "bg-amber-600 hover:bg-amber-700 text-white";
+      case "blue":
+      default:
+        return "bg-primary text-primary-foreground hover:brightness-95";
+    }
+  };
+
   return (
-    <div
-      className="
-        fixed inset-0
-        w-screen h-screen min-h-screen
-        z-50
-        flex items-center justify-center
-        p-4
-        bg-black/60
-        backdrop-blur-xs
-        animate-in
-        fade-in
-      "
-    >
-      <div
-        className="
-          bg-card
-          border border-border
-          rounded-2xl
-          max-w-sm
-          w-full
-          p-5 md:p-6
-          shadow-elevated
-          space-y-4
-          animate-in
-          zoom-in-95
-          max-h-[90vh]
-          overflow-y-auto
-          text-center
-        "
-      >
-        {getIconBadge()}
-        <div>
-          <h3 className="text-base font-black text-foreground">{title}</h3>
-          <div className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-            {message}
+    <ModalPortal>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+        <div
+          className="
+            bg-card
+            border border-border
+            rounded-2xl
+            max-w-sm
+            w-full
+            p-5 md:p-6
+            shadow-elevated
+            space-y-4
+            animate-in
+            zoom-in-95
+            max-h-[calc(100vh-2rem)]
+            overflow-y-auto
+            text-center
+          "
+        >
+          {getIconBadge()}
+          <div>
+            <h3 className="text-base font-black text-foreground">{title}</h3>
+            <div className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+              {message}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className={`px-5 py-2.5 rounded-xl font-black text-xs shadow-card active:scale-[0.98] transition-all cursor-pointer ${getButtonClass()}`}
+            >
+              Mengerti
+            </button>
           </div>
         </div>
-
-        <div className="flex items-center justify-center pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-card hover:brightness-95 active:scale-[0.98] transition-all cursor-pointer"
-          >
-            Mengerti
-          </button>
-        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }
 
@@ -276,87 +282,77 @@ export function ConfirmModal({
   };
 
   return (
-    <div
-      className="
-        fixed inset-0
-        w-screen h-screen min-h-screen
-        z-50
-        flex items-center justify-center
-        p-4
-        bg-black/60
-        backdrop-blur-xs
-        animate-in
-        fade-in
-      "
-    >
-      <div
-        className="
-          bg-card
-          border border-border
-          rounded-2xl
-          max-w-sm
-          w-full
-          p-5 md:p-6
-          shadow-elevated
-          space-y-4
-          animate-in
-          zoom-in-95
-          max-h-[90vh]
-          overflow-y-auto
-          text-center
-        "
-      >
-        {getIconBadge()}
-        <div>
-          <h3 className="text-base font-black text-foreground">{title}</h3>
-          <div className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-            {message}
+    <ModalPortal>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+        <div
+          className="
+            bg-card
+            border border-border
+            rounded-2xl
+            max-w-sm
+            w-full
+            p-5 md:p-6
+            shadow-elevated
+            space-y-4
+            animate-in
+            zoom-in-95
+            max-h-[calc(100vh-2rem)]
+            overflow-y-auto
+            text-center
+          "
+        >
+          {getIconBadge()}
+          <div>
+            <h3 className="text-base font-black text-foreground">{title}</h3>
+            <div className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+              {message}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="
+                px-5
+                py-2.5
+                rounded-xl
+                border border-border
+                bg-secondary
+                text-secondary-foreground
+                font-extrabold
+                text-xs
+                hover:bg-accent
+                hover:text-accent-foreground
+                transition-colors
+                cursor-pointer
+              "
+            >
+              {cancelLabel}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className={`
+                px-5
+                py-2.5
+                rounded-xl
+                font-black
+                text-xs
+                shadow-card
+                hover:brightness-95
+                active:scale-[0.98]
+                transition-all
+                cursor-pointer
+                ${getConfirmButtonClasses()}
+              `}
+            >
+              {confirmLabel}
+            </button>
           </div>
         </div>
-
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="
-              px-5
-              py-2.5
-              rounded-xl
-              border border-border
-              bg-secondary
-              text-secondary-foreground
-              font-extrabold
-              text-xs
-              hover:bg-accent
-              hover:text-accent-foreground
-              transition-colors
-              cursor-pointer
-            "
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={`
-              px-5
-              py-2.5
-              rounded-xl
-              font-black
-              text-xs
-              shadow-card
-              hover:brightness-95
-              active:scale-[0.98]
-              transition-all
-              cursor-pointer
-              ${getConfirmButtonClasses()}
-            `}
-          >
-            {confirmLabel}
-          </button>
-        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }
 

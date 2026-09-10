@@ -125,9 +125,6 @@ async function getActiveSetting() {
   };
 }
 
-/**
- * Helper: Mencari tipe user dan tabel asalnya (peserta_magang vs karyawan_os vs users)
- */
 async function resolveUserTarget(userId: string | number, explicitRole?: string | null) {
   const cleanId = String(userId);
   const roleUpper = (explicitRole || "").toUpperCase();
@@ -152,7 +149,6 @@ async function resolveUserTarget(userId: string | number, explicitRole?: string 
     }
   }
 
-  // Coba cari di peserta_magang
   const [magangRows]: any = await mysqlPool.query(
     "SELECT id, name, email, phone, identity_number, institution, study_program, avatar, 'ANAK_MAGANG' as role FROM peserta_magang WHERE id = ? LIMIT 1",
     [cleanId]
@@ -161,7 +157,6 @@ async function resolveUserTarget(userId: string | number, explicitRole?: string 
     return { type: "peserta_magang" as const, id: magangRows[0].id, data: magangRows[0] };
   }
 
-  // Coba cari di karyawan_os
   const [osRows]: any = await mysqlPool.query(
     "SELECT id, name, email, phone, identity_number, avatar, 'KARYAWAN_OS' as role FROM karyawan_os WHERE id = ? LIMIT 1",
     [cleanId]
@@ -170,11 +165,10 @@ async function resolveUserTarget(userId: string | number, explicitRole?: string 
     return { type: "karyawan_os" as const, id: osRows[0].id, data: osRows[0] };
   }
 
-  // Fallback ke users jika ada
   try {
     const [userRows]: any = await mysqlPool.query(
       "SELECT id, name, role, email, phone, identity_number, institution, study_program, avatar FROM users WHERE id = ? LIMIT 1",
-      [cleanId]
+      [cleanId],
     );
     if (userRows && userRows.length > 0) {
       const u = userRows[0];
@@ -183,24 +177,11 @@ async function resolveUserTarget(userId: string | number, explicitRole?: string 
       }
       return { type: "peserta_magang" as const, id: u.id, data: u };
     }
-  } catch {
-    // Abaikan jika tabel users tidak ada
-  }
+  } catch {}
 
   return { type: "peserta_magang" as const, id: cleanId, data: null };
 }
 
-/**
- * GET: Mengambil data absensi
- * Sesuai skema tabel absensi:
- *   id (bigint unsigned), karyawan_os_id (bigint unsigned), peserta_magang_id (bigint unsigned),
- *   pengaturan_sistem_id (int unsigned), tanggal (date), jam_masuk (time), jam_keluar (time),
- *   status enum('HADIR','IZIN','SAKIT','ALPA'),
- *   status_masuk enum('TEPAT_WAKTU','TERLAMBAT'),
- *   status_pulang enum('TEPAT_WAKTU','PULANG_CEPAT'),
- *   foto_masuk varchar(500), foto_keluar varchar(500), foto_pulang_cepat varchar(500),
- *   keterangan text, created_at timestamp, updated_at timestamp
- */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

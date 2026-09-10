@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 import { useAuth } from "@/lib/auth/context";
 import { TugasItem, User, LogBook } from "@/types";
 import {
@@ -30,6 +37,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Check,
 } from "lucide-react";
 
 const KATEGORI_OPTIONS = [
@@ -130,11 +138,15 @@ export default function AdminTugasPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [debounceSearch, setDebounceSearch] = useState<string>("");
   const [selectedInternId, setSelectedInternId] = useState<string>("ALL");
+  const [internSearchQuery, setInternSearchQuery] = useState<string>("");
+  const [isInternDropdownOpen, setIsInternDropdownOpen] =
+    useState<boolean>(false);
+  const internComboboxRef = useRef<HTMLDivElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [sortOrder, setSortOrder] = useState<"DESC" | "ASC">("DESC");
+  const [itemsPerPage, setItemsPerPage] = useState<number>(5);
 
-  // Modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
@@ -142,7 +154,6 @@ export default function AdminTugasPage() {
 
   const [selectedTugas, setSelectedTugas] = useState<TugasItem | null>(null);
 
-  // Form state
   const [formData, setFormData] = useState({
     peserta_magang_id: "",
     log_book_id: "",
@@ -156,7 +167,7 @@ export default function AdminTugasPage() {
     string[]
   >([]);
   const [internSearchModal, setInternSearchModal] = useState<string>("");
-  const [isInternDropdownOpen, setIsInternDropdownOpen] =
+  const [isModalInternDropdownOpen, setIsModalInternDropdownOpen] =
     useState<boolean>(false);
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -178,10 +189,6 @@ export default function AdminTugasPage() {
   const effectiveRole = String(user?.role || "").toUpperCase();
   const isDenied = effectiveRole === "ADMIN_OS";
 
-  // =========================================================
-  // DEBOUNCE SEARCH
-  // =========================================================
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebounceSearch(searchQuery);
@@ -189,10 +196,6 @@ export default function AdminTugasPage() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  // =========================================================
-  // FETCH INTERNS
-  // =========================================================
 
   useEffect(() => {
     async function fetchInterns() {
@@ -214,9 +217,18 @@ export default function AdminTugasPage() {
     fetchInterns();
   }, []);
 
-  // =========================================================
-  // FETCH LOGBOOK
-  // =========================================================
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        internComboboxRef.current &&
+        !internComboboxRef.current.contains(event.target as Node)
+      ) {
+        setIsInternDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     async function fetchLogbooksList() {
@@ -237,10 +249,6 @@ export default function AdminTugasPage() {
 
     fetchLogbooksList();
   }, []);
-
-  // =========================================================
-  // FETCH TUGAS
-  // =========================================================
 
   const fetchTugasList = useCallback(async () => {
     try {
@@ -288,10 +296,6 @@ export default function AdminTugasPage() {
     fetchTugasList();
   }, [fetchTugasList]);
 
-  // =========================================================
-  // TOGGLE STATUS PENGERJAAN
-  // =========================================================
-
   const handleToggleStatus = async (task: TugasItem) => {
     try {
       const current = (
@@ -315,9 +319,12 @@ export default function AdminTugasPage() {
 
       if (res.ok && json.success) {
         setSuccessMessage(
-          `Status tugas #${task.id} diperbarui menjadi ${
-            newStatus === "SELESAI" ? "Selesai" : "Belum Dikerjakan"
-          }.`,
+          json.message ||
+            `Status tugas #${task.id} diperbarui menjadi ${
+              newStatus === "SELESAI"
+                ? "Selesai (Tercatat di Log Book)"
+                : "Belum Dikerjakan"
+            }.`,
         );
 
         fetchTugasList();
@@ -328,10 +335,6 @@ export default function AdminTugasPage() {
       console.error("Gagal memperbarui status tugas:", err);
     }
   };
-
-  // =========================================================
-  // SORT
-  // =========================================================
 
   const displayedTugas = useMemo(() => {
     const list = [...tugasList];
@@ -346,10 +349,6 @@ export default function AdminTugasPage() {
 
     return list;
   }, [tugasList, sortOrder]);
-
-  // =========================================================
-  // STATISTICS
-  // =========================================================
 
   const stats = useMemo(() => {
     const total = tugasList.length;
@@ -373,16 +372,19 @@ export default function AdminTugasPage() {
     };
   }, [tugasList]);
 
-  // =========================================================
-  // RESET FORM
-  // =========================================================
+  const selectedInternObj = useMemo(() => {
+    if (selectedInternId === "ALL") return null;
+    return (
+      interns.find((i) => String(i.id) === String(selectedInternId)) || null
+    );
+  }, [selectedInternId, interns]);
 
   const resetForm = () => {
     setSelectedCreateInternIds(
       interns.length > 0 ? [String(interns[0].id)] : [],
     );
     setInternSearchModal("");
-    setIsInternDropdownOpen(false);
+    setIsModalInternDropdownOpen(false);
     setFormData({
       peserta_magang_id: interns.length > 0 ? String(interns[0].id) : "",
       log_book_id: "",
@@ -395,18 +397,10 @@ export default function AdminTugasPage() {
     setErrorMessage(null);
   };
 
-  // =========================================================
-  // CREATE MODAL
-  // =========================================================
-
   const handleOpenCreate = () => {
     resetForm();
     setIsCreateModalOpen(true);
   };
-
-  // =========================================================
-  // EDIT MODAL
-  // =========================================================
 
   const handleOpenEdit = (item: TugasItem) => {
     setSelectedTugas(item);
@@ -432,28 +426,16 @@ export default function AdminTugasPage() {
     setIsEditModalOpen(true);
   };
 
-  // =========================================================
-  // DETAIL MODAL
-  // =========================================================
-
   const handleOpenDetail = (item: TugasItem) => {
     setSelectedTugas(item);
     setIsDetailModalOpen(true);
   };
-
-  // =========================================================
-  // DELETE MODAL
-  // =========================================================
 
   const handleOpenDelete = (item: TugasItem) => {
     setSelectedTugas(item);
     setErrorMessage(null);
     setIsDeleteModalOpen(true);
   };
-
-  // =========================================================
-  // CREATE
-  // =========================================================
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -520,10 +502,6 @@ export default function AdminTugasPage() {
     }
   };
 
-  // =========================================================
-  // EDIT
-  // =========================================================
-
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -568,7 +546,7 @@ export default function AdminTugasPage() {
       const json = await res.json();
 
       if (res.ok && json.success) {
-        setSuccessMessage("Tugas berhasil diperbarui.");
+        setSuccessMessage(json.message || "Tugas berhasil diperbarui.");
 
         setIsEditModalOpen(false);
 
@@ -586,10 +564,6 @@ export default function AdminTugasPage() {
       setIsSubmitting(false);
     }
   };
-
-  // =========================================================
-  // DELETE
-  // =========================================================
 
   const handleDeleteSubmit = async () => {
     if (!selectedTugas) return;
@@ -623,10 +597,6 @@ export default function AdminTugasPage() {
     }
   };
 
-  // =========================================================
-  // ACCESS DENIED
-  // =========================================================
-
   if (isDenied) {
     return (
       <DashboardLayout>
@@ -651,10 +621,6 @@ export default function AdminTugasPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* ========================================================= */}
-        {/* HEADER */}
-        {/* ========================================================= */}
-
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -696,10 +662,6 @@ export default function AdminTugasPage() {
           </div>
         </div>
 
-        {/* ========================================================= */}
-        {/* SUCCESS MESSAGE */}
-        {/* ========================================================= */}
-
         {successMessage && (
           <div className="p-4 rounded-xl status-hadir border flex items-center justify-between gap-3 text-xs font-bold animate-in fade-in">
             <div className="flex items-center gap-2">
@@ -717,12 +679,7 @@ export default function AdminTugasPage() {
           </div>
         )}
 
-        {/* ========================================================= */}
-        {/* QUICK STATS */}
-        {/* ========================================================= */}
-
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {/* Total Tugas - Primary / Amber */}
           <div className="bg-card border border-border hover:border-primary/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
@@ -743,7 +700,6 @@ export default function AdminTugasPage() {
             </span>
           </div>
 
-          {/* Belum Dikerjakan - Amber (status-terlambat) */}
           <div className="bg-card border border-border hover:border-status-terlambat/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
@@ -766,7 +722,6 @@ export default function AdminTugasPage() {
             </span>
           </div>
 
-          {/* Selesai - Green (status-hadir) */}
           <div className="bg-card border border-border hover:border-status-hadir/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
@@ -789,7 +744,6 @@ export default function AdminTugasPage() {
             </span>
           </div>
 
-          {/* Programmer - Blue (status-izin) */}
           <div className="bg-card border border-border hover:border-status-izin/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
@@ -812,10 +766,6 @@ export default function AdminTugasPage() {
             </span>
           </div>
         </div>
-
-        {/* ========================================================= */}
-        {/* SEARCH & FILTER */}
-        {/* ========================================================= */}
 
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
@@ -842,27 +792,136 @@ export default function AdminTugasPage() {
               )}
             </div>
 
-            {/* Intern / Siswa Magang Filter */}
-            <div className="relative">
-              <select
-                value={selectedInternId}
-                onChange={(e) => setSelectedInternId(e.target.value)}
-                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer appearance-none"
-              >
-                <option value="ALL">Semua Peserta</option>
+            <div className="relative" ref={internComboboxRef}>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={
+                    isInternDropdownOpen
+                      ? internSearchQuery
+                      : selectedInternObj
+                        ? selectedInternObj.name ||
+                          selectedInternObj.nama ||
+                          "Peserta Terpilih"
+                        : "Semua Peserta"
+                  }
+                  onChange={(e) => {
+                    setInternSearchQuery(e.target.value);
+                    if (!isInternDropdownOpen) setIsInternDropdownOpen(true);
+                  }}
+                  onFocus={() => {
+                    setInternSearchQuery("");
+                    setIsInternDropdownOpen(true);
+                  }}
+                  placeholder="Cari peserta..."
+                  className="w-full pl-3 pr-8 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsInternDropdownOpen((prev) => !prev)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      isInternDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              </div>
 
-                {interns.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.name || i.nama || "Peserta"} (
-                    {i.institution || i.sekolah_kampus || "Magang"})
-                  </option>
-                ))}
-              </select>
-
-              <Users className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              {isInternDropdownOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto divide-y divide-border/60 animate-in fade-in zoom-in-95">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedInternId("ALL");
+                      setInternSearchQuery("");
+                      setIsInternDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-muted/60 transition-colors cursor-pointer ${
+                      selectedInternId === "ALL"
+                        ? "bg-primary/10 text-primary font-bold"
+                        : "text-foreground font-semibold"
+                    }`}
+                  >
+                    <span>Semua Peserta</span>
+                    {selectedInternId === "ALL" && (
+                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                    )}
+                  </button>
+                  {interns
+                    .filter((intern) => {
+                      if (!internSearchQuery.trim()) return true;
+                      const q = internSearchQuery.toLowerCase();
+                      const name = (
+                        intern.name ||
+                        intern.nama ||
+                        ""
+                      ).toLowerCase();
+                      const inst = (
+                        intern.institution ||
+                        intern.sekolah_kampus ||
+                        ""
+                      ).toLowerCase();
+                      return name.includes(q) || inst.includes(q);
+                    })
+                    .map((intern) => {
+                      const isSelected =
+                        String(intern.id) === String(selectedInternId);
+                      const displayName =
+                        intern.name || intern.nama || "Peserta";
+                      const displayInst =
+                        intern.institution || intern.sekolah_kampus || "Magang";
+                      return (
+                        <button
+                          key={intern.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedInternId(String(intern.id));
+                            setInternSearchQuery("");
+                            setIsInternDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-muted/60 transition-colors cursor-pointer ${
+                            isSelected
+                              ? "bg-primary/10 text-primary font-bold"
+                              : "text-foreground font-semibold"
+                          }`}
+                        >
+                          <div className="min-w-0 pr-2">
+                            <p className="truncate">{displayName}</p>
+                            <p className="text-[10px] text-muted-foreground font-normal truncate">
+                              {displayInst}
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  {interns.filter((intern) => {
+                    if (!internSearchQuery.trim()) return true;
+                    const q = internSearchQuery.toLowerCase();
+                    const name = (
+                      intern.name ||
+                      intern.nama ||
+                      ""
+                    ).toLowerCase();
+                    const inst = (
+                      intern.institution ||
+                      intern.sekolah_kampus ||
+                      ""
+                    ).toLowerCase();
+                    return name.includes(q) || inst.includes(q);
+                  }).length === 0 && (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      Tidak ada peserta ditemukan
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Category Filter */}
             <div className="relative">
               <select
                 value={selectedCategory}
@@ -881,7 +940,6 @@ export default function AdminTugasPage() {
               <Filter className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             </div>
 
-            {/* Status Pengerjaan Filter */}
             <div className="relative">
               <select
                 value={selectedStatus}
@@ -921,6 +979,8 @@ export default function AdminTugasPage() {
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedInternId("ALL");
+                  setInternSearchQuery("");
+                  setIsInternDropdownOpen(false);
                   setSelectedCategory("ALL");
                   setSelectedStatus("ALL");
                 }}
@@ -931,10 +991,6 @@ export default function AdminTugasPage() {
             )}
           </div>
         </div>
-
-        {/* ========================================================= */}
-        {/* TABLE */}
-        {/* ========================================================= */}
 
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
           <div className="overflow-x-auto">
@@ -993,7 +1049,7 @@ export default function AdminTugasPage() {
                     </td>
                   </tr>
                 ) : (
-                  displayedTugas.map((task) => {
+                  displayedTugas.slice(0, itemsPerPage).map((task) => {
                     const katLabel = task.kategori || "Umum";
 
                     return (
@@ -1001,12 +1057,10 @@ export default function AdminTugasPage() {
                         key={task.id}
                         className="hover:bg-accent/40 transition-colors"
                       >
-                        {/* ID */}
                         <td className="py-3.5 px-4 font-mono font-bold text-muted-foreground text-center">
                           #{task.id}
                         </td>
 
-                        {/* Participant */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2.5 min-w-[160px]">
                             {task.user_avatar ? (
@@ -1033,7 +1087,6 @@ export default function AdminTugasPage() {
                           </div>
                         </td>
 
-                        {/* Title */}
                         <td className="py-3.5 px-4 max-w-xs">
                           <div className="space-y-1">
                             <p className="font-black text-foreground text-xs leading-snug">
@@ -1048,7 +1101,6 @@ export default function AdminTugasPage() {
                           </div>
                         </td>
 
-                        {/* Category */}
                         <td className="py-3.5 px-4">
                           <span
                             className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
@@ -1061,7 +1113,6 @@ export default function AdminTugasPage() {
                           </span>
                         </td>
 
-                        {/* Status Pengerjaan */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <button
                             type="button"
@@ -1087,7 +1138,6 @@ export default function AdminTugasPage() {
                           </button>
                         </td>
 
-                        {/* Logbook */}
                         <td className="py-3.5 px-4 max-w-[180px]">
                           {task.log_book_aktivitas ? (
                             <div className="space-y-0.5 text-[10px]">
@@ -1108,7 +1158,6 @@ export default function AdminTugasPage() {
                           )}
                         </td>
 
-                        {/* Date */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="space-y-0.5 text-[11px]">
                             <p className="font-bold text-foreground">
@@ -1130,7 +1179,6 @@ export default function AdminTugasPage() {
                           </div>
                         </td>
 
-                        {/* Actions */}
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <div className="inline-flex items-center gap-1.5">
                             <button
@@ -1165,30 +1213,53 @@ export default function AdminTugasPage() {
               </tbody>
             </table>
           </div>
+
+          {!isLoading && (
+            <div className="p-4 border-t border-border flex items-center justify-between gap-4 bg-muted/20">
+              <div className="text-xs text-muted-foreground font-semibold">
+                Menampilkan{" "}
+                <strong className="text-foreground font-bold">
+                  {displayedTugas.length}
+                </strong>{" "}
+                data tugas
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">
+                  Number of rows:
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="
+                    bg-card
+                    border border-border
+                    rounded-lg
+                    px-2.5 py-1.5
+                    text-xs font-bold
+                    text-foreground
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-primary/40
+                    transition-all
+                    cursor-pointer
+                  "
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* ========================================================= */}
-        {/* CREATE MODAL */}
-        {/* ========================================================= */}
-
         {isCreateModalOpen && (
-          <div
-            className="
-      fixed inset-0 z-50
-      bg-black/60 dark:bg-black/60
-      backdrop-blur-xs
-      flex items-center justify-center
-      p-3
-      overflow-y-auto
-      animate-in fade-in
-      fixed inset-0 z-50
-            flex items-center justify-center
-            p-4
-            bg-black/60
-            backdrop-blur-xs
-            animate-in fade-in
-    "
-          >
+          <ModalPortal>
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+            >
             <div
               className="
         bg-card
@@ -1199,13 +1270,11 @@ export default function AdminTugasPage() {
         p-4 md:p-5
         shadow-2xl
         space-y-3
-        my-4
         animate-in zoom-in-95
-        max-h-[90vh]
+        max-h-[calc(100vh-2rem)]
         overflow-y-auto
       "
             >
-              {/* HEADER */}
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <div>
                   <h3 className="font-extrabold text-foreground text-sm leading-tight">
@@ -1233,7 +1302,6 @@ export default function AdminTugasPage() {
                 </button>
               </div>
 
-              {/* ERROR */}
               {errorMessage && (
                 <div
                   className="
@@ -1253,15 +1321,7 @@ export default function AdminTugasPage() {
               )}
 
               <form onSubmit={handleCreateSubmit} className="space-y-3">
-                {/* ========================================= */}
-                {/* GRID UTAMA */}
-                {/* ========================================= */}
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {/* ===================================== */}
-                  {/* PESERTA MAGANG - FULL WIDTH */}
-                  {/* ===================================== */}
-
                   <div className="space-y-1 md:col-span-2">
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] font-extrabold text-foreground flex items-center gap-1">
@@ -1319,10 +1379,11 @@ export default function AdminTugasPage() {
                       </div>
                     </div>
 
-                    {/* DROPDOWN TRIGGER */}
                     <button
                       type="button"
-                      onClick={() => setIsInternDropdownOpen((prev) => !prev)}
+                      onClick={() =>
+                        setIsModalInternDropdownOpen((prev) => !prev)
+                      }
                       className="
                 w-full
                 flex items-center justify-between
@@ -1414,7 +1475,7 @@ export default function AdminTugasPage() {
                       </div>
 
                       <div className="text-muted-foreground shrink-0 ml-1">
-                        {isInternDropdownOpen ? (
+                        {isModalInternDropdownOpen ? (
                           <ChevronUp className="w-3.5 h-3.5 text-primary" />
                         ) : (
                           <ChevronDown className="w-3.5 h-3.5" />
@@ -1422,8 +1483,7 @@ export default function AdminTugasPage() {
                       </div>
                     </button>
 
-                    {/* DROPDOWN MENU */}
-                    {isInternDropdownOpen && (
+                    {isModalInternDropdownOpen && (
                       <div
                         className="
                   p-1.5
@@ -1606,10 +1666,6 @@ export default function AdminTugasPage() {
                     )}
                   </div>
 
-                  {/* ===================================== */}
-                  {/* KATEGORI */}
-                  {/* ===================================== */}
-
                   <div className="space-y-1">
                     <label className="text-[10px] font-extrabold text-foreground">
                       Kategori Tugas <span className="text-destructive">*</span>
@@ -1647,7 +1703,6 @@ export default function AdminTugasPage() {
                     </select>
                   </div>
 
-                  {/* LOGBOOK */}
                   <div className="space-y-1">
                     <label className="text-[10px] font-extrabold text-foreground">
                       Tautkan Logbook (Opsional)
@@ -1686,10 +1741,6 @@ export default function AdminTugasPage() {
                     </select>
                   </div>
 
-                  {/* ===================================== */}
-                  {/* JUDUL - FULL WIDTH */}
-                  {/* ===================================== */}
-
                   <div className="space-y-1 md:col-span-2">
                     <label className="text-[10px] font-extrabold text-foreground">
                       Judul Tugas <span className="text-destructive">*</span>
@@ -1722,10 +1773,6 @@ export default function AdminTugasPage() {
                       required
                     />
                   </div>
-
-                  {/* ===================================== */}
-                  {/* DESKRIPSI - FULL WIDTH */}
-                  {/* ===================================== */}
 
                   <div className="space-y-1 md:col-span-2">
                     <label className="text-[10px] font-extrabold text-foreground">
@@ -1761,7 +1808,6 @@ export default function AdminTugasPage() {
                   </div>
                 </div>
 
-                {/* BUTTON */}
                 <div
                   className="
             flex items-center
@@ -1820,15 +1866,13 @@ export default function AdminTugasPage() {
               </form>
             </div>
           </div>
-        )}
+        </ModalPortal>
+      )}
 
-        {/* ========================================================= */}
-        {/* EDIT MODAL */}
-        {/* ========================================================= */}
-
-        {isEditModalOpen && selectedTugas && (
-          <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl max-w-md w-full p-4 shadow-2xl space-y-3 my-8">
+      {isEditModalOpen && selectedTugas && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+            <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-4 shadow-2xl space-y-3">
               <div className="flex items-center justify-between border-b border-border pb-2.5">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-xl bg-primary/10 text-primary">
@@ -1863,7 +1907,6 @@ export default function AdminTugasPage() {
               )}
 
               <form onSubmit={handleEditSubmit} className="space-y-3">
-                {/* Participant */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-foreground">
                     Peserta Magang <span className="text-destructive">*</span>
@@ -1890,7 +1933,6 @@ export default function AdminTugasPage() {
                   </select>
                 </div>
 
-                {/* Category & Status Pengerjaan */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <label className="text-[11px] font-extrabold text-foreground">
@@ -1936,7 +1978,6 @@ export default function AdminTugasPage() {
                   </div>
                 </div>
 
-                {/* Title */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-foreground">
                     Judul Tugas <span className="text-destructive">*</span>
@@ -1956,7 +1997,6 @@ export default function AdminTugasPage() {
                   />
                 </div>
 
-                {/* Description */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-foreground">
                     Deskripsi & Rincian Instruksi
@@ -1975,7 +2015,6 @@ export default function AdminTugasPage() {
                   />
                 </div>
 
-                {/* Logbook */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-extrabold text-foreground">
                     Tautkan ke Logbook (Opsional)
@@ -2003,7 +2042,6 @@ export default function AdminTugasPage() {
                   </select>
                 </div>
 
-                {/* Buttons */}
                 <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-border">
                   <button
                     type="button"
@@ -2028,15 +2066,13 @@ export default function AdminTugasPage() {
               </form>
             </div>
           </div>
-        )}
+        </ModalPortal>
+      )}
 
-        {/* ========================================================= */}
-        {/* DETAIL MODAL */}
-        {/* ========================================================= */}
-
-        {isDetailModalOpen && selectedTugas && (
-          <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl max-w-md w-full p-4 shadow-2xl space-y-3 my-8">
+      {isDetailModalOpen && selectedTugas && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+            <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-4 shadow-2xl space-y-3">
               <div className="flex items-center justify-between border-b border-border pb-2.5">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-xl bg-primary/10 text-primary">
@@ -2062,7 +2098,6 @@ export default function AdminTugasPage() {
                 </button>
               </div>
 
-              {/* Participant */}
               <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center gap-2.5">
                 {selectedTugas.user_avatar ? (
                   <img
@@ -2087,7 +2122,6 @@ export default function AdminTugasPage() {
                 </div>
               </div>
 
-              {/* Details */}
               <div className="space-y-2.5">
                 <div>
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
@@ -2197,15 +2231,13 @@ export default function AdminTugasPage() {
               </div>
             </div>
           </div>
-        )}
+        </ModalPortal>
+      )}
 
-        {/* ========================================================= */}
-        {/* DELETE MODAL */}
-        {/* ========================================================= */}
-
-        {isDeleteModalOpen && selectedTugas && (
-          <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      {isDeleteModalOpen && selectedTugas && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+            <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-6 shadow-2xl space-y-4">
               <div className="flex items-center gap-3 text-destructive">
                 <div className="p-3 rounded-2xl bg-destructive/10">
                   <Trash2 className="w-6 h-6" />
@@ -2265,7 +2297,8 @@ export default function AdminTugasPage() {
               </div>
             </div>
           </div>
-        )}
+        </ModalPortal>
+      )}
       </div>
     </DashboardLayout>
   );

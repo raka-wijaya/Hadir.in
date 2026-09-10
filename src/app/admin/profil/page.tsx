@@ -38,9 +38,6 @@ export default function AdminProfilPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ─────────────────────────────────────────────────────────────
-  // INIT FORM
-  // ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (user) {
       setName(user.name || user.nama || "");
@@ -55,9 +52,6 @@ export default function AdminProfilPage() {
     }
   }, [user]);
 
-  // ─────────────────────────────────────────────────────────────
-  // AVATAR
-  // ─────────────────────────────────────────────────────────────
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -77,9 +71,6 @@ export default function AdminProfilPage() {
     reader.readAsDataURL(file);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // CANCEL
-  // ─────────────────────────────────────────────────────────────
   const handleCancel = () => {
     if (user) {
       setName(user.name || user.nama || "");
@@ -96,9 +87,6 @@ export default function AdminProfilPage() {
     setIsEditing(false);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // SIMPAN
-  // ─────────────────────────────────────────────────────────────
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -157,14 +145,10 @@ export default function AdminProfilPage() {
     user?.avatar ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "Admin")}&background=f59e0b&color=000000&bold=true`;
 
-  // ─────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────
   return (
     <DashboardLayout>
       <div className="space-y-6 mx-auto">
 
-        {/* HEADER */}
         <div className="border-b border-border pb-4">
           <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
             Profil Saya
@@ -174,7 +158,6 @@ export default function AdminProfilPage() {
           </p>
         </div>
 
-        {/* SUCCESS */}
         {savedMsg && (
           <div className="bg-primary/20 border border-primary/40 rounded-2xl p-4 flex items-center gap-2.5 animate-in fade-in">
             <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
@@ -184,7 +167,6 @@ export default function AdminProfilPage() {
           </div>
         )}
 
-        {/* ERROR */}
         {errorMsg && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-2.5 animate-in fade-in">
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
@@ -194,10 +176,8 @@ export default function AdminProfilPage() {
           </div>
         )}
 
-        {/* PROFILE CARD */}
         <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-6">
 
-          {/* AVATAR */}
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="relative group">
               <img
@@ -237,7 +217,6 @@ export default function AdminProfilPage() {
             </div>
           </div>
 
-          {/* DETAIL / FORM */}
           <div className="bg-input/50 rounded-2xl p-5 border border-border space-y-4 text-xs md:text-sm">
             <h3 className="font-bold text-sm text-foreground border-b border-border pb-2 flex items-center justify-between">
               <span>Informasi Pribadi</span>
@@ -249,10 +228,9 @@ export default function AdminProfilPage() {
             </h3>
 
             {isEditing ? (
-              /* ── EDIT FORM ── */
+             
               <form onSubmit={handleSave} className="space-y-4">
 
-                {/* Nama */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <UserIcon className="w-3.5 h-3.5 text-primary" />
@@ -268,7 +246,6 @@ export default function AdminProfilPage() {
                   />
                 </div>
 
-                {/* Email */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-primary" />
@@ -284,7 +261,6 @@ export default function AdminProfilPage() {
                   />
                 </div>
 
-                {/* Telepon */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-primary" />
@@ -299,7 +275,6 @@ export default function AdminProfilPage() {
                   />
                 </div>
 
-                {/* NIP */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <CreditCard className="w-3.5 h-3.5 text-primary" />
@@ -314,7 +289,6 @@ export default function AdminProfilPage() {
                   />
                 </div>
 
-                {/* Instansi */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <Building2 className="w-3.5 h-3.5 text-primary" />
@@ -329,7 +303,6 @@ export default function AdminProfilPage() {
                   />
                 </div>
 
-                {/* Unit Kerja / Bagian */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <Briefcase className="w-3.5 h-3.5 text-primary" />
@@ -344,7 +317,6 @@ export default function AdminProfilPage() {
                   />
                 </div>
 
-                {/* Aksi */}
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"
@@ -376,7 +348,7 @@ export default function AdminProfilPage() {
                 </div>
               </form>
             ) : (
-              /* ── VIEW MODE ── */
+              
               <div className="space-y-3">
                 <div className="flex justify-between items-center gap-4 pb-2 border-b border-border">
                   <span className="text-muted-foreground font-medium flex items-center gap-1.5">
@@ -445,7 +417,6 @@ export default function AdminProfilPage() {
             )}
           </div>
 
-          {/* EDIT BUTTON */}
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}

@@ -28,6 +28,7 @@ import {
   ExternalLink,
   InfoIcon,
   AlertTriangleIcon,
+  Filter,
 } from "lucide-react";
 
 export default function AdminPendaftaranPage() {
@@ -35,11 +36,12 @@ export default function AdminPendaftaranPage() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [debounceSearch, setDebounceSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedDetail, setSelectedDetail] = useState<Pendaftar | null>(null);
   const [adminNoteInput, setAdminNoteInput] = useState("");
   const [showInputModal, setShowInputModal] = useState(false);
 
-  // Form input states
   const [inputNama, setInputNama] = useState("");
   const [inputEmail, setInputEmail] = useState("");
   const [inputNoHp, setInputNoHp] = useState("");
@@ -164,7 +166,6 @@ export default function AdminPendaftaranPage() {
 
       setList(updated);
 
-      // Update detail jika masih terbuka
       if (selectedDetail?.id === id) {
         setSelectedDetail({
           ...selectedDetail,
@@ -232,7 +233,6 @@ export default function AdminPendaftaranPage() {
 
       setShowInputModal(false);
 
-      // Reset form
       setInputNama("");
       setInputEmail("");
       setInputNoHp("");
@@ -261,6 +261,10 @@ export default function AdminPendaftaranPage() {
   };
 
   const filtered = list.filter((item) => {
+    if (statusFilter !== "ALL" && item.status.toUpperCase() !== statusFilter) {
+      return false;
+    }
+
     const keyword = debounceSearch.trim().toLowerCase();
 
     if (!keyword) return true;
@@ -277,9 +281,10 @@ export default function AdminPendaftaranPage() {
     );
   });
 
+  const paginatedList = filtered.slice(0, itemsPerPage);
+
   const createUserFromPendaftar = async (pendaftar: Pendaftar): Promise<{ success: boolean; message: string; password?: string }> => {
     try {
-      // Generate password sederhana: nama depan + 4 digit tahun
       const namaParts = pendaftar.nama.trim().split(" ");
       const namaDepan = namaParts[0].toLowerCase().replace(/[^a-z0-9]/g, "");
       const tahun = new Date().getFullYear();
@@ -304,13 +309,18 @@ export default function AdminPendaftaranPage() {
 
       const result = await res.json();
 
-      // 409 = email sudah ada, anggap berhasil (akun sudah ada)
       if (res.status === 409) {
-        return { success: true, message: `Akun dengan email ${pendaftar.email} sudah ada di sistem.` };
+        return {
+          success: true,
+          message: `Akun dengan email ${pendaftar.email} sudah ada di sistem.`,
+        };
       }
 
       if (!res.ok || !result.success) {
-        return { success: false, message: result.message || "Gagal membuat akun." };
+        return {
+          success: false,
+          message: result.message || "Gagal membuat akun.",
+        };
       }
 
       return {
@@ -319,7 +329,10 @@ export default function AdminPendaftaranPage() {
         password: defaultPassword,
       };
     } catch (err: any) {
-      return { success: false, message: err?.message || "Gagal membuat akun peserta." };
+      return {
+        success: false,
+        message: err?.message || "Gagal membuat akun peserta.",
+      };
     }
   };
 
@@ -459,7 +472,6 @@ export default function AdminPendaftaranPage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {/* Total */}
           <div className="bg-card border border-border rounded-md p-4 shadow-card space-y-1">
             <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
               Total Pendaftar
@@ -468,7 +480,6 @@ export default function AdminPendaftaranPage() {
             <p className="text-2xl font-black text-foreground">{total}</p>
           </div>
 
-          {/* Pending */}
           <div className="bg-card border border-border rounded-md p-4 shadow-card space-y-1">
             <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
               Pending
@@ -479,7 +490,6 @@ export default function AdminPendaftaranPage() {
             </p>
           </div>
 
-          {/* Lolos */}
           <div className="bg-card border border-border rounded-md p-4 shadow-card space-y-1">
             <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
               Lolos
@@ -490,7 +500,6 @@ export default function AdminPendaftaranPage() {
             </p>
           </div>
 
-          {/* Tidak Lolos */}
           <div className="bg-card border border-border rounded-md p-4 shadow-card space-y-1">
             <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
               Tidak Lolos
@@ -502,43 +511,87 @@ export default function AdminPendaftaranPage() {
           </div>
         </div>
 
-        {/* =========================
-            SEARCH
-        ========================= */}
-
-        <div className="bg-card border border-border rounded-md p-4 shadow-card flex justify-between items-center">
-          <div
-            className="
-              flex items-center gap-2
-              bg-input
-              border border-border
-              rounded-default
-              px-3 py-2
-              w-full md:w-80
-              transition-colors
-              focus-within:border-ring
-              focus-within:ring-2
-              focus-within:ring-ring/20
-            "
-          >
-            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-card flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-md w-full">
+            <Search
+              className="
+                w-4 h-4
+                absolute left-3 top-1/2
+                -translate-y-1/2
+                text-muted-foreground
+              "
+            />
 
             <input
               type="text"
+              placeholder="Cari kode, nama, kampus, divisi..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari kode, nama, kampus, divisi..."
               className="
-                bg-transparent
-                border-none
-                outline-none
-                text-xs
-                text-foreground
                 w-full
-                placeholder:text-muted-foreground
+                pl-9 pr-9 py-2.5
+                bg-input
+                border border-border
+                rounded-xl
+                text-xs
                 font-semibold
+                text-foreground
+                placeholder:text-muted-foreground
+                transition-all
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary/40
+                focus:border-primary
               "
             />
+
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="
+                  absolute right-2.5 top-1/2
+                  -translate-y-1/2
+                  text-muted-foreground
+                  hover:text-foreground
+                  hover:bg-accent
+                  p-1 rounded-md
+                  transition-colors
+                  cursor-pointer
+                "
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground whitespace-nowrap shrink-0">
+              <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>Filter:</span>
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="
+                h-8 pl-3 pr-8
+                rounded-xl border border-border
+                bg-card text-foreground
+                text-xs font-semibold
+                cursor-pointer
+                focus:outline-none focus:ring-2 focus:ring-primary/40
+                transition-colors
+                appearance-none
+                bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')]
+                bg-no-repeat bg-[right_0.6rem_center]
+              "
+            >
+              <option value="ALL">Semua Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="DITERIMA">Diterima</option>
+              <option value="DITOLAK">Ditolak</option>
+            </select>
           </div>
         </div>
 
@@ -610,7 +663,7 @@ export default function AdminPendaftaranPage() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((item) => (
+                  paginatedList.map((item) => (
                     <tr
                       key={item.id}
                       className="
@@ -618,7 +671,6 @@ export default function AdminPendaftaranPage() {
                         transition-colors
                       "
                     >
-                      {/* Kode */}
                       <td
                         className="
                         py-3.5 px-4
@@ -630,7 +682,6 @@ export default function AdminPendaftaranPage() {
                         {item.kode_pendaftaran}
                       </td>
 
-                      {/* Nama */}
                       <td
                         className="
                         py-3.5 px-4
@@ -651,7 +702,6 @@ export default function AdminPendaftaranPage() {
                         </div>
                       </td>
 
-                      {/* Kampus */}
                       <td
                         className="
                         py-3.5 px-4
@@ -662,7 +712,6 @@ export default function AdminPendaftaranPage() {
                         {item.sekolah_kampus}
                       </td>
 
-                      {/* Divisi */}
                       <td
                         className="
                         py-3.5 px-4
@@ -673,12 +722,9 @@ export default function AdminPendaftaranPage() {
                         {item.bagian}
                       </td>
 
-                      {/* Status */}
                       <td className="py-3.5 px-4">
                         <StatusBadge status={item.status} />
                       </td>
-
-                      {/* Aksi */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center justify-end gap-1">
                           <button
@@ -733,19 +779,61 @@ export default function AdminPendaftaranPage() {
               </tbody>
             </table>
           </div>
+
+          {!loading && (
+            <div className="p-4 border-t border-border flex items-center justify-between gap-4 bg-muted/20">
+              <div className="text-xs text-muted-foreground font-semibold">
+                Menampilkan{" "}
+                <strong className="text-foreground font-bold">
+                  {filtered.length}
+                </strong>{" "}
+                data pendaftaran magang
+                {statusFilter !== "ALL" && (
+                  <span className="ml-1 text-primary font-bold">
+                    (
+                    {statusFilter === "PENDING"
+                      ? "Pending"
+                      : statusFilter === "DITERIMA"
+                        ? "Diterima"
+                        : "Ditolak"}
+                    )
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">
+                  Number of rows:
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="
+                    bg-card
+                    border border-border
+                    rounded-lg
+                    px-2.5 py-1.5
+                    text-xs font-bold
+                    text-foreground
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-primary/40
+                    transition-all
+                    cursor-pointer
+                  "
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         {showInputModal && (
-          <div
-            className="
-            fixed inset-0 z-50
-            flex items-center justify-center
-            p-4
-            bg-black/60
-            backdrop-blur-xs
-            animate-in fade-in
-          "
-          >
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
             <form
               onSubmit={handleCreatePendaftar}
               className="
@@ -753,13 +841,14 @@ export default function AdminPendaftaranPage() {
                 border border-border
                 rounded-lg
                 w-full max-w-lg
+                max-h-[calc(100vh-2rem)]
+                overflow-y-auto
                 p-6
                 shadow-elevated
                 space-y-4
                 animate-in zoom-in-95
               "
             >
-              {/* Header */}
               <div
                 className="
                 flex items-center justify-between
@@ -787,9 +876,7 @@ export default function AdminPendaftaranPage() {
                 </button>
               </div>
 
-              {/* Form */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {/* Nama */}
                 <div className="space-y-1">
                   <label className="font-extrabold text-foreground gap-1 flex">
                     Nama Lengkap<span className="text-status-tolak">*</span>
@@ -817,10 +904,9 @@ export default function AdminPendaftaranPage() {
                   />
                 </div>
 
-                {/* Email */}
                 <div className="space-y-1">
-                  <label className="font-extrabold text-foreground">
-                    Email<span className="text-status-tolak">*</span>
+                  <label className="font-extrabold text-foreground gap-1 flex">
+                    Email <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -845,9 +931,8 @@ export default function AdminPendaftaranPage() {
                   />
                 </div>
 
-                {/* No HP */}
                 <div className="space-y-1">
-                  <label className="font-extrabold text-foreground">
+                  <label className="font-extrabold text-foreground gap-1 flex">
                     No. HP / WhatsApp
                     <span className="text-status-tolak">*</span>
                   </label>
@@ -874,10 +959,10 @@ export default function AdminPendaftaranPage() {
                   />
                 </div>
 
-                {/* Kampus */}
                 <div className="space-y-1">
-                  <label className="font-extrabold text-foreground">
-                    Kampus / Sekolah<span className="text-status-tolak">*</span>
+                  <label className="font-extrabold text-foreground gap-1 flex">
+                    Kampus / Sekolah{" "}
+                    <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -902,10 +987,9 @@ export default function AdminPendaftaranPage() {
                   />
                 </div>
 
-                {/* Jurusan */}
                 <div className="space-y-1">
-                  <label className="font-extrabold text-foreground">
-                    Program Studi<span className="text-status-tolak">*</span>
+                  <label className="font-extrabold text-foreground gap-1 flex">
+                    Program Studi <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -929,10 +1013,9 @@ export default function AdminPendaftaranPage() {
                   />
                 </div>
 
-                {/* Divisi */}
                 <div className="space-y-1">
-                  <label className="font-extrabold text-foreground">
-                    Divisi / Bagian<span className="text-status-tolak">*</span>
+                  <label className="font-extrabold text-foreground gap-1 flex">
+                    Divisi / Bagian <span className="text-status-tolak">*</span>
                   </label>
 
                   <select
@@ -954,17 +1037,18 @@ export default function AdminPendaftaranPage() {
                   >
                     <option value="Programmer">Programmer</option>
 
-                    <option value="Operator">Operator</option>
+                    <option value="Operator">Operator Layanan Adminduk</option>
 
-                    <option value="Media">Media</option>
+                    <option value="Branding Development">
+                      Branding Development
+                    </option>
                   </select>
                 </div>
               </div>
 
-              {/* Alamat */}
               <div className="space-y-1 text-xs">
-                <label className="font-extrabold text-foreground">
-                  Alamat Domisili<span className="text-status-tolak">*</span>
+                <label className="font-extrabold text-foreground gap-1 flex">
+                  Alamat Domisili <span className="text-status-tolak">*</span>
                 </label>
 
                 <textarea
@@ -988,7 +1072,6 @@ export default function AdminPendaftaranPage() {
                 />
               </div>
 
-              {/* Actions */}
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
@@ -1033,16 +1116,7 @@ export default function AdminPendaftaranPage() {
         )}
 
         {selectedDetail && (
-          <div
-            className="
-            fixed inset-0 z-50
-            flex items-center justify-center
-            p-4
-            bg-foreground/60
-            backdrop-blur-xs
-            animate-in fade-in
-          "
-          >
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
             <div
               className="
               bg-card
@@ -1053,11 +1127,10 @@ export default function AdminPendaftaranPage() {
               p-6
               space-y-5
               animate-in zoom-in-95
-              max-h-[90vh]
+              max-h-[calc(100vh-2rem)]
               overflow-y-auto
             "
             >
-              {/* Header */}
               <div
                 className="
                 flex items-center justify-between
@@ -1103,7 +1176,6 @@ export default function AdminPendaftaranPage() {
                 </button>
               </div>
 
-              {/* Personal & Info */}
               <div className="space-y-3 text-xs">
                 <div
                   className="
@@ -1180,7 +1252,6 @@ export default function AdminPendaftaranPage() {
                   </div>
                 </div>
 
-                {/* Kampus & Jurusan */}
                 <div
                   className="
                   bg-muted/50
@@ -1208,7 +1279,6 @@ export default function AdminPendaftaranPage() {
                   </p>
                 </div>
 
-                {/* Dokumen & Lampiran (CV & Portofolio) */}
                 <div className="space-y-1.5">
                   <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
                     Dokumen &amp; Berkas Lampiran
@@ -1264,7 +1334,6 @@ export default function AdminPendaftaranPage() {
                       )}
                     </div>
 
-                    {/* File Portfolio */}
                     <div className="p-2.5 rounded-default border border-border bg-muted/40 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="w-7 h-7 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0">
@@ -1316,7 +1385,6 @@ export default function AdminPendaftaranPage() {
                   </div>
                 </div>
 
-                {/* Catatan */}
                 <div className="space-y-1">
                   <label
                     className="
@@ -1361,7 +1429,6 @@ export default function AdminPendaftaranPage() {
                 pt-2
               "
               >
-                {/* Tidak Lolos */}
                 <button
                   onClick={async () => {
                     await updateStatus(
@@ -1389,12 +1456,10 @@ export default function AdminPendaftaranPage() {
                   Tidak Lolos
                 </button>
 
-                {/* Lolos */}
                 <button
                   onClick={async () => {
                     const pendaftarSnapshot = { ...selectedDetail };
 
-                    // 1. Update status ke DITERIMA
                     await updateStatus(
                       selectedDetail.id,
                       "DITERIMA",
@@ -1403,7 +1468,6 @@ export default function AdminPendaftaranPage() {
 
                     setSelectedDetail(null);
 
-                    // 2. Otomatis buat akun ANAK_MAGANG
                     const userResult = await createUserFromPendaftar(
                       pendaftarSnapshot as Pendaftar,
                     );

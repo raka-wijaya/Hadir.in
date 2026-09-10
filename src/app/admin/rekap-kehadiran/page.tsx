@@ -50,17 +50,15 @@ export default function RekapKehadiranPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"DESC" | "ASC">("DESC");
+  const [itemsPerPage, setItemsPerPage] = useState<number>(5);
 
-  // Modals
   const [selectedPhoto, setSelectedPhoto] = useState<Absensi | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
 
-  // Print Settings State
   const [printSupervisorName, setPrintSupervisorName] = useState<string>("Pembimbing Lapangan");
   const [printSupervisorNip, setPrintSupervisorNip] = useState<string>("-");
   const [printLocation, setPrintLocation] = useState<string>("Jakarta");
 
-  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebounceSearch(search);
@@ -99,7 +97,6 @@ export default function RekapKehadiranPage() {
     loadRecords();
   }, [loadRecords]);
 
-  // Client-side sort
   const sortedRecords = useMemo(() => {
     return [...records].sort((a, b) => {
       const dateA = new Date(a.tanggal || a.attendanceDate || 0).getTime();
@@ -108,7 +105,6 @@ export default function RekapKehadiranPage() {
     });
   }, [records, sortOrder]);
 
-  // Statistics calculation
   const stats = useMemo(() => {
     const total = sortedRecords.length;
     let hadirTepat = 0;
@@ -151,7 +147,6 @@ export default function RekapKehadiranPage() {
     window.print();
   };
 
-  // Helper to determine the effective display status for a record
   const getRecordStatus = (rec: Absensi) => {
     const rawStatus = (rec.status || "").toUpperCase();
     const statusMasuk = (rec.status_masuk || rec.statusMasuk || "").toUpperCase();
@@ -168,7 +163,6 @@ export default function RekapKehadiranPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 print:hidden">
-        {/* Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
           <div>
             <div className="flex items-center gap-2">
@@ -204,7 +198,6 @@ export default function RekapKehadiranPage() {
           </div>
         </div>
 
-        {/* Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
@@ -262,10 +255,8 @@ export default function RekapKehadiranPage() {
           </div>
         </div>
 
-        {/* Filter Controls Bar */}
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-            {/* Search Input Box as requested */}
             <div className="relative md:col-span-2">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -286,7 +277,6 @@ export default function RekapKehadiranPage() {
               )}
             </div>
 
-            {/* Role Filter */}
             <div className="relative">
               <select
                 value={roleFilter}
@@ -300,7 +290,6 @@ export default function RekapKehadiranPage() {
               <Users className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             </div>
 
-            {/* Status Filter */}
             <div className="relative">
               <select
                 value={statusFilter}
@@ -318,7 +307,6 @@ export default function RekapKehadiranPage() {
               <Filter className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             </div>
 
-            {/* Date Filter: Tanggal Mulai */}
             <div className="relative">
               <input
                 type="date"
@@ -374,16 +362,12 @@ export default function RekapKehadiranPage() {
           </div>
         </div>
 
-        {/* Data Table */}
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
           <div className="p-4 md:p-5 border-b border-border flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <h2 className="font-extrabold text-base text-foreground">
                 Daftar Rekapitulasi Presensi Kehadiran
               </h2>
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
-                {sortedRecords.length} data
-              </span>
             </div>
           </div>
 
@@ -427,7 +411,7 @@ export default function RekapKehadiranPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border text-foreground">
-                  {sortedRecords.map((rec, index) => {
+                  {sortedRecords.slice(0, itemsPerPage).map((rec, index) => {
                     const effectiveStatus = getRecordStatus(rec);
                     const isLate =
                       (rec.menit_terlambat || rec.lateMinutes || 0) > 0 ||
@@ -561,10 +545,49 @@ export default function RekapKehadiranPage() {
               </table>
             </div>
           )}
+
+          {!isLoading && (
+            <div className="p-4 border-t border-border flex items-center justify-between gap-4 bg-muted/20">
+              <div className="text-xs text-muted-foreground font-semibold">
+                Menampilkan{" "}
+                <strong className="text-foreground font-bold">
+                  {sortedRecords.length}
+                </strong>{" "}
+                data rekap kehadiran
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">
+                  Number of rows:
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="
+                    bg-card
+                    border border-border
+                    rounded-lg
+                    px-2.5 py-1.5
+                    text-xs font-bold
+                    text-foreground
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-primary/40
+                    transition-all
+                    cursor-pointer
+                  "
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* PHOTO LIGHTBOX MODAL */}
       {selectedPhoto && (
         <PhotoModal
           isOpen={Boolean(selectedPhoto)}
@@ -614,11 +637,9 @@ export default function RekapKehadiranPage() {
         />
       )}
 
-      {/* PRINT PREVIEW / CETAK PDF MODAL */}
       {isPrintModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 print:hidden">
-          <div className="bg-card border border-border rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
-            {/* Header Modal */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
+          <div className="bg-card border border-border rounded-2xl max-w-4xl w-full max-h-[calc(100vh-2rem)] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
             <div className="p-4 md:p-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
               <div className="flex items-center gap-2">
                 <span className="p-2 rounded-xl bg-primary/10 text-primary">
@@ -642,7 +663,6 @@ export default function RekapKehadiranPage() {
               </button>
             </div>
 
-            {/* Print Controls Setting */}
             <div className="p-4 border-b border-border bg-muted/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div>
                 <label className="block font-bold text-foreground mb-1">
@@ -682,7 +702,6 @@ export default function RekapKehadiranPage() {
               </div>
             </div>
 
-            {/* Document Preview Container (Scrollable) */}
             <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-neutral-900/10 dark:bg-black/40">
               <div className="bg-white text-black p-8 rounded-lg shadow-md max-w-3xl mx-auto space-y-6 text-xs font-sans">
                 {/* Kop Dokumen */}
@@ -700,7 +719,6 @@ export default function RekapKehadiranPage() {
                   </p>
                 </div>
 
-                {/* Judul Laporan */}
                 <div className="text-center space-y-0.5">
                   <h4 className="text-sm font-black uppercase underline tracking-wide">
                     LEMBAR LAPORAN REKAPITULASI KEHADIRAN & PRESENSI
@@ -713,7 +731,6 @@ export default function RekapKehadiranPage() {
                   </p>
                 </div>
 
-                {/* Rekapitulasi Statistik Box */}
                 <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
                   <div className="border border-neutral-300 p-2 rounded bg-neutral-50">
                     <span className="block text-neutral-600 font-medium">
@@ -749,7 +766,6 @@ export default function RekapKehadiranPage() {
                   </div>
                 </div>
 
-                {/* Tabel Rekapitulasi */}
                 <table className="w-full border-collapse border border-black text-[10px]">
                   <thead>
                     <tr className="bg-neutral-200 border-b border-black text-black font-bold uppercase text-center">
@@ -844,7 +860,6 @@ export default function RekapKehadiranPage() {
                   </tbody>
                 </table>
 
-                {/* Lembar Tanda Tangan */}
                 <div className="grid grid-cols-2 gap-8 pt-6 text-[11px] text-center">
                   <div className="space-y-16">
                     <p className="font-semibold">
@@ -885,7 +900,6 @@ export default function RekapKehadiranPage() {
               </div>
             </div>
 
-            {/* Footer Modal Actions */}
             <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-3 shrink-0">
               <span className="text-xs text-muted-foreground">
                 Tip: Pilih opsi <strong>Save as PDF</strong> pada jendela cetak
@@ -913,9 +927,7 @@ export default function RekapKehadiranPage() {
         </div>
       )}
 
-      {/* DEDICATED PRINTABLE CONTAINER (Only visible when printing) */}
       <div className="hidden print:block text-black bg-white p-6 space-y-6 text-xs font-sans">
-        {/* Kop Dokumen */}
         <div className="border-b-2 border-black pb-3 text-center space-y-1">
           <h2 className="text-base font-black uppercase tracking-wider text-black">
             DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL
@@ -929,7 +941,6 @@ export default function RekapKehadiranPage() {
           </p>
         </div>
 
-        {/* Judul Laporan */}
         <div className="text-center space-y-0.5">
           <h4 className="text-sm font-black uppercase underline tracking-wide">
             LEMBAR LAPORAN REKAPITULASI KEHADIRAN & PRESENSI
@@ -942,7 +953,6 @@ export default function RekapKehadiranPage() {
           </p>
         </div>
 
-        {/* Rekapitulasi Statistik Box */}
         <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
           <div className="border border-neutral-300 p-2 rounded bg-neutral-50">
             <span className="block text-neutral-600 font-medium">
@@ -976,7 +986,6 @@ export default function RekapKehadiranPage() {
           </div>
         </div>
 
-        {/* Tabel Rekapitulasi */}
         <table className="w-full border-collapse border border-black text-[10px]">
           <thead>
             <tr className="bg-neutral-200 border-b border-black text-black font-bold uppercase text-center">
@@ -1055,7 +1064,6 @@ export default function RekapKehadiranPage() {
           </tbody>
         </table>
 
-        {/* Lembar Tanda Tangan */}
         <div className="grid grid-cols-2 gap-8 pt-6 text-[11px] text-center">
           <div className="space-y-16">
             <p className="font-semibold">Petugas Rekapitulasi Presensi,</p>

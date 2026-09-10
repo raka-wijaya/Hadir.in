@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 import { useAuth } from "@/lib/auth/context";
 import { LogBook, LOGBOOK_CATEGORIES, LOGBOOK_CATEGORY_LABELS, LogBookCategory, User } from "@/types";
 import {
@@ -32,6 +39,8 @@ import {
   Users,
   ShieldAlert,
   FileDown,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -94,25 +103,27 @@ export default function AdminLogBookPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedInternId, setSelectedInternId] = useState<string>("ALL");
+  const [internSearchQuery, setInternSearchQuery] = useState<string>("");
+  const [isInternDropdownOpen, setIsInternDropdownOpen] =
+    useState<boolean>(false);
+  const internComboboxRef = useRef<HTMLDivElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"DESC" | "ASC">("DESC");
   const [debounceSearch, setDebounceSearch] = useState('');
+  const [itemsPerPage, setItemsPerPage] = useState<number>(5);
 
-  // Modals
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
   const [selectedLogbook, setSelectedLogbook] = useState<LogBook | null>(null);
 
-  // Print Settings State
   const [printSupervisorName, setPrintSupervisorName] = useState<string>("Pembimbing Lapangan");
   const [printSupervisorNip, setPrintSupervisorNip] = useState<string>("-");
   const [printLocation, setPrintLocation] = useState<string>("Jakarta");
 
-  // Form State for Edit
   const [formData, setFormData] = useState({
     tanggal: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Jakarta" }).format(new Date()),
     waktu_mulai: "08:00",
@@ -124,11 +135,9 @@ export default function AdminLogBookPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Check role: ADMIN_OS is not allowed
   const effectiveRole = String(user?.role || "").toUpperCase();
   const isDenied = effectiveRole === "ADMIN_OS";
 
-  // Fetch daftar mahasiswa / anak magang
   useEffect(() => {
     async function fetchInterns() {
       try {
@@ -192,6 +201,19 @@ export default function AdminLogBookPage() {
       return () => clearTimeout(timer);
     }
   }, [successMessage, errorMessage]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        internComboboxRef.current &&
+        !internComboboxRef.current.contains(event.target as Node)
+      ) {
+        setIsInternDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleOpenEdit = (item: LogBook) => {
     setSelectedLogbook(item);
@@ -295,7 +317,6 @@ export default function AdminLogBookPage() {
     return { totalCount, totalHours, todayCount, topCat, catMap };
   }, [logbooks]);
 
-  // Selected intern details for print report
   const selectedInternObj = useMemo(() => {
     if (selectedInternId === "ALL") return null;
     return interns.find((i) => String(i.id) === String(selectedInternId)) || null;
@@ -326,7 +347,6 @@ export default function AdminLogBookPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 print:hidden">
-        {/* Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
           <div>
             <div className="flex items-center gap-2">
@@ -335,7 +355,8 @@ export default function AdminLogBookPage() {
               </h1>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">
-              Pantau, evaluasi, dan cetak seluruh catatan kegiatan harian serta capaian kerja mahasiswa magang.
+              Pantau, evaluasi, dan cetak seluruh catatan kegiatan harian serta
+              capaian kerja mahasiswa magang.
             </p>
           </div>
 
@@ -345,7 +366,9 @@ export default function AdminLogBookPage() {
               title="Segarkan Data"
               className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-primary" : ""}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${isLoading ? "animate-spin text-primary" : ""}`}
+              />
             </button>
             <button
               onClick={() => setIsPrintModalOpen(true)}
@@ -359,14 +382,16 @@ export default function AdminLogBookPage() {
           </div>
         </div>
 
-        {/* Feedback Alerts */}
         {successMessage && (
           <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-between gap-3 text-xs md:text-sm font-semibold animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{successMessage}</span>
             </div>
-            <button onClick={() => setSuccessMessage(null)} className="hover:opacity-70">
+            <button
+              onClick={() => setSuccessMessage(null)}
+              className="hover:opacity-70"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -378,55 +403,80 @@ export default function AdminLogBookPage() {
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
-            <button onClick={() => setErrorMessage(null)} className="hover:opacity-70">
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="hover:opacity-70"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Total Entri Logbook</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Total Entri Logbook
+              </span>
               <BookOpen className="w-4 h-4 text-primary" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">{stats.totalCount}</p>
-            <p className="text-[11px] text-muted-foreground">Aktivitas terdata</p>
+            <p className="text-2xl md:text-3xl font-black text-foreground">
+              {stats.totalCount}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Aktivitas terdata
+            </p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Akumulasi Waktu</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Akumulasi Waktu
+              </span>
               <Clock className="w-4 h-4 text-cyan-500" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">{stats.totalHours} <span className="text-sm font-bold text-muted-foreground">Jam</span></p>
-            <p className="text-[11px] text-muted-foreground">Total jam kerja tercatat</p>
+            <p className="text-2xl md:text-3xl font-black text-foreground">
+              {stats.totalHours}{" "}
+              <span className="text-sm font-bold text-muted-foreground">
+                Jam
+              </span>
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Total jam kerja tercatat
+            </p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Aktivitas Hari Ini</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Aktivitas Hari Ini
+              </span>
               <Sparkles className="w-4 h-4 text-amber-500" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">{stats.todayCount}</p>
+            <p className="text-2xl md:text-3xl font-black text-foreground">
+              {stats.todayCount}
+            </p>
             <p className="text-[11px] text-muted-foreground">Entri hari ini</p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">Kategori Terbanyak</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                Kategori Terbanyak
+              </span>
               <Layers className="w-4 h-4 text-purple-500" />
             </div>
-            <p className="text-base md:text-lg font-black text-foreground truncate">{stats.topCat}</p>
-            <p className="text-[11px] text-muted-foreground">Frekuensi tertinggi</p>
+            <p className="text-base md:text-lg font-black text-foreground truncate">
+              {stats.topCat}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Frekuensi tertinggi
+            </p>
           </div>
         </div>
 
-        {/* Filter Controls */}
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-            {/* Search */}
             <div className="relative md:col-span-2">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -446,24 +496,135 @@ export default function AdminLogBookPage() {
               )}
             </div>
 
-            {/* Intern / Siswa Magang Filter */}
-            <div className="relative">
-              <select
-                value={selectedInternId}
-                onChange={(e) => setSelectedInternId(e.target.value)}
-                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer appearance-none"
-              >
-                <option value="ALL">Semua Siswa</option>
-                {interns.map((intern) => (
-                  <option key={intern.id} value={intern.id}>
-                    {intern.name || intern.nama} ({intern.institution || intern.sekolah_kampus || "Magang"})
-                  </option>
-                ))}
-              </select>
-              <Users className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <div className="relative" ref={internComboboxRef}>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={
+                    isInternDropdownOpen
+                      ? internSearchQuery
+                      : selectedInternObj
+                        ? selectedInternObj.name ||
+                          selectedInternObj.nama ||
+                          "Siswa Terpilih"
+                        : "Semua Siswa"
+                  }
+                  onChange={(e) => {
+                    setInternSearchQuery(e.target.value);
+                    if (!isInternDropdownOpen) setIsInternDropdownOpen(true);
+                  }}
+                  onFocus={() => {
+                    setInternSearchQuery("");
+                    setIsInternDropdownOpen(true);
+                  }}
+                  placeholder="Cari siswa..."
+                  className="w-full pl-3 pr-8 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsInternDropdownOpen((prev) => !prev)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      isInternDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {isInternDropdownOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto divide-y divide-border/60 animate-in fade-in zoom-in-95">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedInternId("ALL");
+                      setInternSearchQuery("");
+                      setIsInternDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-muted/60 transition-colors cursor-pointer ${
+                      selectedInternId === "ALL"
+                        ? "bg-primary/10 text-primary font-bold"
+                        : "text-foreground font-semibold"
+                    }`}
+                  >
+                    <span>Semua Siswa</span>
+                    {selectedInternId === "ALL" && (
+                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                    )}
+                  </button>
+                  {interns
+                    .filter((intern) => {
+                      if (!internSearchQuery.trim()) return true;
+                      const q = internSearchQuery.toLowerCase();
+                      const name = (
+                        intern.name ||
+                        intern.nama ||
+                        ""
+                      ).toLowerCase();
+                      const inst = (
+                        intern.institution ||
+                        intern.sekolah_kampus ||
+                        ""
+                      ).toLowerCase();
+                      return name.includes(q) || inst.includes(q);
+                    })
+                    .map((intern) => {
+                      const isSelected =
+                        String(intern.id) === String(selectedInternId);
+                      const displayName = intern.name || intern.nama;
+                      const displayInst =
+                        intern.institution || intern.sekolah_kampus || "Magang";
+                      return (
+                        <button
+                          key={intern.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedInternId(String(intern.id));
+                            setInternSearchQuery("");
+                            setIsInternDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-muted/60 transition-colors cursor-pointer ${
+                            isSelected
+                              ? "bg-primary/10 text-primary font-bold"
+                              : "text-foreground font-semibold"
+                          }`}
+                        >
+                          <div className="min-w-0 pr-2">
+                            <p className="truncate">{displayName}</p>
+                            <p className="text-[10px] text-muted-foreground font-normal truncate">
+                              {displayInst}
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  {interns.filter((intern) => {
+                    if (!internSearchQuery.trim()) return true;
+                    const q = internSearchQuery.toLowerCase();
+                    const name = (
+                      intern.name ||
+                      intern.nama ||
+                      ""
+                    ).toLowerCase();
+                    const inst = (
+                      intern.institution ||
+                      intern.sekolah_kampus ||
+                      ""
+                    ).toLowerCase();
+                    return name.includes(q) || inst.includes(q);
+                  }).length === 0 && (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      Tidak ada siswa ditemukan
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Category */}
             <div className="relative">
               <select
                 value={selectedCategory}
@@ -480,7 +641,6 @@ export default function AdminLogBookPage() {
               <Filter className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             </div>
 
-            {/* Date Range: Dari */}
             <div className="relative">
               <input
                 type="date"
@@ -503,14 +663,23 @@ export default function AdminLogBookPage() {
 
           <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs">
             <button
-              onClick={() => setSortOrder(sortOrder === "DESC" ? "ASC" : "DESC")}
+              onClick={() =>
+                setSortOrder(sortOrder === "DESC" ? "ASC" : "DESC")
+              }
               className="inline-flex items-center gap-1.5 font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <ArrowUpDown className="w-3.5 h-3.5 text-primary" />
-              <span>Urutan: {sortOrder === "DESC" ? "Terbaru (DESC)" : "Terlama (ASC)"}</span>
+              <span>
+                Urutan:{" "}
+                {sortOrder === "DESC" ? "Terbaru (DESC)" : "Terlama (ASC)"}
+              </span>
             </button>
 
-            {(startDate || endDate || selectedCategory !== "ALL" || selectedInternId !== "ALL" || searchQuery) && (
+            {(startDate ||
+              endDate ||
+              selectedCategory !== "ALL" ||
+              selectedInternId !== "ALL" ||
+              searchQuery) && (
               <button
                 onClick={() => {
                   setStartDate("");
@@ -527,7 +696,6 @@ export default function AdminLogBookPage() {
           </div>
         </div>
 
-        {/* Data Table */}
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
           <div className="p-5 flex items-center justify-between gap-4 border-b border-border">
             <div className="flex items-center gap-2.5">
@@ -537,10 +705,10 @@ export default function AdminLogBookPage() {
                 </h2>
               </div>
             </div>
-
+            {/* 
             <span className="px-3 py-1 rounded-full text-xs font-black bg-primary/10 text-primary border border-primary/20 shrink-0">
               {logbooks.length} Data
-            </span>
+            </span> */}
           </div>
 
           {isLoading ? (
@@ -553,9 +721,12 @@ export default function AdminLogBookPage() {
               <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
                 <NotebookPen className="w-6 h-6" />
               </div>
-              <p className="text-sm font-bold text-foreground">Tidak ada data logbook</p>
+              <p className="text-sm font-bold text-foreground">
+                Tidak ada data logbook
+              </p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Belum ada data aktivitas yang sesuai dengan kriteria filter pencarian.
+                Belum ada data aktivitas yang sesuai dengan kriteria filter
+                pencarian.
               </p>
             </div>
           ) : (
@@ -573,8 +744,11 @@ export default function AdminLogBookPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {logbooks.map((item, index) => {
-                    const kategoriLabel = LOGBOOK_CATEGORY_LABELS[item.kategori as LogBookCategory] || item.kategori;
+                  {logbooks.slice(0, itemsPerPage).map((item, index) => {
+                    const kategoriLabel =
+                      LOGBOOK_CATEGORY_LABELS[
+                        item.kategori as LogBookCategory
+                      ] || item.kategori;
                     return (
                       <tr
                         key={item.id}
@@ -589,7 +763,7 @@ export default function AdminLogBookPage() {
                               src={
                                 item.user_avatar ||
                                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                  item.user_nama || item.userName || "M"
+                                  item.user_nama || item.userName || "M",
                                 )}&background=72e3ad&color=1e2723&bold=true`
                               }
                               alt={item.user_nama || "Avatar"}
@@ -597,10 +771,14 @@ export default function AdminLogBookPage() {
                             />
                             <div className="min-w-0">
                               <p className="font-extrabold text-foreground truncate">
-                                {item.user_nama || item.userName || "Mahasiswa Magang"}
+                                {item.user_nama ||
+                                  item.userName ||
+                                  "Mahasiswa Magang"}
                               </p>
                               <p className="text-[10px] text-muted-foreground truncate">
-                                {item.user_institution || item.user_sekolah || "Peserta Magang"}
+                                {item.user_institution ||
+                                  item.user_sekolah ||
+                                  "Peserta Magang"}
                               </p>
                             </div>
                           </div>
@@ -616,20 +794,23 @@ export default function AdminLogBookPage() {
                             <div className="flex items-center gap-1.5 font-extrabold text-foreground">
                               <Clock className="w-3 h-3 text-cyan-500 shrink-0" />
                               <span>
-                                {formatWaktu(item.waktu_mulai)} - {formatWaktu(item.waktu_selesai)}
+                                {formatWaktu(item.waktu_mulai)} -{" "}
+                                {formatWaktu(item.waktu_selesai)}
                               </span>
                             </div>
-                            {item.durasi_menit !== undefined && item.durasi_menit > 0 && (
-                              <span className="text-[10px] font-semibold text-muted-foreground">
-                                ({Math.floor(item.durasi_menit / 60)}j {item.durasi_menit % 60}m)
-                              </span>
-                            )}
+                            {item.durasi_menit !== undefined &&
+                              item.durasi_menit > 0 && (
+                                <span className="text-[10px] font-semibold text-muted-foreground">
+                                  ({Math.floor(item.durasi_menit / 60)}j{" "}
+                                  {item.durasi_menit % 60}m)
+                                </span>
+                              )}
                           </div>
                         </td>
                         <td className="py-3.5 px-4">
                           <span
                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${getKategoriBadgeClass(
-                              item.kategori
+                              item.kategori,
                             )}`}
                           >
                             {getKategoriIcon(item.kategori)}
@@ -677,13 +858,53 @@ export default function AdminLogBookPage() {
               </table>
             </div>
           )}
+
+          {!isLoading && (
+            <div className="p-4 border-t border-border flex items-center justify-between gap-4 bg-muted/20">
+              <div className="text-xs text-muted-foreground font-semibold">
+                Menampilkan{" "}
+                <strong className="text-foreground font-bold">
+                  {logbooks.length}
+                </strong>{" "}
+                data log book
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">
+                  Number of rows:
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="
+                    bg-card
+                    border border-border
+                    rounded-lg
+                    px-2.5 py-1.5
+                    text-xs font-bold
+                    text-foreground
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-primary/40
+                    transition-all
+                    cursor-pointer
+                  "
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* EDIT MODAL */}
       {isEditModalOpen && selectedLogbook && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 print:hidden">
-          <div className="bg-card border border-border rounded-2xl max-w-lg w-full p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
+          <div className="bg-card border border-border rounded-2xl max-w-lg w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 rounded-xl bg-blue-500/10 text-blue-500">
@@ -709,7 +930,9 @@ export default function AdminLogBookPage() {
                 <input
                   type="date"
                   value={formData.tanggal}
-                  onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tanggal: e.target.value })
+                  }
                   required
                   className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
@@ -723,7 +946,9 @@ export default function AdminLogBookPage() {
                   <input
                     type="time"
                     value={formData.waktu_mulai}
-                    onChange={(e) => setFormData({ ...formData, waktu_mulai: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, waktu_mulai: e.target.value })
+                    }
                     required
                     className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
@@ -735,7 +960,12 @@ export default function AdminLogBookPage() {
                   <input
                     type="time"
                     value={formData.waktu_selesai}
-                    onChange={(e) => setFormData({ ...formData, waktu_selesai: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        waktu_selesai: e.target.value,
+                      })
+                    }
                     required
                     className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
@@ -748,7 +978,9 @@ export default function AdminLogBookPage() {
                 </label>
                 <select
                   value={formData.kategori}
-                  onChange={(e) => setFormData({ ...formData, kategori: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, kategori: e.target.value })
+                  }
                   className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
                 >
                   {LOGBOOK_CATEGORIES.map((cat) => (
@@ -766,7 +998,9 @@ export default function AdminLogBookPage() {
                 <textarea
                   rows={4}
                   value={formData.aktivitas}
-                  onChange={(e) => setFormData({ ...formData, aktivitas: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, aktivitas: e.target.value })
+                  }
                   required
                   className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
@@ -798,12 +1032,13 @@ export default function AdminLogBookPage() {
             </form>
           </div>
         </div>
-      )}
+      </ModalPortal>
+    )}
 
-      {/* DETAIL MODAL */}
-      {isDetailModalOpen && selectedLogbook && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 print:hidden">
-          <div className="bg-card border border-border rounded-2xl max-w-md w-full p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+    {isDetailModalOpen && selectedLogbook && (
+      <ModalPortal>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
@@ -823,40 +1058,63 @@ export default function AdminLogBookPage() {
 
             <div className="space-y-3 text-xs">
               <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">Peserta Magang</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                  Peserta Magang
+                </span>
                 <p className="font-extrabold text-foreground text-sm">
-                  {selectedLogbook.user_nama || selectedLogbook.userName || "Mahasiswa Magang"}
+                  {selectedLogbook.user_nama ||
+                    selectedLogbook.userName ||
+                    "Mahasiswa Magang"}
                 </p>
                 <p className="text-muted-foreground">
-                  {selectedLogbook.user_institution || selectedLogbook.user_sekolah || "-"}
+                  {selectedLogbook.user_institution ||
+                    selectedLogbook.user_sekolah ||
+                    "-"}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Tanggal</span>
-                  <p className="font-extrabold text-foreground">{formatTanggalIndo(selectedLogbook.tanggal)}</p>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                    Tanggal
+                  </span>
+                  <p className="font-extrabold text-foreground">
+                    {formatTanggalIndo(selectedLogbook.tanggal)}
+                  </p>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Waktu & Durasi</span>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                    Waktu & Durasi
+                  </span>
                   <p className="font-extrabold text-foreground">
-                    {formatWaktu(selectedLogbook.waktu_mulai)} - {formatWaktu(selectedLogbook.waktu_selesai)}
+                    {formatWaktu(selectedLogbook.waktu_mulai)} -{" "}
+                    {formatWaktu(selectedLogbook.waktu_selesai)}
                   </p>
                 </div>
               </div>
 
               <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">Kategori</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                  Kategori
+                </span>
                 <div>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${getKategoriBadgeClass(selectedLogbook.kategori)}`}>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${getKategoriBadgeClass(selectedLogbook.kategori)}`}
+                  >
                     {getKategoriIcon(selectedLogbook.kategori)}
-                    <span className="capitalize">{LOGBOOK_CATEGORY_LABELS[selectedLogbook.kategori as LogBookCategory] || selectedLogbook.kategori}</span>
+                    <span className="capitalize">
+                      {LOGBOOK_CATEGORY_LABELS[
+                        selectedLogbook.kategori as LogBookCategory
+                      ] || selectedLogbook.kategori}
+                    </span>
                   </span>
                 </div>
               </div>
 
               <div className="p-3.5 rounded-xl bg-muted/40 border border-border space-y-1">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">Uraian Aktivitas</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                  Uraian Aktivitas
+                </span>
                 <p className="text-foreground leading-relaxed whitespace-pre-wrap font-medium">
                   {selectedLogbook.aktivitas}
                 </p>
@@ -873,19 +1131,23 @@ export default function AdminLogBookPage() {
             </div>
           </div>
         </div>
-      )}
+      </ModalPortal>
+    )}
 
-      {/* DELETE MODAL */}
-      {isDeleteModalOpen && selectedLogbook && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 print:hidden">
-          <div className="bg-card border border-border rounded-2xl max-w-sm w-full p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+    {isDeleteModalOpen && selectedLogbook && (
+      <ModalPortal>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
+          <div className="bg-card border border-border rounded-2xl max-w-sm w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
             <div className="text-center space-y-1">
-              <h3 className="text-base font-black text-foreground">Hapus Entri Logbook?</h3>
+              <h3 className="text-base font-black text-foreground">
+                Hapus Entri Logbook?
+              </h3>
               <p className="text-xs text-muted-foreground">
-                Tindakan ini tidak dapat dibatalkan. Data logbook aktivitas ini akan dihapus permanen.
+                Tindakan ini tidak dapat dibatalkan. Data logbook aktivitas ini
+                akan dihapus permanen.
               </p>
             </div>
 
@@ -908,13 +1170,13 @@ export default function AdminLogBookPage() {
             </div>
           </div>
         </div>
-      )}
+      </ModalPortal>
+    )}
 
-      {/* PRINT PREVIEW / CETAK PDF MODAL */}
-      {isPrintModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 print:hidden">
-          <div className="bg-card border border-border rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
-            {/* Header Modal */}
+    {isPrintModalOpen && (
+      <ModalPortal>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
+          <div className="bg-card border border-border rounded-2xl max-w-4xl w-full max-h-[calc(100vh-2rem)] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
             <div className="p-4 md:p-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
               <div className="flex items-center gap-2">
                 <div>
@@ -922,7 +1184,8 @@ export default function AdminLogBookPage() {
                     Pratinjau & Cetak Laporan PDF Logbook
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    {logbooks.length} aktivitas siap dicetak ke format laporan resmi A4.
+                    {logbooks.length} aktivitas siap dicetak ke format laporan
+                    resmi A4.
                   </p>
                 </div>
               </div>
@@ -934,10 +1197,11 @@ export default function AdminLogBookPage() {
               </button>
             </div>
 
-            {/* Print Controls Setting */}
             <div className="p-4 border-b border-border bg-muted/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div>
-                <label className="block font-bold text-foreground mb-1">Nama Pembimbing Lapangan</label>
+                <label className="block font-bold text-foreground mb-1">
+                  Nama Pembimbing Lapangan
+                </label>
                 <input
                   type="text"
                   value={printSupervisorName}
@@ -947,7 +1211,9 @@ export default function AdminLogBookPage() {
                 />
               </div>
               <div>
-                <label className="block font-bold text-foreground mb-1">NIP / Jabatan</label>
+                <label className="block font-bold text-foreground mb-1">
+                  NIP / Jabatan
+                </label>
                 <input
                   type="text"
                   value={printSupervisorNip}
@@ -957,7 +1223,9 @@ export default function AdminLogBookPage() {
                 />
               </div>
               <div>
-                <label className="block font-bold text-foreground mb-1">Kota / Lokasi Surat</label>
+                <label className="block font-bold text-foreground mb-1">
+                  Kota / Lokasi Surat
+                </label>
                 <input
                   type="text"
                   value={printLocation}
@@ -968,10 +1236,8 @@ export default function AdminLogBookPage() {
               </div>
             </div>
 
-            {/* Document Preview Container (Scrollable) */}
             <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-neutral-900/10 dark:bg-black/40">
               <div className="bg-white text-black p-8 rounded-lg shadow-md max-w-3xl mx-auto space-y-6 text-xs font-sans">
-                {/* Kop Dokumen */}
                 <div className="border-b-2 border-black pb-3 text-center space-y-1">
                   <h2 className="text-base font-black uppercase tracking-wider text-black">
                     DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL
@@ -980,121 +1246,187 @@ export default function AdminLogBookPage() {
                     SISTEM INFORMASI PRESENSI & LOGBOOK MAGANG (HADIR.IN)
                   </h3>
                   <p className="text-[10px] text-neutral-600">
-                    Jl. Sultan Agung No.23 Gajah Timur, Magersari, Kec. Sidoarjo, Telp: (031) 8960188, Email: disdukcapil@layanan.go.id
+                    Jl. Sultan Agung No.23 Gajah Timur, Magersari, Kec.
+                    Sidoarjo, Telp: (031) 8960188, Email:
+                    disdukcapil@layanan.go.id
                   </p>
                 </div>
 
-                {/* Judul Laporan */}
                 <div className="text-center space-y-0.5">
                   <h4 className="text-sm font-black uppercase underline tracking-wide">
                     LEMBAR LAPORAN AKTIVITAS LOGBOOK MAGANG
                   </h4>
                   <p className="text-[11px] text-neutral-700">
-                    Periode: {startDate ? formatTanggalIndo(startDate) : "Awal"} s/d {endDate ? formatTanggalIndo(endDate) : "Sekarang"}
+                    Periode: {startDate ? formatTanggalIndo(startDate) : "Awal"}{" "}
+                    s/d {endDate ? formatTanggalIndo(endDate) : "Sekarang"}
                   </p>
                 </div>
 
-                {/* Info Peserta jika difilter per individu */}
                 {selectedInternObj && (
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 p-3 rounded-lg border border-neutral-300 bg-neutral-50 text-[11px]">
                     <div>
-                      <span className="font-semibold text-neutral-600">Nama Mahasiswa: </span>
-                      <strong className="text-black">{selectedInternObj.name || selectedInternObj.nama}</strong>
+                      <span className="font-semibold text-neutral-600">
+                        Nama Mahasiswa:{" "}
+                      </span>
+                      <strong className="text-black">
+                        {selectedInternObj.name || selectedInternObj.nama}
+                      </strong>
                     </div>
                     <div>
-                      <span className="font-semibold text-neutral-600">Instansi / Kampus: </span>
-                      <strong className="text-black">{selectedInternObj.institution || selectedInternObj.sekolah_kampus || "-"}</strong>
+                      <span className="font-semibold text-neutral-600">
+                        Instansi / Kampus:{" "}
+                      </span>
+                      <strong className="text-black">
+                        {selectedInternObj.institution ||
+                          selectedInternObj.sekolah_kampus ||
+                          "-"}
+                      </strong>
                     </div>
                     <div>
-                      <span className="font-semibold text-neutral-600">Program Studi / Divisi: </span>
-                      <strong className="text-black">{selectedInternObj.study_program || selectedInternObj.studyProgram || selectedInternObj.bagian || "-"}</strong>
+                      <span className="font-semibold text-neutral-600">
+                        Program Studi / Divisi:{" "}
+                      </span>
+                      <strong className="text-black">
+                        {selectedInternObj.study_program ||
+                          selectedInternObj.studyProgram ||
+                          selectedInternObj.bagian ||
+                          "-"}
+                      </strong>
                     </div>
                     <div>
-                      <span className="font-semibold text-neutral-600">No. Identitas / NIM: </span>
-                      <strong className="text-black">{selectedInternObj.identityNumber || selectedInternObj.identity_number || "-"}</strong>
+                      <span className="font-semibold text-neutral-600">
+                        No. Identitas / NIM:{" "}
+                      </span>
+                      <strong className="text-black">
+                        {selectedInternObj.identityNumber ||
+                          selectedInternObj.identity_number ||
+                          "-"}
+                      </strong>
                     </div>
                   </div>
                 )}
 
-                {/* Tabel Aktivitas */}
                 <table className="w-full border-collapse border border-black text-[10px]">
                   <thead>
                     <tr className="bg-neutral-200 border-b border-black text-black font-bold uppercase text-center">
                       <th className="border border-black p-1.5 w-8">No</th>
-                      {!selectedInternObj && <th className="border border-black p-1.5 min-w-[100px]">Peserta</th>}
-                      <th className="border border-black p-1.5 w-24">Tanggal</th>
-                      <th className="border border-black p-1.5 w-24">Waktu (Jam)</th>
-                      <th className="border border-black p-1.5 w-24">Kategori</th>
-                      <th className="border border-black p-1.5 text-left">Uraian Aktivitas & Capaian Pekerjaan</th>
+                      {!selectedInternObj && (
+                        <th className="border border-black p-1.5 min-w-[100px]">
+                          Peserta
+                        </th>
+                      )}
+                      <th className="border border-black p-1.5 w-24">
+                        Tanggal
+                      </th>
+                      <th className="border border-black p-1.5 w-24">
+                        Waktu (Jam)
+                      </th>
+                      <th className="border border-black p-1.5 w-24">
+                        Kategori
+                      </th>
+                      <th className="border border-black p-1.5 text-left">
+                        Uraian Aktivitas & Capaian Pekerjaan
+                      </th>
                       <th className="border border-black p-1.5 w-16">Durasi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {logbooks.map((item, idx) => {
-                      const durasiJam = item.durasi_menit ? `${Math.floor(item.durasi_menit / 60)}j ${item.durasi_menit % 60}m` : "—";
-                      const kat = LOGBOOK_CATEGORY_LABELS[item.kategori as LogBookCategory] || item.kategori;
+                      const durasiJam = item.durasi_menit
+                        ? `${Math.floor(item.durasi_menit / 60)}j ${item.durasi_menit % 60}m`
+                        : "—";
+                      const kat =
+                        LOGBOOK_CATEGORY_LABELS[
+                          item.kategori as LogBookCategory
+                        ] || item.kategori;
                       return (
-                        <tr key={item.id} className="border-b border-neutral-400">
-                          <td className="border border-black p-1.5 text-center font-semibold">{idx + 1}</td>
+                        <tr
+                          key={item.id}
+                          className="border-b border-neutral-400"
+                        >
+                          <td className="border border-black p-1.5 text-center font-semibold">
+                            {idx + 1}
+                          </td>
                           {!selectedInternObj && (
                             <td className="border border-black p-1.5 font-bold">
-                              {item.user_nama || item.userName || "Mahasiswa Magang"}
+                              {item.user_nama ||
+                                item.userName ||
+                                "Mahasiswa Magang"}
                             </td>
                           )}
                           <td className="border border-black p-1.5 text-center font-medium">
                             {formatTanggalIndo(item.tanggal)}
                           </td>
                           <td className="border border-black p-1.5 text-center font-mono">
-                            {formatWaktu(item.waktu_mulai)} - {formatWaktu(item.waktu_selesai)}
+                            {formatWaktu(item.waktu_mulai)} -{" "}
+                            {formatWaktu(item.waktu_selesai)}
                           </td>
-                          <td className="border border-black p-1.5 text-center capitalize font-semibold">{kat}</td>
-                          <td className="border border-black p-1.5 text-left whitespace-pre-wrap">{item.aktivitas}</td>
-                          <td className="border border-black p-1.5 text-center font-bold">{durasiJam}</td>
+                          <td className="border border-black p-1.5 text-center capitalize font-semibold">
+                            {kat}
+                          </td>
+                          <td className="border border-black p-1.5 text-left whitespace-pre-wrap">
+                            {item.aktivitas}
+                          </td>
+                          <td className="border border-black p-1.5 text-center font-bold">
+                            {durasiJam}
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
 
-                {/* Ringkasan Total */}
                 <div className="flex justify-between items-center p-2.5 rounded-lg border border-black bg-neutral-100 text-[11px] font-bold">
-                  <span>Total Aktivitas Tercatat: {stats.totalCount} kegiatan</span>
+                  <span>
+                    Total Aktivitas Tercatat: {stats.totalCount} kegiatan
+                  </span>
                   <span>Total Akumulasi Waktu: {stats.totalHours} Jam</span>
                 </div>
 
-                {/* Lembar Tanda Tangan */}
                 <div className="grid grid-cols-2 gap-8 pt-6 text-[11px] text-center">
                   <div className="space-y-16">
-                    <p className="font-semibold">
-                      Mahasiswa / Siswa Magang,
-                    </p>
+                    <p className="font-semibold">Mahasiswa / Siswa Magang,</p>
                     <div>
                       <p className="font-bold underline uppercase">
-                        {selectedInternObj?.name || selectedInternObj?.nama || "( ........................................ )"}
+                        {selectedInternObj?.name ||
+                          selectedInternObj?.nama ||
+                          "( ........................................ )"}
                       </p>
-                      <p className="text-[10px] text-neutral-600">Peserta Magang</p>
+                      <p className="text-[10px] text-neutral-600">
+                        Peserta Magang
+                      </p>
                     </div>
                   </div>
 
                   <div className="space-y-16">
                     <p className="font-semibold">
-                      {printLocation}, {new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date())}
+                      {printLocation},{" "}
+                      {new Intl.DateTimeFormat("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        timeZone: "Asia/Jakarta",
+                      }).format(new Date())}
                       <br />
                       Mengetahui, Pembimbing Lapangan
                     </p>
                     <div>
-                      <p className="font-bold underline uppercase">{printSupervisorName}</p>
-                      <p className="text-[10px] text-neutral-600">NIP: {printSupervisorNip}</p>
+                      <p className="font-bold underline uppercase">
+                        {printSupervisorName}
+                      </p>
+                      <p className="text-[10px] text-neutral-600">
+                        NIP: {printSupervisorNip}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Footer Modal Actions */}
             <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-3 shrink-0">
               <span className="text-xs text-muted-foreground">
-                Tip: Pilih opsi <strong>Save as PDF</strong> pada jendela cetak browser.
+                Tip: Pilih opsi <strong>Save as PDF</strong> pada jendela cetak
+                browser.
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -1116,11 +1448,10 @@ export default function AdminLogBookPage() {
             </div>
           </div>
         </div>
-      )}
+      </ModalPortal>
+    )}
 
-      {/* DEDICATED PRINTABLE CONTAINER (Only visible when printing) */}
       <div className="hidden print:block text-black bg-white p-6 space-y-6 text-xs font-sans">
-        {/* Kop Dokumen */}
         <div className="border-b-2 border-black pb-3 text-center space-y-1">
           <h2 className="text-base font-black uppercase tracking-wider text-black">
             DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL
@@ -1129,62 +1460,96 @@ export default function AdminLogBookPage() {
             SISTEM INFORMASI PRESENSI & LOGBOOK MAGANG (HADIR.IN)
           </h3>
           <p className="text-[10px] text-neutral-600">
-            Jl. Sultan Agung No.23 Gajah Timur, Magersari, Kec. Sidoarjo, Telp: (031) 8960188, Email: disdukcapil@layanan.go.id
+            Jl. Sultan Agung No.23 Gajah Timur, Magersari, Kec. Sidoarjo, Telp:
+            (031) 8960188, Email: disdukcapil@layanan.go.id
           </p>
         </div>
 
-        {/* Judul Laporan */}
         <div className="text-center space-y-0.5">
           <h4 className="text-sm font-black uppercase underline tracking-wide">
             LEMBAR LAPORAN AKTIVITAS LOGBOOK MAGANG
           </h4>
           <p className="text-[11px] text-neutral-700">
-            Periode: {startDate ? formatTanggalIndo(startDate) : "Awal"} s/d {endDate ? formatTanggalIndo(endDate) : "Sekarang"}
+            Periode: {startDate ? formatTanggalIndo(startDate) : "Awal"} s/d{" "}
+            {endDate ? formatTanggalIndo(endDate) : "Sekarang"}
           </p>
         </div>
 
-        {/* Info Peserta jika difilter per individu */}
         {selectedInternObj && (
           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 p-3 rounded-lg border border-neutral-300 bg-neutral-50 text-[11px]">
             <div>
-              <span className="font-semibold text-neutral-600">Nama Mahasiswa: </span>
-              <strong className="text-black">{selectedInternObj.name || selectedInternObj.nama}</strong>
+              <span className="font-semibold text-neutral-600">
+                Nama Mahasiswa:{" "}
+              </span>
+              <strong className="text-black">
+                {selectedInternObj.name || selectedInternObj.nama}
+              </strong>
             </div>
             <div>
-              <span className="font-semibold text-neutral-600">Instansi / Kampus: </span>
-              <strong className="text-black">{selectedInternObj.institution || selectedInternObj.sekolah_kampus || "-"}</strong>
+              <span className="font-semibold text-neutral-600">
+                Instansi / Kampus:{" "}
+              </span>
+              <strong className="text-black">
+                {selectedInternObj.institution ||
+                  selectedInternObj.sekolah_kampus ||
+                  "-"}
+              </strong>
             </div>
             <div>
-              <span className="font-semibold text-neutral-600">Program Studi / Divisi: </span>
-              <strong className="text-black">{selectedInternObj.study_program || selectedInternObj.studyProgram || selectedInternObj.bagian || "-"}</strong>
+              <span className="font-semibold text-neutral-600">
+                Program Studi / Divisi:{" "}
+              </span>
+              <strong className="text-black">
+                {selectedInternObj.study_program ||
+                  selectedInternObj.studyProgram ||
+                  selectedInternObj.bagian ||
+                  "-"}
+              </strong>
             </div>
             <div>
-              <span className="font-semibold text-neutral-600">No. Identitas / NIM: </span>
-              <strong className="text-black">{selectedInternObj.identityNumber || selectedInternObj.identity_number || "-"}</strong>
+              <span className="font-semibold text-neutral-600">
+                No. Identitas / NIM:{" "}
+              </span>
+              <strong className="text-black">
+                {selectedInternObj.identityNumber ||
+                  selectedInternObj.identity_number ||
+                  "-"}
+              </strong>
             </div>
           </div>
         )}
 
-        {/* Tabel Aktivitas */}
         <table className="w-full border-collapse border border-black text-[10px]">
           <thead>
             <tr className="bg-neutral-200 border-b border-black text-black font-bold uppercase text-center">
               <th className="border border-black p-1.5 w-8">No</th>
-              {!selectedInternObj && <th className="border border-black p-1.5 min-w-[100px]">Peserta</th>}
+              {!selectedInternObj && (
+                <th className="border border-black p-1.5 min-w-[100px]">
+                  Peserta
+                </th>
+              )}
               <th className="border border-black p-1.5 w-24">Tanggal</th>
               <th className="border border-black p-1.5 w-24">Waktu (Jam)</th>
               <th className="border border-black p-1.5 w-24">Kategori</th>
-              <th className="border border-black p-1.5 text-left">Uraian Aktivitas & Capaian Pekerjaan</th>
+              <th className="border border-black p-1.5 text-left">
+                Uraian Aktivitas & Capaian Pekerjaan
+              </th>
               <th className="border border-black p-1.5 w-16">Durasi</th>
             </tr>
           </thead>
           <tbody>
             {logbooks.map((item, idx) => {
-              const durasiJam = item.durasi_menit ? `${Math.floor(item.durasi_menit / 60)}j ${item.durasi_menit % 60}m` : "—";
-              const kat = LOGBOOK_CATEGORY_LABELS[item.kategori as LogBookCategory] || item.kategori;
+              const durasiJam = item.durasi_menit
+                ? `${Math.floor(item.durasi_menit / 60)}j ${item.durasi_menit % 60}m`
+                : "—";
+              const kat =
+                LOGBOOK_CATEGORY_LABELS[item.kategori as LogBookCategory] ||
+                item.kategori;
               return (
                 <tr key={item.id} className="border-b border-neutral-400">
-                  <td className="border border-black p-1.5 text-center font-semibold">{idx + 1}</td>
+                  <td className="border border-black p-1.5 text-center font-semibold">
+                    {idx + 1}
+                  </td>
                   {!selectedInternObj && (
                     <td className="border border-black p-1.5 font-bold">
                       {item.user_nama || item.userName || "Mahasiswa Magang"}
@@ -1194,32 +1559,37 @@ export default function AdminLogBookPage() {
                     {formatTanggalIndo(item.tanggal)}
                   </td>
                   <td className="border border-black p-1.5 text-center font-mono">
-                    {formatWaktu(item.waktu_mulai)} - {formatWaktu(item.waktu_selesai)}
+                    {formatWaktu(item.waktu_mulai)} -{" "}
+                    {formatWaktu(item.waktu_selesai)}
                   </td>
-                  <td className="border border-black p-1.5 text-center capitalize font-semibold">{kat}</td>
-                  <td className="border border-black p-1.5 text-left whitespace-pre-wrap">{item.aktivitas}</td>
-                  <td className="border border-black p-1.5 text-center font-bold">{durasiJam}</td>
+                  <td className="border border-black p-1.5 text-center capitalize font-semibold">
+                    {kat}
+                  </td>
+                  <td className="border border-black p-1.5 text-left whitespace-pre-wrap">
+                    {item.aktivitas}
+                  </td>
+                  <td className="border border-black p-1.5 text-center font-bold">
+                    {durasiJam}
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
 
-        {/* Ringkasan Total */}
         <div className="flex justify-between items-center p-2.5 rounded-lg border border-black bg-neutral-100 text-[11px] font-bold">
           <span>Total Aktivitas Tercatat: {stats.totalCount} kegiatan</span>
           <span>Total Akumulasi Waktu: {stats.totalHours} Jam</span>
         </div>
 
-        {/* Lembar Tanda Tangan */}
         <div className="grid grid-cols-2 gap-8 pt-6 text-[11px] text-center">
           <div className="space-y-16">
-            <p className="font-semibold">
-              Mahasiswa / Siswa Magang,
-            </p>
+            <p className="font-semibold">Mahasiswa / Siswa Magang,</p>
             <div>
               <p className="font-bold underline uppercase">
-                {selectedInternObj?.name || selectedInternObj?.nama || "( ........................................ )"}
+                {selectedInternObj?.name ||
+                  selectedInternObj?.nama ||
+                  "( ........................................ )"}
               </p>
               <p className="text-[10px] text-neutral-600">Peserta Magang</p>
             </div>
@@ -1227,13 +1597,23 @@ export default function AdminLogBookPage() {
 
           <div className="space-y-16">
             <p className="font-semibold">
-              {printLocation}, {new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date())}
+              {printLocation},{" "}
+              {new Intl.DateTimeFormat("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                timeZone: "Asia/Jakarta",
+              }).format(new Date())}
               <br />
               Mengetahui, Pembimbing Lapangan
             </p>
             <div>
-              <p className="font-bold underline uppercase">{printSupervisorName}</p>
-              <p className="text-[10px] text-neutral-600">NIP: {printSupervisorNip}</p>
+              <p className="font-bold underline uppercase">
+                {printSupervisorName}
+              </p>
+              <p className="text-[10px] text-neutral-600">
+                NIP: {printSupervisorNip}
+              </p>
             </div>
           </div>
         </div>

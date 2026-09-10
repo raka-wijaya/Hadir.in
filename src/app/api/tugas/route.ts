@@ -29,6 +29,23 @@ function normalizeStatusPengerjaan(
 async function ensureTugasTableExists() {
   try {
     await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS \`log_book\` (
+        \`id\` INT(11) NOT NULL AUTO_INCREMENT,
+        \`peserta_magang_id\` BIGINT(20) UNSIGNED DEFAULT NULL,
+        \`tanggal\` DATE NOT NULL,
+        \`waktu_mulai\` TIME NOT NULL,
+        \`waktu_selesai\` TIME NOT NULL,
+        \`kategori\` ENUM('akta kelahiran','akta kematian','tambah bio data','pindah keluar','pindah datang','media','programmer') NOT NULL,
+        \`aktivitas\` TEXT NOT NULL,
+        \`created_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        KEY \`idx_log_book_peserta_magang_id\` (\`peserta_magang_id\`),
+        KEY \`idx_log_book_tanggal\` (\`tanggal\`),
+        KEY \`idx_log_book_kategori\` (\`kategori\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await mysqlPool.query(`
       CREATE TABLE IF NOT EXISTS \`tugas\` (
         \`id\` INT(11) NOT NULL AUTO_INCREMENT,
         \`peserta_magang_id\` BIGINT(20) UNSIGNED DEFAULT NULL,
@@ -79,6 +96,88 @@ async function ensureTugasTableExists() {
     }
   } catch (err) {
     console.warn("ensureTugasTableExists warning:", err);
+  }
+}
+
+const VALID_LOGBOOK_CATEGORIES = [
+  "akta kelahiran",
+  "akta kematian",
+  "tambah bio data",
+  "pindah keluar",
+  "pindah datang",
+  "media",
+  "programmer",
+] as const;
+
+function mapToLogBookCategory(kategori?: string | null): string {
+  if (!kategori) return "programmer";
+  const cleaned = kategori.trim().toLowerCase();
+  const found = VALID_LOGBOOK_CATEGORIES.find((cat) => cat === cleaned);
+  if (found) return found;
+
+  if (cleaned.includes("kelahiran") || cleaned.includes("lahir")) return "akta kelahiran";
+  if (cleaned.includes("kematian") || cleaned.includes("mati")) return "akta kematian";
+  if (cleaned.includes("bio") || cleaned.includes("biodata") || cleaned.includes("tambah data")) return "tambah bio data";
+  if (cleaned.includes("pindah keluar") || cleaned.includes("keluar")) return "pindah keluar";
+  if (cleaned.includes("pindah datang") || cleaned.includes("datang") || cleaned.includes("masuk")) return "pindah datang";
+  if (cleaned.includes("program") || cleaned.includes("coding") || cleaned.includes("dev")) return "programmer";
+  if (cleaned.includes("media") || cleaned.includes("desain") || cleaned.includes("sosmed")) return "media";
+
+  return "programmer";
+}
+
+function getTodayJakarta(): string {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Jakarta",
+  }).format(new Date());
+}
+
+function getCurrentTimeJakarta(): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Jakarta",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date());
+}
+
+async function createLogBookForTask(
+  pesertaMagangId: number | string | null,
+  judulTugas: string,
+  deskripsi: string,
+  kategori: string
+): Promise<number | null> {
+  if (!pesertaMagangId) return null;
+  try {
+    const today = getTodayJakarta();
+    const timeNow = getCurrentTimeJakarta();
+    const logKategori = mapToLogBookCategory(kategori);
+    const cleanJudul = (judulTugas || "Tugas Selesai").trim();
+    const cleanDeskripsi = (deskripsi || "").trim();
+    const aktivitas = cleanDeskripsi
+      ? `[Tugas Selesai] ${cleanJudul} - ${cleanDeskripsi}`
+      : `[Tugas Selesai] ${cleanJudul}`;
+
+    const [res]: any = await mysqlPool.query(
+      `INSERT INTO \`log_book\` (\`peserta_magang_id\`, \`tanggal\`, \`waktu_mulai\`, \`waktu_selesai\`, \`kategori\`, \`aktivitas\`)
+       VALUES (?, ?, '08:00:00', ?, ?, ?)`,
+      [Number(pesertaMagangId), today, timeNow, logKategori, aktivitas]
+    );
+
+    return res?.insertId ? Number(res.insertId) : null;
+  } catch (err) {
+    console.error("Gagal membuat log_book otomatis untuk tugas:", err);
+    return null;
+  }
+}
+
+async function removeLogBookForTask(logBookId: number | string | null) {
+  if (!logBookId) return;
+  try {
+    await mysqlPool.query("DELETE FROM \`log_book\` WHERE \`id\` = ?", [Number(logBookId)]);
+  } catch (err) {
+    console.error("Gagal menghapus log_book untuk tugas:", err);
   }
 }
 
@@ -293,6 +392,16 @@ export async function POST(req: NextRequest) {
     const insertedRecords: any[] = [];
 
     for (const pId of targetIds) {
+      let effectiveLogBookId = logBookId ? Number(logBookId) : null;
+      if (statusPengerjaan === "SELESAI" && !effectiveLogBookId && pId) {
+        effectiveLogBookId = await createLogBookForTask(
+          pId,
+          judulTugas,
+          deskripsi,
+          kategori
+        );
+      }
+
       const [result]: any = await mysqlPool.query(
         `
         INSERT INTO \`tugas\` (
@@ -307,7 +416,7 @@ export async function POST(req: NextRequest) {
         `,
         [
           pId ? Number(pId) : null,
-          logBookId ? Number(logBookId) : null,
+          effectiveLogBookId,
           judulTugas,
           deskripsi,
           kategori,
@@ -334,8 +443,8 @@ export async function POST(req: NextRequest) {
         id: Number(insertedId),
         peserta_magang_id: pId ? String(pId) : null,
         pesertaMagangId: pId ? String(pId) : null,
-        log_book_id: logBookId ? Number(logBookId) : null,
-        logBookId: logBookId ? Number(logBookId) : null,
+        log_book_id: effectiveLogBookId,
+        logBookId: effectiveLogBookId,
         judul_tugas: judulTugas,
         judulTugas: judulTugas,
         deskripsi,
@@ -354,7 +463,9 @@ export async function POST(req: NextRequest) {
     const message =
       insertedRecords.length > 1
         ? `Tugas berhasil dibagikan kepada ${insertedRecords.length} peserta magang.`
-        : "Tugas berhasil ditambahkan.";
+        : statusPengerjaan === "SELESAI"
+          ? "Tugas berhasil ditambahkan dan dicatat ke log book."
+          : "Tugas berhasil ditambahkan.";
 
     return NextResponse.json(
       {
@@ -401,6 +512,64 @@ async function handleUpdate(req: NextRequest) {
       );
     }
 
+    const [existingRows]: any = await mysqlPool.query(
+      "SELECT id, peserta_magang_id, log_book_id, judul_tugas, deskripsi, kategori, status_pengerjaan FROM `tugas` WHERE `id` = ? LIMIT 1",
+      [Number(id)]
+    );
+
+    if (!existingRows || existingRows.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "Tugas tidak ditemukan." },
+        { status: 404 }
+      );
+    }
+
+    const existingTask = existingRows[0];
+    const currentStatus = (existingTask.status_pengerjaan || "").toUpperCase();
+    const statusRequested =
+      body.status_pengerjaan !== undefined || body.statusPengerjaan !== undefined;
+    const newStatus = statusRequested
+      ? normalizeStatusPengerjaan(body.status_pengerjaan || body.statusPengerjaan)
+      : currentStatus;
+
+    const pmId =
+      body.peserta_magang_id !== undefined || body.pesertaMagangId !== undefined
+        ? (body.peserta_magang_id ?? body.pesertaMagangId)
+        : existingTask.peserta_magang_id;
+
+    const judulTugas =
+      body.judul_tugas ?? body.judulTugas ?? existingTask.judul_tugas;
+    const deskripsi = body.deskripsi ?? existingTask.deskripsi;
+    const kategori = body.kategori ?? existingTask.kategori;
+
+    let targetLogBookId =
+      body.log_book_id !== undefined || body.logBookId !== undefined
+        ? (body.log_book_id ?? body.logBookId)
+        : existingTask.log_book_id;
+
+    // Sinkronisasi otomatis ke log_book
+    if (newStatus === "SELESAI") {
+      if (targetLogBookId) {
+        // Pastikan entri log_book masih ada
+        const [lbRows]: any = await mysqlPool.query(
+          "SELECT id FROM `log_book` WHERE `id` = ? LIMIT 1",
+          [Number(targetLogBookId)]
+        );
+        if (!lbRows || lbRows.length === 0) {
+          targetLogBookId = await createLogBookForTask(pmId, judulTugas, deskripsi, kategori);
+        }
+      } else {
+        // Belum ada logbook, buat baru otomatis
+        targetLogBookId = await createLogBookForTask(pmId, judulTugas, deskripsi, kategori);
+      }
+    } else if (newStatus === "BELUM_DIKERJAKAN" && currentStatus === "SELESAI") {
+      // Jika dibatalkan kembali ke BELUM_DIKERJAKAN, hapus entri log_book yang terhubung
+      if (targetLogBookId) {
+        await removeLogBookForTask(targetLogBookId);
+        targetLogBookId = null;
+      }
+    }
+
     const updates: string[] = [];
     const params: any[] = [];
 
@@ -416,31 +585,22 @@ async function handleUpdate(req: NextRequest) {
       updates.push("`kategori` = ?");
       params.push(body.kategori);
     }
-    if (
-      body.status_pengerjaan !== undefined ||
-      body.statusPengerjaan !== undefined
-    ) {
-      const sp = normalizeStatusPengerjaan(
-        body.status_pengerjaan || body.statusPengerjaan
-      );
+    if (statusRequested) {
       updates.push("`status_pengerjaan` = ?");
-      params.push(sp);
+      params.push(newStatus);
     }
     if (
       body.peserta_magang_id !== undefined ||
       body.pesertaMagangId !== undefined
     ) {
-      const pmId = body.peserta_magang_id ?? body.pesertaMagangId;
       updates.push("`peserta_magang_id` = ?");
       params.push(pmId ? Number(pmId) : null);
     }
-    if (
-      body.log_book_id !== undefined ||
-      body.logBookId !== undefined
-    ) {
-      const lbId = body.log_book_id ?? body.logBookId;
+
+    // Selalu sinkronkan log_book_id bila nilainya berubah
+    if (targetLogBookId !== existingTask.log_book_id) {
       updates.push("`log_book_id` = ?");
-      params.push(lbId ? Number(lbId) : null);
+      params.push(targetLogBookId ? Number(targetLogBookId) : null);
     }
 
     if (updates.length === 0) {
@@ -455,7 +615,11 @@ async function handleUpdate(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Tugas berhasil diperbarui.",
+      message:
+        newStatus === "SELESAI"
+          ? "Tugas berhasil diselesaikan dan dicatat ke log book."
+          : "Tugas berhasil diperbarui.",
+      log_book_id: targetLogBookId,
     });
   } catch (err: any) {
     console.error("PUT/PATCH /api/tugas error:", err);
@@ -491,6 +655,15 @@ export async function DELETE(req: NextRequest) {
         { success: false, message: "ID tugas wajib disertakan." },
         { status: 400 }
       );
+    }
+
+    // Jika ada log_book terkait tugas ini, hapus juga log_book-nya
+    const [existingTaskRows]: any = await mysqlPool.query(
+      "SELECT log_book_id FROM `tugas` WHERE `id` = ? LIMIT 1",
+      [Number(id)]
+    );
+    if (existingTaskRows && existingTaskRows.length > 0 && existingTaskRows[0].log_book_id) {
+      await removeLogBookForTask(existingTaskRows[0].log_book_id);
     }
 
     const [result]: any = await mysqlPool.query(

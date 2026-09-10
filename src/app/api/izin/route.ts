@@ -402,7 +402,12 @@ export async function POST(req: NextRequest) {
     }
 
     const today = getTodayJakarta();
-    const jenisRaw = String(body.jenis || body.status || "IZIN").trim();
+    const jenisRaw = String(body.jenis || body.status || "SAKIT").trim().toUpperCase();
+    // Normalisasi jenis ke dua nilai standar: SAKIT atau IZIN
+    const jenisFinal =
+      jenisRaw === "SAKIT"
+        ? "SAKIT"
+        : "IZIN"; // IZIN, KEPERLUAN_PRIBADI, KEPERLUAN PRIBADI, dan lainnya → IZIN
     const tanggalMulai = formatDateYMD(
       body.tanggal_mulai || body.tanggalMulai || today
     );
@@ -451,9 +456,9 @@ export async function POST(req: NextRequest) {
 
     // 2. Sinkronkan ke tabel `absensi` untuk setiap tanggal dalam rentang izin
     const settingId = await getActiveSettingId();
-    const isSakit = jenisRaw.toUpperCase().includes("SAKIT");
+    const isSakit = jenisFinal === "SAKIT";
     const statusAbsensi: "SAKIT" | "IZIN" = isSakit ? "SAKIT" : "IZIN";
-    const notesFormatted = `[${jenisRaw}] ${alasan}`;
+    const notesFormatted = `[${jenisFinal}] ${alasan}`;
 
     const startDateObj = new Date(tanggalMulai);
     const endDateObj = new Date(tanggalSelesai);
@@ -537,7 +542,7 @@ export async function POST(req: NextRequest) {
         primaryAbsensiId,
         pesertaMagangId || null,
         karyawanOsId || null,
-        jenisRaw,
+        jenisFinal,
         tanggalMulai,
         tanggalSelesai,
         alasan,
@@ -676,8 +681,24 @@ export async function PATCH(req: NextRequest) {
     const params: any[] = [];
 
     if (jenis !== undefined) {
+      // Normalisasi jenis ke dua nilai standar: SAKIT atau IZIN
+      const jenisNorm = String(jenis).trim().toUpperCase();
+      const jenisFinal = jenisNorm === "SAKIT" ? "SAKIT" : "IZIN";
       fields.push("jenis = ?");
-      params.push(jenis);
+      params.push(jenisFinal);
+
+      // Update status absensi jika jenis berubah
+      if (currentIzin.absensi_id) {
+        try {
+          const newStatusAbsensi: "SAKIT" | "IZIN" = jenisFinal === "SAKIT" ? "SAKIT" : "IZIN";
+          await mysqlPool.query(
+            "UPDATE absensi SET status = ? WHERE id = ?",
+            [newStatusAbsensi, currentIzin.absensi_id]
+          );
+        } catch (absStatusErr) {
+          console.warn("Gagal update status absensi saat ubah jenis:", absStatusErr);
+        }
+      }
     }
     if (tanggal_mulai !== undefined || tanggalMulai !== undefined) {
       fields.push("tanggal_mulai = ?");

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, Clock, Calendar, CheckCircle, Camera, LogIn, LogOut } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 interface PhotoModalProps {
   isOpen: boolean;
@@ -66,12 +67,11 @@ export function PhotoModal({
       : "Bukti Presensi Swafoto Masuk");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-sm overflow-hidden shadow-xl animate-in zoom-in-95 duration-200">
+    <ModalPortal>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+        <div className="bg-card border border-border rounded-2xl w-full max-w-sm max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden shadow-xl animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-input/50">
-          <h3 className="font-bold text-sm text-foreground">
-            {modalTitle}
-          </h3>
+          <h3 className="font-bold text-sm text-foreground">{modalTitle}</h3>
           <button
             onClick={onClose}
             className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all cursor-pointer"
@@ -91,8 +91,8 @@ export function PhotoModal({
                 }}
                 className={`py-1.5 px-2 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   activeType === "MASUK"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <LogIn className="w-3.5 h-3.5" />
@@ -106,8 +106,8 @@ export function PhotoModal({
                 }}
                 className={`py-1.5 px-2 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   activeType === "PULANG"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -117,8 +117,7 @@ export function PhotoModal({
           </div>
         )}
 
-        <div className="p-3 space-y-3">
-
+        <div className="p-3 space-y-3 overflow-y-auto">
           <div className="relative rounded-xl overflow-hidden border border-border aspect-video aspect-[4/3] bg-black shadow-inner flex items-center justify-center">
             {currentPhoto && !imgError ? (
               <img
@@ -131,7 +130,8 @@ export function PhotoModal({
               <div className="flex flex-col items-center justify-center text-muted-foreground p-4 text-center">
                 <Camera className="w-8 h-8 mb-1.5 opacity-40 text-primary" />
                 <p className="text-[11px] font-bold text-foreground">
-                  Foto {activeType === "PULANG" ? "Pulang" : "Masuk"} Tidak Tersedia
+                  Foto {activeType === "PULANG" ? "Pulang" : "Masuk"} Tidak
+                  Tersedia
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
                   Belum ada foto yang tersimpan.
@@ -157,9 +157,7 @@ export function PhotoModal({
               </span>
               <span className="font-medium text-foreground">
                 {(() => {
-                  const parts = (attendanceDate || "")
-                    .slice(0, 10)
-                    .split("-");
+                  const parts = (attendanceDate || "").slice(0, 10).split("-");
                   if (parts.length === 3) {
                     return `${parts[2]}-${parts[1]}-${parts[0]}`;
                   }
@@ -192,7 +190,6 @@ export function PhotoModal({
                 <span>{lateMinutes} Menit</span>
               </div>
             )}
-
           </div>
         </div>
         <div className="px-4 py-3 border-t border-border bg-input/30 flex justify-end">
@@ -203,8 +200,8 @@ export function PhotoModal({
             Tutup Pratinjau
           </button>
         </div>
-
       </div>
-    </div>
+      </div>
+    </ModalPortal>
   );
 }

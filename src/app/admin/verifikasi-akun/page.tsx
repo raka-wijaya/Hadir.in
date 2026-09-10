@@ -22,6 +22,8 @@ import {
   Building2,
   Info,
 } from "lucide-react";
+import { AlertModal, ConfirmModal } from "@/components/ui/Alert";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 interface AccountUser {
   id: string;
@@ -46,25 +48,47 @@ export default function AdminVerifikasiAkunPage() {
   const [search, setSearch] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("PENDING");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
+  const [itemsPerPage, setItemsPerPage] = useState<number>(5);
 
-  // Modals & Actions
   const [selectedUser, setSelectedUser] = useState<AccountUser | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
   const [isRejectOpen, setIsRejectOpen] = useState<boolean>(false);
   const [rejectionReasonInput, setRejectionReasonInput] = useState<string>("");
+  const [rejectionError, setRejectionError] = useState<string>("");
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
-  const [toastAlert, setToastAlert] = useState<{
-    type: "success" | "error";
+  const [userToApprove, setUserToApprove] = useState<AccountUser | null>(null);
+
+  const [modalAlert, setModalAlert] = useState<{
+    isOpen: boolean;
+    title: string;
     message: string;
-  } | null>(null);
+    color: "red" | "green" | "blue" | "yellow";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    color: "green",
+  });
+
+  const showAlert = (
+    message: string,
+    title = "Pemberitahuan",
+    color: "red" | "green" | "blue" | "yellow" = "green",
+  ) => {
+    setModalAlert({
+      isOpen: true,
+      title,
+      message,
+      color,
+    });
+  };
 
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const combined: AccountUser[] = [];
 
-      // Fetch Admins
       try {
         const adminRes = await fetch("/api/users/admin", { cache: "no-store" });
         if (adminRes.ok) {
@@ -83,7 +107,6 @@ export default function AdminVerifikasiAkunPage() {
         console.error("Gagal mengambil data admin:", err);
       }
 
-      // Fetch Karyawan OS
       try {
         const osRes = await fetch("/api/users/karyawan_os", { cache: "no-store" });
         if (osRes.ok) {
@@ -105,10 +128,11 @@ export default function AdminVerifikasiAkunPage() {
       setUsers(combined);
     } catch (err) {
       console.error("Gagal mengambil data pengguna:", err);
-      setToastAlert({
-        type: "error",
-        message: "Gagal memuat data verifikasi akun.",
-      });
+      showAlert(
+        "Gagal memuat data verifikasi akun.",
+        "Gagal Memuat Data",
+        "red",
+      );
     } finally {
       setLoading(false);
     }
@@ -117,13 +141,6 @@ export default function AdminVerifikasiAkunPage() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
-
-  useEffect(() => {
-    if (toastAlert) {
-      const t = setTimeout(() => setToastAlert(null), 4000);
-      return () => clearTimeout(t);
-    }
-  }, [toastAlert]);
 
   const handleApprove = async (userItem: AccountUser) => {
     try {
@@ -148,11 +165,13 @@ export default function AdminVerifikasiAkunPage() {
         throw new Error(result.message || "Gagal menyetujui akun.");
       }
 
-      setToastAlert({
-        type: "success",
-        message: `Akun ${userItem.name} (${userItem.role}) berhasil disetujui / diverifikasi!`,
-      });
+      showAlert(
+        `Akun ${userItem.name} (${userItem.role}) berhasil disetujui / diverifikasi!`,
+        "Berhasil Disetujui",
+        "green",
+      );
 
+      setUserToApprove(null);
       if (
         selectedUser?.id === userItem.id &&
         selectedUser?.sourceTable === userItem.sourceTable
@@ -163,10 +182,11 @@ export default function AdminVerifikasiAkunPage() {
 
       fetchUsers();
     } catch (err: any) {
-      setToastAlert({
-        type: "error",
-        message: err?.message || "Terjadi kesalahan saat memverifikasi akun.",
-      });
+      showAlert(
+        err?.message || "Terjadi kesalahan saat memverifikasi akun.",
+        "Gagal Menyetujui Akun",
+        "red",
+      );
     } finally {
       setSubmittingId(null);
     }
@@ -196,21 +216,24 @@ export default function AdminVerifikasiAkunPage() {
         throw new Error(result.message || "Gagal menolak akun.");
       }
 
-      setToastAlert({
-        type: "success",
-        message: `Pendaftaran akun ${selectedUser.name} telah ditolak.`,
-      });
+      showAlert(
+        `Pendaftaran akun ${selectedUser.name} telah ditolak.`,
+        "Pendaftaran Ditolak",
+        "red",
+      );
 
       setIsRejectOpen(false);
       setIsDetailOpen(false);
       setSelectedUser(null);
       setRejectionReasonInput("");
+      setRejectionError("");
       fetchUsers();
     } catch (err: any) {
-      setToastAlert({
-        type: "error",
-        message: err?.message || "Terjadi kesalahan saat menolak akun.",
-      });
+      showAlert(
+        err?.message || "Terjadi kesalahan saat menolak akun.",
+        "Gagal Menolak Akun",
+        "red",
+      );
     } finally {
       setSubmittingId(null);
     }
@@ -218,7 +241,6 @@ export default function AdminVerifikasiAkunPage() {
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
-      // Status Filter
       if (statusFilter !== "ALL") {
         if (statusFilter === "PENDING" && u.verification_status !== "PENDING")
           return false;
@@ -228,15 +250,17 @@ export default function AdminVerifikasiAkunPage() {
           return false;
       }
 
-      // Role Filter
       if (roleFilter !== "ALL") {
         if (roleFilter === "KARYAWAN_OS" && u.role !== "KARYAWAN_OS")
           return false;
-        if (roleFilter === "ADMIN" && !u.role.startsWith("ADMIN") && u.role !== "SUPERADMIN")
+        if (
+          roleFilter === "ADMIN" &&
+          !u.role.startsWith("ADMIN") &&
+          u.role !== "SUPERADMIN"
+        )
           return false;
       }
 
-      // Search Query
       if (search.trim()) {
         const q = search.trim().toLowerCase();
         const matchName = (u.name || "").toLowerCase().includes(q);
@@ -250,6 +274,10 @@ export default function AdminVerifikasiAkunPage() {
     });
   }, [users, statusFilter, roleFilter, search]);
 
+  const paginatedUsers = useMemo(() => {
+    return filteredUsers.slice(0, itemsPerPage);
+  }, [filteredUsers, itemsPerPage]);
+
   const counts = useMemo(() => {
     const pending = users.filter((u) => u.verification_status === "PENDING").length;
     const approved = users.filter((u) => u.verification_status === "APPROVED").length;
@@ -260,7 +288,6 @@ export default function AdminVerifikasiAkunPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
           <div>
             <div className="flex items-center gap-2">
@@ -269,7 +296,8 @@ export default function AdminVerifikasiAkunPage() {
               </h1>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">
-              Verifikasi pendaftaran akun Pegawai OS dan Administrator baru untuk mencegah pendaftaran ilegal/liar.
+              Verifikasi pendaftaran akun Pegawai OS dan Administrator baru
+              untuk mencegah pendaftaran ilegal/liar.
             </p>
           </div>
 
@@ -277,35 +305,45 @@ export default function AdminVerifikasiAkunPage() {
             onClick={fetchUsers}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs cursor-pointer w-fit"
           >
-            <RefreshCw className={`w-4 h-4 text-primary ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 text-primary ${loading ? "animate-spin" : ""}`}
+            />
             Refresh Data
           </button>
         </div>
 
-        {/* Toast Alerts */}
-        {toastAlert && (
-          <div
-            className={`p-4 rounded-xl border flex items-center justify-between gap-3 text-xs md:text-sm font-semibold animate-in fade-in ${
-              toastAlert.type === "success"
-                ? "status-hadir"
-                : "status-alpa"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {toastAlert.type === "success" ? (
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-              ) : (
-                <AlertCircle className="w-4 h-4 shrink-0" />
-              )}
-              <span>{toastAlert.message}</span>
-            </div>
-            <button onClick={() => setToastAlert(null)} className="hover:opacity-70">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+        {/* Pop Up Konfirmasi Setujui */}
+        <ConfirmModal
+          isOpen={!!userToApprove}
+          title="Setujui Verifikasi Akun"
+          message={`Apakah Anda yakin ingin menyetujui akun "${userToApprove?.name}" (${userToApprove?.role})? Pengguna akan dapat login dan mengakses sistem.`}
+          confirmLabel="Ya, Setujui"
+          cancelLabel="Batal"
+          confirmColor="green"
+          onConfirm={() => {
+            if (userToApprove) {
+              handleApprove(userToApprove);
+            }
+          }}
+          onCancel={() => setUserToApprove(null)}
+        />
 
-        {/* Stats Cards */}
+        {/* Pop Up Konfirmasi Tolak — dihapus, form tolak sudah berfungsi sebagai langkah konfirmasi */}
+
+        {/* Pop Up Alert Notifikasi Hasil */}
+        <AlertModal
+          isOpen={modalAlert.isOpen}
+          title={modalAlert.title}
+          message={modalAlert.message}
+          color={modalAlert.color}
+          onClose={() =>
+            setModalAlert((prev) => ({
+              ...prev,
+              isOpen: false,
+            }))
+          }
+        />
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <div
             onClick={() => setStatusFilter("PENDING")}
@@ -324,7 +362,9 @@ export default function AdminVerifikasiAkunPage() {
             <p className="text-2xl md:text-3xl font-black text-status-terlambat">
               {counts.pending}
             </p>
-            <p className="text-[11px] text-muted-foreground">Perlu tindakan persetujuan</p>
+            <p className="text-[11px] text-muted-foreground">
+              Perlu tindakan persetujuan
+            </p>
           </div>
 
           <div
@@ -344,7 +384,9 @@ export default function AdminVerifikasiAkunPage() {
             <p className="text-2xl md:text-3xl font-black text-status-hadir">
               {counts.approved}
             </p>
-            <p className="text-[11px] text-muted-foreground">Akun aktif terverifikasi</p>
+            <p className="text-[11px] text-muted-foreground">
+              Akun aktif terverifikasi
+            </p>
           </div>
 
           <div
@@ -364,7 +406,9 @@ export default function AdminVerifikasiAkunPage() {
             <p className="text-2xl md:text-3xl font-black text-status-alpa">
               {counts.rejected}
             </p>
-            <p className="text-[11px] text-muted-foreground">Pendaftaran ditolak</p>
+            <p className="text-[11px] text-muted-foreground">
+              Pendaftaran ditolak
+            </p>
           </div>
 
           <div
@@ -384,11 +428,12 @@ export default function AdminVerifikasiAkunPage() {
             <p className="text-2xl md:text-3xl font-black text-foreground">
               {counts.total}
             </p>
-            <p className="text-[11px] text-muted-foreground">Semua riwayat akun</p>
+            <p className="text-[11px] text-muted-foreground">
+              Semua riwayat akun
+            </p>
           </div>
         </div>
 
-        {/* Filters */}
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="relative">
@@ -439,7 +484,6 @@ export default function AdminVerifikasiAkunPage() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
           <div className="p-5 flex items-center justify-between gap-4 border-b border-border">
             <div className="flex items-center gap-2.5">
@@ -449,10 +493,10 @@ export default function AdminVerifikasiAkunPage() {
                 </h2>
               </div>
             </div>
-
+            {/* 
             <span className="px-3 py-1 rounded-full text-xs font-black bg-primary/10 text-primary border border-primary/20 shrink-0">
               {filteredUsers.length} Data
-            </span>
+            </span> */}
           </div>
 
           {loading ? (
@@ -465,7 +509,9 @@ export default function AdminVerifikasiAkunPage() {
               <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <p className="text-sm font-bold text-foreground">Tidak ada akun pada kategori ini</p>
+              <p className="text-sm font-bold text-foreground">
+                Tidak ada akun pada kategori ini
+              </p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                 {statusFilter === "PENDING"
                   ? "Semua permohonan akun telah berhasil diverifikasi oleh Admin."
@@ -481,32 +527,39 @@ export default function AdminVerifikasiAkunPage() {
                     <th className="py-3 px-4">Role Penugasan</th>
                     <th className="py-3 px-4">Kontak & NIP/NIM</th>
                     <th className="py-3 px-4 text-center">Status Verifikasi</th>
-                    <th className="py-3 px-4 text-center w-48">Aksi Verifikasi</th>
+                    <th className="py-3 px-4 text-center w-48">
+                      Aksi Verifikasi
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredUsers.map((item) => {
+                  {paginatedUsers.map((item) => {
                     const isPending = item.verification_status === "PENDING";
                     const isApproved = item.verification_status === "APPROVED";
                     const isRejected = item.verification_status === "REJECTED";
                     const rowKey = `${item.sourceTable}-${item.id}`;
 
                     return (
-                      <tr key={rowKey} className="hover:bg-muted/30 transition-colors">
+                      <tr
+                        key={rowKey}
+                        className="hover:bg-muted/30 transition-colors"
+                      >
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
                             <img
                               src={
                                 item.avatar ||
                                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                  item.name || "User"
+                                  item.name || "User",
                                 )}&background=4f46e5&color=ffffff&bold=true`
                               }
                               alt={item.name}
                               className="w-9 h-9 rounded-full object-cover border border-primary shrink-0"
                             />
                             <div>
-                              <p className="font-extrabold text-foreground">{item.name}</p>
+                              <p className="font-extrabold text-foreground">
+                                {item.name}
+                              </p>
                               <p className="text-[11px] text-muted-foreground font-medium">
                                 {item.email}
                               </p>
@@ -566,7 +619,7 @@ export default function AdminVerifikasiAkunPage() {
                             {isPending ? (
                               <>
                                 <button
-                                  onClick={() => handleApprove(item)}
+                                  onClick={() => setUserToApprove(item)}
                                   disabled={submittingId === rowKey}
                                   className="px-3 py-1.5 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 text-xs font-extrabold transition-all shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
                                 >
@@ -609,18 +662,55 @@ export default function AdminVerifikasiAkunPage() {
               </table>
             </div>
           )}
+
+          {!loading && (
+            <div className="p-4 border-t border-border flex items-center justify-between gap-4 bg-muted/20">
+              <div className="text-xs text-muted-foreground font-semibold">
+                Menampilkan{" "}
+                <strong className="text-foreground font-bold">
+                  {filteredUsers.length}
+                </strong>{" "}
+                data verifikasi akun
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">
+                  Number of rows:
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="
+                    bg-card
+                    border border-border
+                    rounded-lg
+                    px-2.5 py-1.5
+                    text-xs font-bold
+                    text-foreground
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-primary/40
+                    transition-all
+                    cursor-pointer
+                  "
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* DETAIL MODAL */}
       {isDetailOpen && selectedUser && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl max-w-md w-full p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                  <ShieldCheck className="w-5 h-5" />
-                </span>
                 <h3 className="text-base md:text-lg font-black text-foreground">
                   Detail Status Verifikasi
                 </h3>
@@ -636,12 +726,17 @@ export default function AdminVerifikasiAkunPage() {
             <div className="space-y-3 text-xs">
               <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border">
                 <img
-                  src={selectedUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUser.name)}`}
+                  src={
+                    selectedUser.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUser.name)}`
+                  }
                   alt={selectedUser.name}
                   className="w-12 h-12 rounded-full object-cover border border-primary shrink-0"
                 />
                 <div>
-                  <h4 className="font-extrabold text-foreground text-sm">{selectedUser.name}</h4>
+                  <h4 className="font-extrabold text-foreground text-sm">
+                    {selectedUser.name}
+                  </h4>
                   <p className="text-muted-foreground">{selectedUser.email}</p>
                   <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary/10 text-primary border border-primary/20">
                     {selectedUser.role}
@@ -651,31 +746,47 @@ export default function AdminVerifikasiAkunPage() {
 
               <div className="space-y-2 p-3 rounded-xl bg-input/40 border border-border">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-muted-foreground">Status Verifikasi:</span>
-                  <span className="font-black text-foreground">{selectedUser.verification_status}</span>
+                  <span className="font-bold text-muted-foreground">
+                    Status Verifikasi:
+                  </span>
+                  <span className="font-black text-foreground">
+                    {selectedUser.verification_status}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-muted-foreground">No. Identitas / NIP:</span>
-                  <span className="font-semibold text-foreground">{selectedUser.identity_number || "—"}</span>
+                  <span className="font-bold text-muted-foreground">
+                    No. Identitas / NIP:
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {selectedUser.identity_number || "—"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-muted-foreground">No. HP:</span>
-                  <span className="font-semibold text-foreground">{selectedUser.phone || "—"}</span>
+                  <span className="font-bold text-muted-foreground">
+                    No. HP:
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {selectedUser.phone || "—"}
+                  </span>
                 </div>
               </div>
 
               {selectedUser.rejection_reason && (
                 <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 space-y-1">
-                  <span className="font-bold text-destructive">Alasan Penolakan:</span>
-                  <p className="text-foreground">{selectedUser.rejection_reason}</p>
+                  <span className="font-bold text-destructive">
+                    Alasan Penolakan:
+                  </span>
+                  <p className="text-foreground">
+                    {selectedUser.rejection_reason}
+                  </p>
                 </div>
               )}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-              {selectedUser.verification_status !== "APPROVED" && (
+              {selectedUser.verification_status === "PENDING" && (
                 <button
-                  onClick={() => handleApprove(selectedUser)}
+                  onClick={() => setUserToApprove(selectedUser)}
                   className="px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold text-xs hover:bg-emerald-600 transition-all cursor-pointer"
                 >
                   Setujui Akun Ini
@@ -690,56 +801,83 @@ export default function AdminVerifikasiAkunPage() {
             </div>
           </div>
         </div>
-      )}
+      </ModalPortal>
+    )}
 
-      {/* REJECT REASON MODAL */}
       {isRejectOpen && selectedUser && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl max-w-md w-full p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-xl bg-destructive/10 text-destructive">
-                  <XCircle className="w-5 h-5" />
-                </span>
-                <h3 className="text-base md:text-lg font-black text-foreground">
-                  Tolak Pendaftaran Akun
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsRejectOpen(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-all"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-card border border-border rounded-2xl max-w-sm w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 md:p-6 shadow-elevated space-y-4 animate-in zoom-in-95 text-center">
+            {/* Icon Badge */}
+            <div className="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+              <XCircle className="w-6 h-6" />
             </div>
 
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground font-medium">
-                Berikan alasan penolakan pendaftaran akun untuk <span className="font-bold text-foreground">{selectedUser.name}</span> ({selectedUser.email}):
+            {/* Title & Description */}
+            <div>
+              <h3 className="text-base font-black text-foreground">
+                Tolak Pendaftaran Akun
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                Berikan alasan penolakan untuk{" "}
+                <span className="font-bold text-foreground">
+                  {selectedUser.name}
+                </span>{" "}
+                ({selectedUser.email})
               </p>
+            </div>
 
+            {/* Textarea */}
+            <div className="text-left space-y-1.5">
               <textarea
                 rows={3}
                 value={rejectionReasonInput}
-                onChange={(e) => setRejectionReasonInput(e.target.value)}
-                placeholder="Contoh: NIP/Nomor Identitas tidak valid, bukan pegawai resmi Disdukcapil..."
-                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-destructive/50"
+                onChange={(e) => {
+                  setRejectionReasonInput(e.target.value);
+                  if (e.target.value.trim()) setRejectionError("");
+                }}
+                placeholder="Masukkan alasan penolakan pendaftaran akun"
+                className={`w-full px-3 py-2 bg-input border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 ${
+                  rejectionError
+                    ? "border-destructive focus:ring-destructive/50"
+                    : "border-border focus:ring-destructive/50"
+                }`}
               />
+              {rejectionError && (
+                <p className="text-[11px] font-bold text-destructive">
+                  {rejectionError}
+                </p>
+              )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+            {/* Action Buttons */}
+            <div className="flex items-center justify-center gap-2 pt-2">
               <button
-                onClick={() => setIsRejectOpen(false)}
-                className="px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold transition-all cursor-pointer"
+                onClick={() => {
+                  setIsRejectOpen(false);
+                  setRejectionError("");
+                  setRejectionReasonInput("");
+                }}
+                className="px-5 py-2.5 rounded-xl border border-border bg-secondary text-secondary-foreground font-extrabold text-xs hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
               >
                 Batal
               </button>
               <button
-                onClick={handleReject}
-                disabled={submittingId === selectedUser.id}
-                className="px-5 py-2 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs font-bold transition-all shadow-md disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                onClick={() => {
+                  if (!rejectionReasonInput.trim()) {
+                    setRejectionError(
+                      "Mohon isi alasan penolakan terlebih dahulu.",
+                    );
+                    return;
+                  }
+                  setRejectionError("");
+                  setIsRejectOpen(false);
+                  handleReject();
+                }}
+                disabled={!!submittingId}
+                className="px-5 py-2.5 rounded-xl bg-destructive hover:brightness-95 text-destructive-foreground font-black text-xs shadow-card active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
               >
-                {submittingId === selectedUser.id ? (
+                {submittingId ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   "Tolak Akun"
@@ -748,7 +886,8 @@ export default function AdminVerifikasiAkunPage() {
             </div>
           </div>
         </div>
-      )}
+      </ModalPortal>
+    )}
     </DashboardLayout>
   );
 }

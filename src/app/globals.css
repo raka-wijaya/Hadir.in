@@ -230,12 +230,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(245, 158, 11, 0.3);
+  background: transparent;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(245, 158, 11, 0.6);
+  background: transparent;
 }
 
 ::selection {
@@ -428,9 +428,7 @@ body {
   }
 }
 
-/* Input[type="date"] - dark mode fix
-   color-scheme memberi tahu browser untuk merender teks
-   placeholder (dd/mm/yyyy) dan ikon kalender sesuai tema */
+
 input[type="date"] {
   color-scheme: light;
 }

@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { User } from "@/types";
 import { AlertModal, ConfirmModal } from "@/components/ui/Alert";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 import {
   UserCheck,
   Plus,
@@ -23,8 +24,10 @@ export default function AdminPegawaiOsPage() {
 
   const [search, setSearch] = useState("");
   const [debounceSearch, setDebounceSearch] = useState("");
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  const [newNip, setNewNip] = useState("");
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -34,6 +37,7 @@ export default function AdminPegawaiOsPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<User | null>(null);
 
+  const [editNip, setEditNip] = useState("");
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -110,11 +114,11 @@ export default function AdminPegawaiOsPage() {
   }, [fetchEmployees]);
 
   useEffect(() => {
-    const timer = setTimeout(() => { //mengubah nilai debounceSearch setiap 300ms
+    const timer = setTimeout(() => {
       setDebounceSearch(search);
     }, 300);
 
-    return () => clearTimeout(timer); //membersihkan timer jika ada perubahan
+    return () => clearTimeout(timer); 
   }, [search]);
 
   const filtered = employees.filter((e) => {
@@ -152,6 +156,8 @@ export default function AdminPegawaiOsPage() {
     );
   });
 
+  const paginatedEmployees = filtered.slice(0, itemsPerPage);
+
   const toggleStatus = async (id: string) => {
     const targetUser = employees.find(
       (u) => u.id === id
@@ -164,7 +170,6 @@ export default function AdminPegawaiOsPage() {
         ? "INACTIVE"
         : "ACTIVE";
 
-    // Update tampilan langsung
     setEmployees((prev) =>
       prev.map((user) =>
         user.id === id
@@ -200,6 +205,7 @@ export default function AdminPegawaiOsPage() {
   ) => {
     e.preventDefault();
 
+    const cleanNip = newNip.trim();
     const cleanName = newName.trim();
     const cleanEmail = newEmail.trim().toLowerCase();
     const cleanPhone = newPhone.trim();
@@ -207,18 +213,20 @@ export default function AdminPegawaiOsPage() {
     const cleanDivisi = newDivisi.trim();
 
     if (
+      !cleanNip ||
       !cleanName ||
       !cleanEmail ||
       !cleanPhone ||
       !cleanVendor ||
       !cleanDivisi
     ) {
+      showAlert(
+        "Semua field wajib diisi termasuk NIP.",
+        "Data Tidak Lengkap",
+        "yellow",
+      );
       return;
     }
-
-    const nip = `NIP-OS-${Math.floor(
-      100000 + Math.random() * 900000
-    )}`;
 
     try {
       const res = await fetch("/api/users/karyawan_os", {
@@ -232,7 +240,7 @@ export default function AdminPegawaiOsPage() {
           phone: cleanPhone,
           institution: cleanVendor,
           study_program: cleanDivisi,
-          identity_number: nip,
+          identity_number: cleanNip,
           role: "KARYAWAN_OS",
           status: "ACTIVE",
         }),
@@ -261,6 +269,7 @@ export default function AdminPegawaiOsPage() {
   };
 
   const resetAddForm = () => {
+    setNewNip("");
     setNewName("");
     setNewEmail("");
     setNewPhone("");
@@ -272,6 +281,10 @@ export default function AdminPegawaiOsPage() {
     employee: User
   ) => {
     setEditingEmployee(employee);
+
+    setEditNip(
+      employee.identityNumber || (employee as any).identity_number || "",
+    );
 
     setEditName(
       employee.nama ||
@@ -315,6 +328,7 @@ export default function AdminPegawaiOsPage() {
       return;
     }
 
+    const cleanNip = editNip.trim();
     const cleanName = editName.trim();
     const cleanEmail = editEmail
       .trim()
@@ -325,18 +339,26 @@ export default function AdminPegawaiOsPage() {
     const cleanDivisi = editDivisi.trim();
 
     if (
+      !cleanNip ||
       !cleanName ||
       !cleanEmail ||
       !cleanPhone ||
       !cleanVendor ||
       !cleanDivisi
     ) {
-      showAlert("Semua field wajib diisi.", "Data Tidak Lengkap", "yellow");
+      showAlert(
+        "Semua field wajib diisi termasuk NIP.",
+        "Data Tidak Lengkap",
+        "yellow",
+      );
       return;
     }
 
     const updatedEmployee: User = {
       ...editingEmployee,
+
+      identityNumber: cleanNip,
+      identity_number: cleanNip,
 
       nama: cleanName,
       name: cleanName,
@@ -354,11 +376,10 @@ export default function AdminPegawaiOsPage() {
       bagian: cleanDivisi,
 
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        cleanName
+        cleanName,
       )}&background=f59e0b&color=000000&bold=true`,
     };
 
-    // Update state
     setEmployees((prev) =>
       prev.map((employee) =>
         employee.id ===
@@ -373,11 +394,11 @@ export default function AdminPegawaiOsPage() {
       const res = await fetch("/api/users/karyawan_os", {
         method: "PATCH",
         headers: {
-          "Content-Type":
-            "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           id: editingEmployee.id,
+          identity_number: cleanNip,
           name: cleanName,
           email: cleanEmail,
           phone: cleanPhone,
@@ -408,6 +429,7 @@ export default function AdminPegawaiOsPage() {
   };
 
   const resetEditForm = () => {
+    setEditNip("");
     setEditName("");
     setEditEmail("");
     setEditPhone("");
@@ -560,14 +582,14 @@ export default function AdminPegawaiOsPage() {
                       Memuat data pegawai OS...
                     </td>
                   </tr>
-                ) : filtered.length > 0 ? (
-                  filtered.map((item) => (
+                ) : paginatedEmployees.length > 0 ? (
+                  paginatedEmployees.map((item) => (
                     <tr
                       key={item.id}
                       className="hover:bg-accent/40 transition-colors"
                     >
                       <td className="py-3.5 px-4 font-mono text-xs font-extrabold text-primary">
-                        {item.identityNumber || "NIP-OS-882910"}
+                        {item.identityNumber || "-"}
                       </td>
 
                       <td className="py-3.5 px-4">
@@ -681,18 +703,51 @@ export default function AdminPegawaiOsPage() {
               </tbody>
             </table>
           </div>
+
+          {!isLoading && filtered.length > 0 && (
+            <div className="p-4 border-t border-border flex items-center justify-between gap-4 bg-muted/20">
+              <div className="text-xs text-muted-foreground font-semibold">
+                Menampilkan{" "}
+                <strong className="text-foreground font-bold">
+                  {filtered.length}
+                </strong>{" "}
+                data pegawai OS
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">
+                  Number of rows:
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="
+                    bg-card
+                    border border-border
+                    rounded-lg
+                    px-2.5 py-1.5
+                    text-xs font-bold
+                    text-foreground
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-primary/40
+                    transition-all
+                    cursor-pointer
+                  "
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         {showAddModal && (
           <div
-            className="
-      fixed inset-0 z-50
-      flex items-center justify-center
-      p-4
-      bg-black/60
-      backdrop-blur-xs
-      animate-in fade-in
-    "
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
             onMouseDown={(e) => {
               if (e.target === e.currentTarget) {
                 closeAddModal();
@@ -711,11 +766,10 @@ export default function AdminPegawaiOsPage() {
         shadow-elevated
         space-y-5
         animate-in zoom-in-95
-        max-h-[90vh]
+        max-h-[calc(100vh-2rem)]
         overflow-y-auto
       "
             >
-              {/* HEADER */}
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-black text-lg text-foreground">
@@ -745,12 +799,38 @@ export default function AdminPegawaiOsPage() {
                 </button>
               </div>
 
-              {/* FORM 2 KOLOM */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* NAMA */}
                 <div className="space-y-1">
                   <label className="text-xs font-extrabold text-foreground">
-                    Nama Lengkap *
+                    NIP / No. Induk Pegawai{" "}
+                    <span className="text-status-tolak">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    value={newNip}
+                    onChange={(e) => setNewNip(e.target.value)}
+                    placeholder="Masukkan NIP pegawai OS"
+                    className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3.5 py-2.5
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary
+            "
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    Nama Lengkap <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -775,10 +855,9 @@ export default function AdminPegawaiOsPage() {
                   />
                 </div>
 
-                {/* EMAIL */}
                 <div className="space-y-1">
                   <label className="text-xs font-extrabold text-foreground">
-                    Email Work *
+                    Email Work <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -803,10 +882,9 @@ export default function AdminPegawaiOsPage() {
                   />
                 </div>
 
-                {/* NOMOR HP */}
                 <div className="space-y-1">
                   <label className="text-xs font-extrabold text-foreground">
-                    No. HP / Kontak *
+                    No. HP / Kontak <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -831,10 +909,10 @@ export default function AdminPegawaiOsPage() {
                   />
                 </div>
 
-                {/* VENDOR */}
                 <div className="space-y-1">
                   <label className="text-xs font-extrabold text-foreground">
-                    Vendor Outsourcing *
+                    Vendor Outsourcing{" "}
+                    <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -859,10 +937,10 @@ export default function AdminPegawaiOsPage() {
                   />
                 </div>
 
-                {/* DIVISI - FULL WIDTH */}
-                <div className="space-y-1 md:col-span-2">
+                <div className="space-y-1">
                   <label className="text-xs font-extrabold text-foreground">
-                    Divisi / Unit Kerja *
+                    Divisi / Unit Kerja{" "}
+                    <span className="text-status-tolak">*</span>
                   </label>
 
                   <input
@@ -888,7 +966,6 @@ export default function AdminPegawaiOsPage() {
                 </div>
               </div>
 
-              {/* BUTTON */}
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -943,7 +1020,7 @@ export default function AdminPegawaiOsPage() {
           >
             <form
               onSubmit={handleSaveEdit}
-              className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-elevated space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+              className="bg-card border border-border rounded-2xl w-full max-w-2xl p-6 shadow-elevated space-y-5 animate-in zoom-in-95 max-h-[calc(100vh-2rem)] overflow-y-auto"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -957,100 +1034,114 @@ export default function AdminPegawaiOsPage() {
                 <button
                   type="button"
                   onClick={closeEditModal}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all cursor-pointer"
                   title="Tutup"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-extrabold text-foreground">
-                  NIP
-                </label>
-                <input
-                  type="text"
-                  value={editingEmployee.identityNumber || ""}
-                  readOnly
-                  className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-xs font-mono font-bold text-muted-foreground cursor-not-allowed"
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    NIP / No. Induk Pegawai{" "}
+                    <span className="text-status-tolak">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editNip}
+                    onChange={(e) => setEditNip(e.target.value)}
+                    placeholder="Masukkan NIP pegawai OS"
+                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    Nama Lengkap <span className="text-status-tolak">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Masukkan nama pegawai OS"
+                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    Email Work <span className="text-status-tolak">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="Masukkan Email Work"
+                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    No. HP / Kontak <span className="text-status-tolak">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="Masukkan No. HP / Kontak"
+                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    Vendor Outsourcing
+                    <span className="text-status-tolak">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editVendor}
+                    onChange={(e) => setEditVendor(e.target.value)}
+                    placeholder="Masukkan Vendor Outsourcing"
+                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-foreground">
+                    Divisi / Unit Kerja{" "}
+                    <span className="text-status-tolak">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editDivisi}
+                    onChange={(e) => setEditDivisi(e.target.value)}
+                    placeholder="Masukkan Divisi / Unit Kerja"
+                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-extrabold text-foreground">
-                  Nama Lengkap *
-                </label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Masukkan nama pegawai OS"
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-extrabold text-foreground">
-                  Email Work *
-                </label>
-                <input
-                  type="email"
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  placeholder="pegawai@os.sipresma.go.id"
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-extrabold text-foreground">
-                  No. HP / Kontak *
-                </label>
-                <input
-                  type="text"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  placeholder="081234567890"
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-extrabold text-foreground">
-                  Vendor Outsourcing *
-                </label>
-                <input
-                  type="text"
-                  value={editVendor}
-                  onChange={(e) => setEditVendor(e.target.value)}
-                  placeholder="PT Sinergi Facility Management"
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-extrabold text-foreground">
-                  Divisi / Unit Kerja *
-                </label>
-                <input
-                  type="text"
-                  value={editDivisi}
-                  onChange={(e) => setEditDivisi(e.target.value)}
-                  placeholder="Teknisi Operasional / Security / IT Support..."
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-              <div className="flex gap-2 pt-2">
+
+              <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={closeEditModal}
-                  className="flex-1 py-2.5 rounded-xl border border-border bg-secondary font-extrabold text-xs hover:bg-accent transition-all"
+                  className="px-6 py-2.5 rounded-xl border border-border bg-secondary text-secondary-foreground font-extrabold text-xs hover:bg-accent transition-all cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingEdit}
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-card hover:opacity-95 transition-all disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-card hover:opacity-95 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isSavingEdit ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>

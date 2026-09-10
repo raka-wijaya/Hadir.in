@@ -2037,7 +2037,7 @@ export default function AdminPengaturanPage() {
               onSubmit={
                 handleSaveEditLibur
               }
-              className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-elevated space-y-4 animate-in zoom-in-95"
+              className="bg-card border border-border rounded-2xl w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto p-6 shadow-elevated space-y-4 animate-in zoom-in-95"
             >
 
               {/* HEADER */}
