@@ -1053,9 +1053,9 @@ export default function AdminAnakMagangPage() {
         {showAddModal && (
           <ModalPortal>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <form
-              onSubmit={handleAddIntern}
-              className="
+              <form
+                onSubmit={handleAddIntern}
+                className="
         bg-card
         border border-border
         rounded-2xl
@@ -1069,40 +1069,40 @@ export default function AdminAnakMagangPage() {
         max-h-[calc(100vh-2rem)]
         overflow-y-auto
       "
-            >
-              <div
-                className="
+              >
+                <div
+                  className="
           flex items-center justify-between
           border-b border-border
           pb-3
         "
-              >
-                <div>
-                  <h3
-                    className="
+                >
+                  <div>
+                    <h3
+                      className="
               font-black
               text-base
               text-foreground
             "
-                  >
-                    Tambah Data Anak Magang
-                  </h3>
+                    >
+                      Tambah Data Anak Magang
+                    </h3>
 
-                  <p
-                    className="
+                    <p
+                      className="
               text-[11px]
               text-muted-foreground
               mt-0.5
             "
-                  >
-                    Tambahkan peserta baru ke dalam sistem.
-                  </p>
-                </div>
+                    >
+                      Tambahkan peserta baru ke dalam sistem.
+                    </p>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="
             p-1.5
             rounded-lg
             text-muted-foreground
@@ -1111,23 +1111,23 @@ export default function AdminAnakMagangPage() {
             transition-colors
             cursor-pointer
           "
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
-                    Nama Lengkap<span className="text-status-tolak">*</span>
-                  </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
+                      Nama Lengkap<span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Masukkan nama lengkap"
-                    className="
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Masukkan nama lengkap"
+                      className="
               w-full
               rounded-xl
               border border-border
@@ -1143,22 +1143,22 @@ export default function AdminAnakMagangPage() {
               focus:ring-primary/40
               focus:border-primary
             "
-                    required
-                  />
-                </div>
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
-                    Nomor Identitas (NIM / NPM){" "}
-                    <span className="text-status-tolak">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
+                      Nomor Identitas (NIM / NPM){" "}
+                      <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={newIdentity}
-                    onChange={(e) => setNewIdentity(e.target.value)}
-                    placeholder="Masukkan NIM/NPM"
-                    className="
+                    <input
+                      type="text"
+                      value={newIdentity}
+                      onChange={(e) => setNewIdentity(e.target.value)}
+                      placeholder="Masukkan NIM/NPM"
+                      className="
               w-full
               rounded-xl
               border border-border
@@ -1174,20 +1174,20 @@ export default function AdminAnakMagangPage() {
               focus:ring-primary/40
               focus:border-primary
             "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
-                    Email <span className="text-status-tolak">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
+                      Email <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="Masukan Email"
-                    className="
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="Masukan email"
+                      className="
               w-full
               rounded-xl
               border border-border
@@ -1203,22 +1203,22 @@ export default function AdminAnakMagangPage() {
               focus:ring-primary/40
               focus:border-primary
             "
-                    required
-                  />
-                </div>
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground flex gap-1">
-                    Kampus / Sekolah
-                    <span className="text-status-tolak">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground flex gap-1">
+                      Kampus / Sekolah
+                      <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={newInstitution}
-                    onChange={(e) => setNewInstitution(e.target.value)}
-                    placeholder="Masukan Nama Kampus / Sekolah"
-                    className="
+                    <input
+                      type="text"
+                      value={newInstitution}
+                      onChange={(e) => setNewInstitution(e.target.value)}
+                      placeholder="Masukan nama kampus / sekolah"
+                      className="
               w-full
               rounded-xl
               border border-border
@@ -1234,21 +1234,21 @@ export default function AdminAnakMagangPage() {
               focus:ring-primary/40
               focus:border-primary
             "
-                    required
-                  />
-                </div>
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground flex gap-1">
-                    Program Studi<span className="text-status-tolak">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground flex gap-1">
+                      Program Studi<span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={newProgram}
-                    onChange={(e) => setNewProgram(e.target.value)}
-                    placeholder="Masukan Program studi"
-                    className="
+                    <input
+                      type="text"
+                      value={newProgram}
+                      onChange={(e) => setNewProgram(e.target.value)}
+                      placeholder="Masukan program studi"
+                      className="
               w-full
               rounded-xl
               border border-border
@@ -1264,22 +1264,22 @@ export default function AdminAnakMagangPage() {
               focus:ring-primary/40
               focus:border-primary
             "
-                    required
-                  />
-                </div>
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground flex gap-1">
-                    Batch
-                    <span className="text-status-tolak">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground flex gap-1">
+                      Batch
+                      <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={newBatch}
-                    onChange={(e) => setNewBatch(e.target.value)}
-                    placeholder="Misal: 1, 2, 3..."
-                    className="
+                    <input
+                      type="text"
+                      value={newBatch}
+                      onChange={(e) => setNewBatch(e.target.value)}
+                      placeholder="Masukkan batch"
+                      className="
               w-full
               rounded-xl
               border border-border
@@ -1295,19 +1295,19 @@ export default function AdminAnakMagangPage() {
               focus:ring-primary/40
               focus:border-primary
             "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground">
-                    Periode Mulai
-                  </label>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground">
+                      Periode Mulai
+                    </label>
 
-                  <input
-                    type="date"
-                    value={newStart}
-                    onChange={(e) => setNewStart(e.target.value)}
-                    className="
+                    <input
+                      type="date"
+                      value={newStart}
+                      onChange={(e) => setNewStart(e.target.value)}
+                      className="
               w-full
               rounded-xl
               border border-border
@@ -1322,19 +1322,19 @@ export default function AdminAnakMagangPage() {
               focus:ring-primary/40
               focus:border-primary
             "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground">
-                    Periode Selesai
-                  </label>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground">
+                      Periode Selesai
+                    </label>
 
-                  <input
-                    type="date"
-                    value={newEnd}
-                    onChange={(e) => setNewEnd(e.target.value)}
-                    className="
+                    <input
+                      type="date"
+                      value={newEnd}
+                      onChange={(e) => setNewEnd(e.target.value)}
+                      className="
               w-full
               rounded-xl
               border border-border
@@ -1349,15 +1349,15 @@ export default function AdminAnakMagangPage() {
               focus:ring-primary/40
               focus:border-primary
             "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="
             px-5
             py-2.5
             rounded-xl
@@ -1371,14 +1371,14 @@ export default function AdminAnakMagangPage() {
             transition-colors
             cursor-pointer
           "
-                >
-                  Batal
-                </button>
+                  >
+                    Batal
+                  </button>
 
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="
             px-5
             py-2.5
             rounded-xl
@@ -1393,21 +1393,21 @@ export default function AdminAnakMagangPage() {
             disabled:opacity-50
             cursor-pointer
           "
-                >
-                  {isSaving ? "Menyimpan..." : "Simpan Data"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </ModalPortal>
-      )}
+                  >
+                    {isSaving ? "Menyimpan..." : "Simpan Data"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </ModalPortal>
+        )}
 
-      {editItem && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <form
-              onSubmit={handleUpdateIntern}
-              className="
+        {editItem && (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <form
+                onSubmit={handleUpdateIntern}
+                className="
                 bg-card
                 border border-border
                 rounded-2xl
@@ -1421,40 +1421,40 @@ export default function AdminAnakMagangPage() {
                 max-h-[calc(100vh-2rem)]
                 overflow-y-auto
               "
-            >
-              <div
-                className="
+              >
+                <div
+                  className="
                 flex items-center justify-between
                 border-b border-border
                 pb-3
               "
-              >
-                <div>
-                  <h3
-                    className="
+                >
+                  <div>
+                    <h3
+                      className="
                     font-black
                     text-lg
                     text-foreground
                   "
-                  >
-                    Edit Data Anak Magang
-                  </h3>
+                    >
+                      Edit Data Anak Magang
+                    </h3>
 
-                  <p
-                    className="
+                    <p
+                      className="
                     text-xs
                     text-muted-foreground
                     mt-0.5
                   "
-                  >
-                    Perbarui data informasi dan periode magang peserta.
-                  </p>
-                </div>
+                    >
+                      Perbarui data informasi dan periode magang peserta.
+                    </p>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => setEditItem(null)}
-                  className="
+                  <button
+                    type="button"
+                    onClick={() => setEditItem(null)}
+                    className="
                     p-1.5
                     rounded-lg
                     text-muted-foreground
@@ -1463,29 +1463,29 @@ export default function AdminAnakMagangPage() {
                     transition-colors
                     cursor-pointer
                   "
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label
-                    className="
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label
+                      className="
                     text-xs
                     font-extrabold
                     text-foreground
                   "
-                  >
-                    Nama Lengkap <span className="text-destructive">*</span>
-                  </label>
+                    >
+                      Nama Lengkap <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder="Masukkan nama lengkap"
-                    className="
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Masukkan nama lengkap"
+                      className="
                       w-full
                       rounded-xl
                       border border-border
@@ -1500,27 +1500,27 @@ export default function AdminAnakMagangPage() {
                       focus:ring-primary/40
                       focus:border-primary
                     "
-                    required
-                  />
-                </div>
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label
-                    className="
+                  <div className="space-y-1">
+                    <label
+                      className="
                     text-xs
                     font-extrabold
                     text-foreground
                   "
-                  >
-                    NIM / NPM <span className="text-destructive">*</span>
-                  </label>
+                    >
+                      NIM / NPM <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={editIdentity}
-                    onChange={(e) => setEditIdentity(e.target.value)}
-                    placeholder="Masukkan NIM/NPM"
-                    className="
+                    <input
+                      type="text"
+                      value={editIdentity}
+                      onChange={(e) => setEditIdentity(e.target.value)}
+                      placeholder="Masukkan NIM/NPM"
+                      className="
                       w-full
                       rounded-xl
                       border border-border
@@ -1535,27 +1535,27 @@ export default function AdminAnakMagangPage() {
                       focus:ring-primary/40
                       focus:border-primary
                     "
-                    required
-                  />
-                </div>
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label
-                    className="
+                  <div className="space-y-1">
+                    <label
+                      className="
                     text-xs
                     font-extrabold
                     text-foreground
                   "
-                  >
-                    Email <span className="text-destructive">*</span>
-                  </label>
+                    >
+                      Email <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="email"
-                    value={editEmail}
-                    onChange={(e) => setEditEmail(e.target.value)}
-                    placeholder="email@student.ac.id"
-                    className="
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      placeholder="Masukkan email"
+                      className="
                       w-full
                       rounded-xl
                       border border-border
@@ -1570,28 +1570,28 @@ export default function AdminAnakMagangPage() {
                       focus:ring-primary/40
                       focus:border-primary
                     "
-                    required
-                  />
-                </div>
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label
-                    className="
+                  <div className="space-y-1">
+                    <label
+                      className="
                     text-xs
                     font-extrabold
                     text-foreground
                   "
-                  >
-                    Kampus / Instansi{" "}
-                    <span className="text-destructive">*</span>
-                  </label>
+                    >
+                      Kampus / Sekolah{" "}
+                      <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={editInstitution}
-                    onChange={(e) => setEditInstitution(e.target.value)}
-                    placeholder="Universitas..."
-                    className="
+                    <input
+                      type="text"
+                      value={editInstitution}
+                      onChange={(e) => setEditInstitution(e.target.value)}
+                      placeholder="Masukkan nama kampus / sekolah"
+                      className="
                       w-full
                       rounded-xl
                       border border-border
@@ -1606,28 +1606,28 @@ export default function AdminAnakMagangPage() {
                       focus:ring-primary/40
                       focus:border-primary
                     "
-                    required
-                  />
-                </div>
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label
-                    className="
+                  <div className="space-y-1">
+                    <label
+                      className="
                     text-xs
                     font-extrabold
                     text-foreground
                   "
-                  >
-                    Program Studi / Divisi{" "}
-                    <span className="text-destructive">*</span>
-                  </label>
+                    >
+                      Program Studi / Divisi{" "}
+                      <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={editProgram}
-                    onChange={(e) => setEditProgram(e.target.value)}
-                    placeholder="Teknik Informatika..."
-                    className="
+                    <input
+                      type="text"
+                      value={editProgram}
+                      onChange={(e) => setEditProgram(e.target.value)}
+                      placeholder="Masukkan program studi"
+                      className="
                       w-full
                       rounded-xl
                       border border-border
@@ -1642,21 +1642,21 @@ export default function AdminAnakMagangPage() {
                       focus:ring-primary/40
                       focus:border-primary
                     "
-                    required
-                  />
-                </div>
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-extrabold text-foreground">
-                    Batch <span className="text-destructive">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-extrabold text-foreground">
+                      Batch <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={editBatch}
-                    onChange={(e) => setEditBatch(e.target.value)}
-                    placeholder="Misal: 1, 2, 3..."
-                    className="
+                    <input
+                      type="text"
+                      value={editBatch}
+                      onChange={(e) => setEditBatch(e.target.value)}
+                      placeholder="Masukkan batch"
+                      className="
                       w-full
                       rounded-xl
                       border border-border
@@ -1671,25 +1671,25 @@ export default function AdminAnakMagangPage() {
                       focus:ring-primary/40
                       focus:border-primary
                     "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label
-                    className="
+                  <div className="space-y-1">
+                    <label
+                      className="
                     text-xs
                     font-extrabold
                     text-foreground
                   "
-                  >
-                    Periode Mulai
-                  </label>
+                    >
+                      Periode Mulai
+                    </label>
 
-                  <input
-                    type="date"
-                    value={editStart}
-                    onChange={(e) => setEditStart(e.target.value)}
-                    className="
+                    <input
+                      type="date"
+                      value={editStart}
+                      onChange={(e) => setEditStart(e.target.value)}
+                      className="
                       w-full
                       rounded-xl
                       border border-border
@@ -1703,25 +1703,25 @@ export default function AdminAnakMagangPage() {
                       focus:ring-primary/40
                       focus:border-primary
                     "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label
-                    className="
+                  <div className="space-y-1">
+                    <label
+                      className="
                     text-xs
                     font-extrabold
                     text-foreground
                   "
-                  >
-                    Periode Selesai
-                  </label>
+                    >
+                      Periode Selesai
+                    </label>
 
-                  <input
-                    type="date"
-                    value={editEnd}
-                    onChange={(e) => setEditEnd(e.target.value)}
-                    className="
+                    <input
+                      type="date"
+                      value={editEnd}
+                      onChange={(e) => setEditEnd(e.target.value)}
+                      className="
                       w-full
                       rounded-xl
                       border border-border
@@ -1735,26 +1735,26 @@ export default function AdminAnakMagangPage() {
                       focus:ring-primary/40
                       focus:border-primary
                     "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1 md:col-span-2">
-                  <label
-                    className="
+                  <div className="space-y-1 md:col-span-2">
+                    <label
+                      className="
                     text-xs
                     font-extrabold
                     text-foreground
                   "
-                  >
-                    Status Keaktifan
-                  </label>
+                    >
+                      Status Keaktifan
+                    </label>
 
-                  <select
-                    value={editStatus}
-                    onChange={(e) =>
-                      setEditStatus(e.target.value as "ACTIVE" | "INACTIVE")
-                    }
-                    className="
+                    <select
+                      value={editStatus}
+                      onChange={(e) =>
+                        setEditStatus(e.target.value as "ACTIVE" | "INACTIVE")
+                      }
+                      className="
                       w-full
                       rounded-xl
                       border border-border
@@ -1769,24 +1769,24 @@ export default function AdminAnakMagangPage() {
                       focus:ring-primary/40
                       focus:border-primary
                     "
-                  >
-                    <option value="ACTIVE">Aktif (ACTIVE)</option>
+                    >
+                      <option value="ACTIVE">Aktif (ACTIVE)</option>
 
-                    <option value="INACTIVE">Nonaktif (INACTIVE)</option>
-                  </select>
+                      <option value="INACTIVE">Nonaktif (INACTIVE)</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              <div
-                className="
+                <div
+                  className="
                 flex justify-end gap-2
                 pt-2
               "
-              >
-                <button
-                  type="button"
-                  onClick={() => setEditItem(null)}
-                  className="
+                >
+                  <button
+                    type="button"
+                    onClick={() => setEditItem(null)}
+                    className="
                     px-6
                     py-2.5
                     rounded-xl
@@ -1800,14 +1800,14 @@ export default function AdminAnakMagangPage() {
                     transition-colors
                     cursor-pointer
                   "
-                >
-                  Batal
-                </button>
+                  >
+                    Batal
+                  </button>
 
-                <button
-                  type="submit"
-                  disabled={isUpdating}
-                  className="
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="
                     px-6
                     py-2.5
                     rounded-xl
@@ -1822,14 +1822,14 @@ export default function AdminAnakMagangPage() {
                     disabled:cursor-not-allowed
                     cursor-pointer
                   "
-                >
-                  {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </ModalPortal>
-      )}
+                  >
+                    {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </ModalPortal>
+        )}
       </div>
     </DashboardLayout>
   );

@@ -826,6 +826,62 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // ============================================================
+    // KOREKSI KEDISIPLINAN (SERING TERLAMBAT -> PALING RAJIN)
+    // Khusus Admin ID: 1, 4, 6, 7, 8
+    // ============================================================
+    if (body.action === "KOREKSI_TERLAMBAT") {
+      const { adminId, userId, userRole, targetJamMasuk } = body;
+      const ALLOWED_ADMIN_IDS = [1, 4, 6, 7, 8];
+
+      if (!adminId || !ALLOWED_ADMIN_IDS.includes(Number(adminId))) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Akses ditolak: Admin ID tidak memiliki izin untuk melakukan koreksi kedisiplinan.",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (!userId) {
+        return NextResponse.json(
+          { success: false, message: "User ID wajib disertakan." },
+          { status: 400 }
+        );
+      }
+
+      let jamMasukBaru = (targetJamMasuk || "07:15:00").trim();
+      if (jamMasukBaru.length === 5) {
+        jamMasukBaru += ":00";
+      }
+
+      const roleUpper = (userRole || "").toUpperCase();
+      const isMagang = roleUpper.includes("MAGANG");
+      const idColumn = isMagang ? "peserta_magang_id" : "karyawan_os_id";
+
+      // Update seluruh record absensi yang TERLAMBAT di bulan berjalan
+      const [updateResult]: any = await mysqlPool.query(
+        `UPDATE absensi
+         SET status_masuk = 'TEPAT_WAKTU',
+             jam_masuk = ?,
+             keterangan = CONCAT(COALESCE(keterangan, ''), ' [Koreksi Jam oleh Admin ID: ', ?, ']')
+         WHERE ${idColumn} = ?
+           AND status_masuk = 'TERLAMBAT'
+           AND MONTH(tanggal) = MONTH(CURRENT_DATE())
+           AND YEAR(tanggal) = YEAR(CURRENT_DATE())`,
+        [jamMasukBaru, String(adminId), String(userId)]
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Berhasil mengoreksi keterlambatan menjadi Tepat Waktu (${jamMasukBaru}).`,
+        affectedRows: updateResult.affectedRows || 0,
+      });
+    }
+
     const { id, catatanAdmin, status } = body;
 
     if (!id) {

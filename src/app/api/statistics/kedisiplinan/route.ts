@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
-    const limit = Number(searchParams.get("limit") || 10);
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam ? Number(limitParam) : null;
 
     const conditions: string[] = [];
     const params: any[] = [];
@@ -84,53 +85,60 @@ export async function GET(request: NextRequest) {
     });
 
     // Generate 4 categories data
-    const rajinItems = [...peserta]
+    const sortedRajin = [...peserta]
       .filter((p) => p.totalHadir > 0)
-      .sort((a, b) => b.totalHadir - a.totalHadir || a.totalTerlambat - b.totalTerlambat)
-      .slice(0, limit)
-      .map((p) => ({
+      .sort(
+        (a, b) =>
+          b.totalHadir - a.totalHadir || a.totalTerlambat - b.totalTerlambat,
+      );
+    const rajinItems = (limit ? sortedRajin.slice(0, limit) : sortedRajin).map(
+      (p) => ({
         id: p.id,
         nama: p.nama,
         role: p.role === "ANAK_MAGANG" ? "MAGANG" : "OS",
         count: p.totalHadir,
         avatar: p.avatar,
-      }));
+      }),
+    );
 
-    const terlambatItems = [...peserta]
+    const sortedTerlambat = [...peserta]
       .filter((p) => p.totalTerlambat > 0)
-      .sort((a, b) => b.totalTerlambat - a.totalTerlambat)
-      .slice(0, limit)
-      .map((p) => ({
-        id: p.id,
-        nama: p.nama,
-        role: p.role === "ANAK_MAGANG" ? "MAGANG" : "OS",
-        count: p.totalTerlambat,
-        avatar: p.avatar,
-      }));
+      .sort((a, b) => b.totalTerlambat - a.totalTerlambat);
+    const terlambatItems = (
+      limit ? sortedTerlambat.slice(0, limit) : sortedTerlambat
+    ).map((p) => ({
+      id: p.id,
+      nama: p.nama,
+      role: p.role === "ANAK_MAGANG" ? "MAGANG" : "OS",
+      count: p.totalTerlambat,
+      avatar: p.avatar,
+    }));
 
-    const izinSakitItems = [...peserta]
+    const sortedIzin = [...peserta]
       .filter((p) => p.totalIzinSakit > 0)
-      .sort((a, b) => b.totalIzinSakit - a.totalIzinSakit)
-      .slice(0, limit)
-      .map((p) => ({
-        id: p.id,
-        nama: p.nama,
-        role: p.role === "ANAK_MAGANG" ? "MAGANG" : "OS",
-        count: p.totalIzinSakit,
-        avatar: p.avatar,
-      }));
+      .sort((a, b) => b.totalIzinSakit - a.totalIzinSakit);
+    const izinSakitItems = (
+      limit ? sortedIzin.slice(0, limit) : sortedIzin
+    ).map((p) => ({
+      id: p.id,
+      nama: p.nama,
+      role: p.role === "ANAK_MAGANG" ? "MAGANG" : "OS",
+      count: p.totalIzinSakit,
+      avatar: p.avatar,
+    }));
 
-    const alpaItems = [...peserta]
+    const sortedAlpa = [...peserta]
       .filter((p) => p.totalAlpa > 0)
-      .sort((a, b) => b.totalAlpa - a.totalAlpa)
-      .slice(0, limit)
-      .map((p) => ({
+      .sort((a, b) => b.totalAlpa - a.totalAlpa);
+    const alpaItems = (limit ? sortedAlpa.slice(0, limit) : sortedAlpa).map(
+      (p) => ({
         id: p.id,
         nama: p.nama,
         role: p.role === "ANAK_MAGANG" ? "MAGANG" : "OS",
         count: p.totalAlpa,
         avatar: p.avatar,
-      }));
+      }),
+    );
 
     const categories = {
       palingRajin: {

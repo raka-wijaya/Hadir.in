@@ -887,7 +887,7 @@ export default function AdminPendaftaranPage() {
                     required
                     value={inputNama}
                     onChange={(e) => setInputNama(e.target.value)}
-                    placeholder="Masukan Nama Lengkap"
+                    placeholder="Masukan nama lengkap"
                     className="
                       w-full
                       rounded-default
@@ -914,7 +914,7 @@ export default function AdminPendaftaranPage() {
                     required
                     value={inputEmail}
                     onChange={(e) => setInputEmail(e.target.value)}
-                    placeholder="Masukan Email"
+                    placeholder="Masukan email"
                     className="
                       w-full
                       rounded-default
@@ -942,7 +942,7 @@ export default function AdminPendaftaranPage() {
                     required
                     value={inputNoHp}
                     onChange={(e) => setInputNoHp(e.target.value)}
-                    placeholder="Masukan No. HP"
+                    placeholder="Masukan no. hp"
                     className="
                       w-full
                       rounded-default
@@ -970,7 +970,7 @@ export default function AdminPendaftaranPage() {
                     required
                     value={inputKampus}
                     onChange={(e) => setInputKampus(e.target.value)}
-                    placeholder="Masukan Nama Kampus / Sekolah"
+                    placeholder="Masukan nama kampus / sekolah"
                     className="
                       w-full
                       rounded-default
@@ -996,7 +996,7 @@ export default function AdminPendaftaranPage() {
                     type="text"
                     value={inputJurusan}
                     onChange={(e) => setInputJurusan(e.target.value)}
-                    placeholder="Masukan Program Studi"
+                    placeholder="Masukan program studi"
                     className="
                       w-full
                       rounded-default
@@ -1055,7 +1055,7 @@ export default function AdminPendaftaranPage() {
                   rows={2}
                   value={inputAlamat}
                   onChange={(e) => setInputAlamat(e.target.value)}
-                  placeholder="Masukan Alamat"
+                  placeholder="Masukan alamat"
                   className="
                     w-full
                     rounded-default
