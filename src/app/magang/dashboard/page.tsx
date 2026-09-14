@@ -32,8 +32,8 @@ import {
   NotebookPen,
   BookOpen,
   Calendar,
-  Loader2,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 function getKategoriIcon(kategori: string) {
   const k = (kategori || "").toLowerCase();
@@ -950,7 +950,7 @@ export default function MagangDashboardPage() {
                             className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border border-destructive/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                           >
                             {isUpdating ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <Spinner size="sm" />
                             ) : (
                               <X className="w-3.5 h-3.5" />
                             )}

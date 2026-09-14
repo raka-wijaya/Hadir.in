@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 function getKategoriIcon(kategori: string) {
   const k = (kategori || "").toLowerCase();
@@ -176,7 +177,7 @@ export default function JobdeskPage() {
         {/* Task Cards Grid */}
         {isLoading ? (
           <div className="py-16 flex flex-col items-center justify-center text-muted-foreground space-y-3">
-            <div className="h-8 w-8 border-3 border-primary border-t-transparent animate-spin rounded-full" />
+            <Spinner size="lg" />
             <p className="text-xs font-semibold">Memuat daftar tugas...</p>
           </div>
         ) : filteredList.length === 0 ? (

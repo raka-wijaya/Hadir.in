@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  Loader2,
   Sparkles,
   Layers,
   ArrowUpDown,
@@ -31,6 +30,7 @@ import {
   Printer,
   RefreshCw,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 
 // Helper: Format tanggal Indonesia
@@ -540,8 +540,8 @@ export default function MagangLogBookPage() {
 
           {isLoading ? (
             <div className="py-16 flex flex-col items-center justify-center text-muted-foreground space-y-3">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-xs font-semibold">Memuat data logbook...</p>
+              <Spinner size="lg" />
+              
             </div>
           ) : logbooks.length === 0 ? (
             <div className="py-16 text-center space-y-3">
@@ -770,7 +770,7 @@ export default function MagangLogBookPage() {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Spinner size="sm" />
                       Menyimpan...
                     </>
                   ) : (
@@ -890,7 +890,7 @@ export default function MagangLogBookPage() {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Spinner size="sm" />
                       Memperbarui...
                     </>
                   ) : (
@@ -1009,7 +1009,7 @@ export default function MagangLogBookPage() {
                 onClick={handleDeleteSubmit}
                 className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
               >
-                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Ya, Hapus"}
+                {isSubmitting ? <Spinner size="sm" /> : "Ya, Hapus"}
               </button>
             </div>
           </div>

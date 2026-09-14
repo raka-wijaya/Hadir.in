@@ -12,6 +12,7 @@ import {
   ConfirmModal,
 } from "@/components/ui/Alert";
 import { ModalPortal } from "@/components/ui/ModalPortal";
+import { Spinner } from "@/components/ui/Spinner";
 
 import {
   Plus,
@@ -235,11 +236,11 @@ export default function AdminAnakMagangPage() {
           ),
         );
 
-        setBannerAlert({
-          title: "Status Berhasil Diperbarui",
-          message: `Status pengguna berhasil diubah menjadi ${newStatus}.`,
-          color: "green",
-        });
+        showAlert(
+          `Status pengguna berhasil diubah menjadi ${newStatus}.`,
+          "Status Berhasil Diperbarui",
+          "green",
+        );
       } else {
         showAlert(
           data.message || "Gagal memperbarui status.",
@@ -594,7 +595,7 @@ export default function AdminAnakMagangPage() {
 
             <input
               type="text"
-              placeholder="Cari NIM, nama, kampus, atau batch..."
+              placeholder="Cari NIM, nama, kampus, atau batch"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="
@@ -619,16 +620,7 @@ export default function AdminAnakMagangPage() {
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="
-                  absolute right-2.5 top-1/2
-                  -translate-y-1/2
-                  text-muted-foreground
-                  hover:text-foreground
-                  hover:bg-accent
-                  p-1 rounded-md
-                  transition-colors
-                  cursor-pointer
-                "
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -721,7 +713,9 @@ export default function AdminAnakMagangPage() {
                         font-semibold
                       "
                     >
-                      Memuat data anak magang...
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Spinner size="lg" />
+                      </div>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
@@ -735,7 +729,7 @@ export default function AdminAnakMagangPage() {
                         font-semibold
                       "
                     >
-                      Tidak ada data anak magang yang cocok
+                      Tidak ada data anak magang
                     </td>
                   </tr>
                 ) : (
@@ -1394,7 +1388,14 @@ export default function AdminAnakMagangPage() {
             cursor-pointer
           "
                   >
-                    {isSaving ? "Menyimpan..." : "Simpan Data"}
+                    {isSaving ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Spinner size="sm" />
+                        <span>Menyimpan...</span>
+                      </span>
+                    ) : (
+                      "Simpan Data"
+                    )}
                   </button>
                 </div>
               </form>
@@ -1823,7 +1824,14 @@ export default function AdminAnakMagangPage() {
                     cursor-pointer
                   "
                   >
-                    {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
+                    {isUpdating ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Spinner size="sm" />
+                        <span>Menyimpan...</span>
+                      </span>
+                    ) : (
+                      "Simpan Perubahan"
+                    )}
                   </button>
                 </div>
               </form>

@@ -6,13 +6,13 @@ import {
   Clock,
   FileText,
   HelpCircle,
-  Loader2,
   RefreshCw,
   AlertCircle,
   Pencil,
   X,
   Sparkles,
 } from "lucide-react";
+import { Spinner } from "./Spinner";
 import { useAuth } from "@/lib/auth/context";
 
 // ============================================================
@@ -72,25 +72,25 @@ export function Kedisiplinan({
     palingRajin: {
       title: "PALING RAJIN",
       totalOrang: 0,
-      emptyText: "Belum ada data presensi tepat waktu bulan ini.",
+      emptyText: "Tidak ada data presensi tepat waktu",
       items: [],
     },
     seringTerlambat: {
       title: "SERING TERLAMBAT",
       totalOrang: 0,
-      emptyText: "Tidak ada catatan terlambat bulan ini.",
+      emptyText: "Tidak ada catatan terlambat",
       items: [],
     },
     seringIzinSakit: {
       title: "SERING IZIN / SAKIT",
       totalOrang: 0,
-      emptyText: "Tidak ada catatan izin/sakit bulan ini.",
+      emptyText: "Tidak ada catatan izin/sakit",
       items: [],
     },
     tanpaKeterangan: {
       title: "TANPA KETERANGAN",
       totalOrang: 0,
-      emptyText: "Semua sudah presensi atau memiliki izin hari ini.",
+      emptyText: "Tidak ada tanpa keterangan",
       items: [],
     },
   });
@@ -410,25 +410,25 @@ export function Kedisiplinan({
         palingRajin: {
           title: "PALING RAJIN",
           totalOrang: rajinItems.length,
-          emptyText: "Belum ada data presensi tepat waktu bulan ini.",
+          emptyText: "Tidak ada data presensi tepat waktu",
           items: rajinItems,
         },
         seringTerlambat: {
           title: "SERING TERLAMBAT",
           totalOrang: terlambatItems.length,
-          emptyText: "Tidak ada catatan terlambat bulan ini.",
+          emptyText: "Tidak ada catatan terlambat",
           items: terlambatItems,
         },
         seringIzinSakit: {
           title: "SERING IZIN / SAKIT",
           totalOrang: izinSakitItems.length,
-          emptyText: "Tidak ada catatan izin/sakit bulan ini.",
+          emptyText: "Tidak ada catatan izin/sakit",
           items: izinSakitItems,
         },
         tanpaKeterangan: {
           title: "TANPA KETERANGAN",
           totalOrang: tanpaKeteranganMap.size,
-          emptyText: "Semua sudah presensi atau memiliki izin hari ini.",
+          emptyText: "Tidak ada tanpa keterangan",
           items: finalTanpaKeteranganItems,
         },
       });
@@ -507,52 +507,41 @@ export function Kedisiplinan({
   };
 
   // ----------------------------------------------------------
-  // CONFIG KARTU KEDISIPLINAN
+  // ----------------------------------------------------------
+  // CONFIG KARTU KEDISIPLINAN (Selaras dengan global.css)
   // ----------------------------------------------------------
   const cardsConfig = [
     {
       key: "palingRajin",
       category: categories.palingRajin,
-      icon: CheckCircle2,
-      iconColor: "text-emerald-600 dark:text-emerald-400",
-      titleColor: "text-emerald-600 dark:text-emerald-400",
-      borderColor: "border-emerald-500/20 dark:border-emerald-500/30",
-      rankColor: "text-emerald-600 dark:text-emerald-400",
-      countBadge:
-        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+      titleColor: "text-status-hadir",
+      borderColor: "border-border hover:border-status-hadir/40",
+      rankColor: "text-status-hadir",
+      countBadge: "status-hadir border",
     },
     {
       key: "seringTerlambat",
       category: categories.seringTerlambat,
-      icon: Clock,
-      iconColor: "text-amber-600 dark:text-amber-400",
-      titleColor: "text-amber-600 dark:text-amber-400",
-      borderColor: "border-amber-500/20 dark:border-amber-500/30",
-      rankColor: "text-amber-600 dark:text-amber-400",
-      countBadge:
-        "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
+      titleColor: "text-status-terlambat",
+      borderColor: "border-border hover:border-status-terlambat/40",
+      rankColor: "text-status-terlambat",
+      countBadge: "status-terlambat border",
     },
     {
       key: "seringIzinSakit",
       category: categories.seringIzinSakit,
-      icon: FileText,
-      iconColor: "text-blue-600 dark:text-blue-400",
-      titleColor: "text-blue-600 dark:text-blue-400",
-      borderColor: "border-blue-500/20 dark:border-blue-500/30",
-      rankColor: "text-blue-600 dark:text-blue-400",
-      countBadge:
-        "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30",
+      titleColor: "text-status-izin",
+      borderColor: "border-border hover:border-status-izin/40",
+      rankColor: "text-status-izin",
+      countBadge: "status-izin border",
     },
     {
       key: "tanpaKeterangan",
       category: categories.tanpaKeterangan,
-      icon: HelpCircle,
-      iconColor: "text-rose-600 dark:text-rose-400",
-      titleColor: "text-rose-600 dark:text-rose-400",
-      borderColor: "border-rose-500/20 dark:border-rose-500/30",
-      rankColor: "text-rose-600 dark:text-rose-400",
-      countBadge:
-        "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30",
+      titleColor: "text-status-alpa",
+      borderColor: "border-border hover:border-status-alpa/40",
+      rankColor: "text-status-alpa",
+      countBadge: "status-alpa border",
     },
   ];
 
@@ -562,16 +551,7 @@ export function Kedisiplinan({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {cardsConfig.map(
-        ({
-          key,
-          category,
-          icon: Icon,
-          iconColor,
-          titleColor,
-          borderColor,
-          rankColor,
-          countBadge,
-        }) => (
+        ({ key, category, titleColor, borderColor, rankColor, countBadge }) => (
           <div
             key={key}
             className={`bg-card border ${borderColor} rounded-2xl p-4 sm:p-5 flex flex-col justify-between min-h-[380px] shadow-card transition-all duration-300`}
@@ -580,7 +560,6 @@ export function Kedisiplinan({
               {/* Header Card */}
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
-                  <Icon className={`w-5 h-5 ${iconColor} shrink-0`} />
                   <h3
                     className={`font-black text-[11px] md:text-[11px] tracking-wider uppercase ${titleColor}`}
                   >
@@ -601,7 +580,7 @@ export function Kedisiplinan({
                       onClick={fetchData}
                       disabled={loading}
                       title="Muat ulang data"
-                      className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                      className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
                     >
                       <RefreshCw
                         className={`w-3 h-3 ${loading ? "animate-spin" : ""}`}
@@ -614,21 +593,20 @@ export function Kedisiplinan({
               {/* Loading State */}
               {loading && (
                 <div className="flex flex-col items-center justify-center py-16 gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <p className="text-[11px] font-semibold text-muted-foreground">
-                    Memuat...
-                  </p>
+                  <Spinner size="lg" />
                 </div>
               )}
 
               {/* Error State */}
               {!loading && error && (
                 <div className="py-12 px-3 text-center">
-                  <AlertCircle className="w-5 h-5 text-rose-500 mx-auto mb-1.5" />
-                  <p className="text-xs text-rose-500 font-semibold">{error}</p>
+                  <AlertCircle className="w-5 h-5 text-destructive mx-auto mb-1.5" />
+                  <p className="text-xs text-destructive font-semibold">
+                    {error}
+                  </p>
                   <button
                     onClick={fetchData}
-                    className="mt-2 text-[11px] font-bold text-rose-500 hover:underline"
+                    className="mt-2 text-[11px] font-bold text-destructive hover:underline cursor-pointer"
                   >
                     Coba lagi
                   </button>
@@ -673,18 +651,18 @@ export function Kedisiplinan({
                             </p>
                             <div className="flex items-center gap-1.5 mt-1">
                               {isOs ? (
-                                <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase">
+                                <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider bg-muted text-foreground border border-border uppercase">
                                   OS
                                 </span>
                               ) : (
-                                <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider bg-primary/15 text-primary border border-primary/30 uppercase">
+                                <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider bg-primary/10 text-primary border border-primary/20 uppercase">
                                   MAGANG
                                 </span>
                               )}
 
                               {key === "tanpaKeterangan" && (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-500 dark:text-rose-400">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-status-alpa">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-status-alpa shrink-0" />
                                   Belum Absen
                                 </span>
                               )}
@@ -700,7 +678,7 @@ export function Kedisiplinan({
                               type="button"
                               onClick={() => handleOpenOverride(item)}
                               title="Pindahkan ke Paling Rajin & Koreksi Jam"
-                              className="p-1 rounded-md text-muted-foreground hover:text-amber-500 hover:bg-amber-500/15 border border-transparent hover:border-amber-500/30 transition-all shrink-0"
+                              className="p-1 rounded-md text-muted-foreground hover:text-status-terlambat hover:bg-muted border border-transparent hover:border-border transition-all shrink-0 cursor-pointer"
                             >
                               <Pencil className="w-3 h-3" />
                             </button>
@@ -709,7 +687,7 @@ export function Kedisiplinan({
                           {/* Right Count Pill (hanya untuk kartu statistik kedisiplinan) */}
                           {key !== "tanpaKeterangan" && (
                             <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-black border font-mono shrink-0 ${countBadge}`}
+                              className={`px-2 py-0.5 rounded-full text-xs font-black font-mono shrink-0 ${countBadge}`}
                             >
                               {item.count}x
                             </span>
@@ -724,11 +702,12 @@ export function Kedisiplinan({
           </div>
         ),
       )}
+
       {/* ======================================================
           MODAL: KOREKSI KEDISIPLINAN (SERING TERLAMBAT -> PALING RAJIN)
           ====================================================== */}
       {overrideItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div
             className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
@@ -740,7 +719,7 @@ export function Kedisiplinan({
                   <h3 className="text-sm font-black tracking-tight text-foreground">
                     Pindahkan ke Paling Rajin
                   </h3>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     Koreksi keterlambatan peserta oleh Admin #{user?.id}
                   </p>
                 </div>
@@ -749,7 +728,7 @@ export function Kedisiplinan({
                 type="button"
                 onClick={handleCloseOverride}
                 disabled={overrideLoading}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -758,16 +737,16 @@ export function Kedisiplinan({
             {/* Content Form */}
             <form onSubmit={handleSubmitOverride} className="space-y-4">
               {/* Info Peserta */}
-              <div className="p-3 rounded-xl bg-accent/40 border border-border/60 flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-muted/50 border border-border flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-foreground">
                     {overrideItem.nama}
                   </p>
-                  <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                  <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
                     {overrideItem.role}
                   </span>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold border border-amber-500/30 bg-amber-500/10 text-amber-500 font-mono">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold status-terlambat border font-mono">
                   {overrideItem.count}x Terlambat
                 </span>
               </div>
@@ -785,7 +764,7 @@ export function Kedisiplinan({
                   value={targetJam}
                   onChange={(e) => setTargetJam(e.target.value)}
                   required
-                  className="w-full px-3 py-2 text-sm font-mono rounded-xl bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                  className="w-full px-3 py-2 text-sm font-mono rounded-xl bg-input border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
                 />
 
                 {/* Preset Jam Cepat */}
@@ -798,10 +777,10 @@ export function Kedisiplinan({
                       key={timePreset}
                       type="button"
                       onClick={() => setTargetJam(timePreset)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border cursor-pointer ${
                         targetJam === timePreset
                           ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted text-muted-foreground border-border hover:text-foreground"
+                          : "bg-muted text-muted-foreground border-border hover:text-foreground hover:bg-muted/80"
                       }`}
                     >
                       {timePreset}
@@ -815,8 +794,8 @@ export function Kedisiplinan({
                 <span className="font-semibold text-foreground">Catatan:</span>{" "}
                 Seluruh riwayat presensi berstatus terlambat bulan ini untuk
                 peserta ini akan diubah menjadi{" "}
-                <strong className="text-emerald-500">Tepat Waktu</strong> dengan
-                jam masuk{" "}
+                <strong className="text-status-hadir">Tepat Waktu</strong>{" "}
+                dengan jam masuk{" "}
                 <strong className="font-mono text-foreground">
                   {targetJam}
                 </strong>
@@ -828,8 +807,8 @@ export function Kedisiplinan({
                 <div
                   className={`p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 ${
                     overrideMessage.type === "success"
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                      : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                      ? "status-hadir border"
+                      : "bg-destructive/10 text-destructive border border-destructive/20"
                   }`}
                 >
                   {overrideMessage.type === "success" ? (
@@ -847,19 +826,18 @@ export function Kedisiplinan({
                   type="button"
                   onClick={handleCloseOverride}
                   disabled={overrideLoading}
-                  className="px-3.5 py-2 text-xs font-bold rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                  className="px-3.5 py-2 text-xs font-bold rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={overrideLoading || !targetJam}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-black rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {overrideLoading ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Menyimpan...</span>
+                      <Spinner size="sm" />
                     </>
                   ) : (
                     <>

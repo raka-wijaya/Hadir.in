@@ -13,12 +13,12 @@ import {
   CreditCard,
   Building2,
   Briefcase,
-  Loader2,
   AlertCircle,
   X,
   Save,
   ShieldCheck,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 export default function AdminProfilPage() {
   const { user, updateUser } = useAuth();
@@ -335,7 +335,7 @@ export default function AdminProfilPage() {
                   >
                     {isSaving ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Spinner size="md" />
                         <span>Menyimpan...</span>
                       </>
                     ) : (

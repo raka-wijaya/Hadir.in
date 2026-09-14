@@ -22,7 +22,6 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  Loader2,
   Sparkles,
   Layers,
   ArrowUpDown,
@@ -43,6 +42,7 @@ import {
   Check,
 } from "lucide-react";
 import Link from "next/link";
+import { Spinner } from "@/components/ui/Spinner";
 
 function formatTanggalIndo(dateStr?: string | null): string {
   if (!dateStr) return "—";
@@ -78,21 +78,21 @@ function getKategoriBadgeClass(kategori: string): string {
   const k = (kategori || "").toLowerCase();
   switch (k) {
     case "akta kelahiran":
-      return "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+      return "status-hadir border";
     case "akta kematian":
-      return "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30";
+      return "bg-muted text-foreground border-border";
     case "tambah bio data":
-      return "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30";
+      return "status-izin border";
     case "pindah keluar":
-      return "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30";
+      return "status-terlambat border";
     case "pindah datang":
-      return "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30";
+      return "status-pending border";
     case "media":
-      return "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30";
+      return "status-sakit border";
     case "programmer":
-      return "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30";
+      return "bg-primary/10 text-primary border-primary/20";
     default:
-      return "bg-primary/15 text-primary border-primary/30";
+      return "bg-primary/10 text-primary border-primary/20";
   }
 }
 
@@ -326,12 +326,13 @@ export default function AdminLogBookPage() {
     return (
       <DashboardLayout>
         <div className="p-8 max-w-xl mx-auto text-center space-y-4">
-          <div className="w-16 h-16 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
+          <div className="w-16 h-16 rounded-3xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
             <ShieldAlert className="w-8 h-8" />
           </div>
           <h2 className="text-xl font-black text-foreground">Akses Dibatasi</h2>
           <p className="text-sm text-muted-foreground">
-            Role Admin OS tidak memiliki akses ke Manajemen Logbook. Halaman ini khusus untuk manajemen aktivitas siswa/mahasiswa magang.
+            Role Admin OS tidak memiliki akses ke Manajemen Logbook. Halaman ini
+            khusus untuk manajemen aktivitas siswa/mahasiswa magang.
           </p>
           <Link
             href="/admin/dashboard"
@@ -383,14 +384,14 @@ export default function AdminLogBookPage() {
         </div>
 
         {successMessage && (
-          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-between gap-3 text-xs md:text-sm font-semibold animate-in fade-in slide-in-from-top-2">
+          <div className="p-4 rounded-xl status-hadir border flex items-center justify-between gap-3 text-xs md:text-sm font-semibold animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{successMessage}</span>
             </div>
             <button
               onClick={() => setSuccessMessage(null)}
-              className="hover:opacity-70"
+              className="hover:opacity-70 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -398,14 +399,14 @@ export default function AdminLogBookPage() {
         )}
 
         {errorMessage && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center justify-between gap-3 text-xs md:text-sm font-semibold animate-in fade-in slide-in-from-top-2">
+          <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive flex items-center justify-between gap-3 text-xs md:text-sm font-semibold animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
             <button
               onClick={() => setErrorMessage(null)}
-              className="hover:opacity-70"
+              className="hover:opacity-70 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -418,7 +419,6 @@ export default function AdminLogBookPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Total Entri Logbook
               </span>
-              <BookOpen className="w-4 h-4 text-primary" />
             </div>
             <p className="text-2xl md:text-3xl font-black text-foreground">
               {stats.totalCount}
@@ -433,7 +433,6 @@ export default function AdminLogBookPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Akumulasi Waktu
               </span>
-              <Clock className="w-4 h-4 text-cyan-500" />
             </div>
             <p className="text-2xl md:text-3xl font-black text-foreground">
               {stats.totalHours}{" "}
@@ -451,7 +450,6 @@ export default function AdminLogBookPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Aktivitas Hari Ini
               </span>
-              <Sparkles className="w-4 h-4 text-amber-500" />
             </div>
             <p className="text-2xl md:text-3xl font-black text-foreground">
               {stats.todayCount}
@@ -464,7 +462,6 @@ export default function AdminLogBookPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Kategori Terbanyak
               </span>
-              <Layers className="w-4 h-4 text-purple-500" />
             </div>
             <p className="text-base md:text-lg font-black text-foreground truncate">
               {stats.topCat}
@@ -481,7 +478,7 @@ export default function AdminLogBookPage() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Cari nama peserta, aktivitas, atau kategori..."
+                placeholder="Cari nama peserta, aktivitas, atau kategori"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -489,7 +486,7 @@ export default function AdminLogBookPage() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -705,29 +702,15 @@ export default function AdminLogBookPage() {
                 </h2>
               </div>
             </div>
-            {/* 
-            <span className="px-3 py-1 rounded-full text-xs font-black bg-primary/10 text-primary border border-primary/20 shrink-0">
-              {logbooks.length} Data
-            </span> */}
           </div>
 
           {isLoading ? (
             <div className="py-16 flex flex-col items-center justify-center text-muted-foreground space-y-3">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-xs font-semibold">Memuat logbook sistem...</p>
+              <Spinner size="lg" />
             </div>
           ) : logbooks.length === 0 ? (
             <div className="py-16 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
-                <NotebookPen className="w-6 h-6" />
-              </div>
-              <p className="text-sm font-bold text-foreground">
-                Tidak ada data logbook
-              </p>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Belum ada data aktivitas yang sesuai dengan kriteria filter
-                pencarian.
-              </p>
+              <p className="text-xs text-foreground">Tidak ada data logbook</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -792,7 +775,7 @@ export default function AdminLogBookPage() {
                         <td className="py-3.5 px-4">
                           <div className="space-y-0.5">
                             <div className="flex items-center gap-1.5 font-extrabold text-foreground">
-                              <Clock className="w-3 h-3 text-cyan-500 shrink-0" />
+                              <Clock className="w-3 h-3 text-primary shrink-0" />
                               <span>
                                 {formatWaktu(item.waktu_mulai)} -{" "}
                                 {formatWaktu(item.waktu_selesai)}
@@ -835,7 +818,7 @@ export default function AdminLogBookPage() {
                             <button
                               onClick={() => handleOpenEdit(item)}
                               title="Edit Logbook"
-                              className="p-1.5 rounded-lg bg-card border border-border text-blue-500 hover:bg-blue-500/10 transition-all cursor-pointer"
+                              className="p-1.5 rounded-lg bg-card border border-border text-primary hover:bg-primary/10 transition-all cursor-pointer"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
@@ -845,7 +828,7 @@ export default function AdminLogBookPage() {
                                 setIsDeleteModalOpen(true);
                               }}
                               title="Hapus Logbook"
-                              className="p-1.5 rounded-lg bg-card border border-border text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
+                              className="p-1.5 rounded-lg bg-card border border-border text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -904,552 +887,558 @@ export default function AdminLogBookPage() {
       {isEditModalOpen && selectedLogbook && (
         <ModalPortal>
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
-          <div className="bg-card border border-border rounded-2xl max-w-lg w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-xl bg-blue-500/10 text-blue-500">
-                  <Edit3 className="w-5 h-5" />
-                </span>
-                <h3 className="text-base md:text-lg font-black text-foreground">
-                  Edit Catatan Logbook
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-all"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1">
-                  Tanggal Kegiatan
-                </label>
-                <input
-                  type="date"
-                  value={formData.tanggal}
-                  onChange={(e) =>
-                    setFormData({ ...formData, tanggal: e.target.value })
-                  }
-                  required
-                  className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-foreground mb-1">
-                    Waktu Mulai
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.waktu_mulai}
-                    onChange={(e) =>
-                      setFormData({ ...formData, waktu_mulai: e.target.value })
-                    }
-                    required
-                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
+            <div className="bg-card border border-border rounded-2xl max-w-lg w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
+                    <Edit3 className="w-5 h-5" />
+                  </span>
+                  <h3 className="text-base md:text-lg font-black text-foreground">
+                    Edit Catatan Logbook
+                  </h3>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-foreground mb-1">
-                    Waktu Selesai
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.waktu_selesai}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        waktu_selesai: e.target.value,
-                      })
-                    }
-                    required
-                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1">
-                  Kategori Pekerjaan
-                </label>
-                <select
-                  value={formData.kategori}
-                  onChange={(e) =>
-                    setFormData({ ...formData, kategori: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-all"
                 >
-                  {LOGBOOK_CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {LOGBOOK_CATEGORY_LABELS[cat]}
-                    </option>
-                  ))}
-                </select>
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1">
-                  Rincian Aktivitas
-                </label>
-                <textarea
-                  rows={4}
-                  value={formData.aktivitas}
-                  onChange={(e) =>
-                    setFormData({ ...formData, aktivitas: e.target.value })
-                  }
-                  required
-                  className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Tanggal Kegiatan
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.tanggal}
+                    onChange={(e) =>
+                      setFormData({ ...formData, tanggal: e.target.value })
+                    }
+                    required
+                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      Waktu Mulai
+                    </label>
+                    <input
+                      type="time"
+                      value={formData.waktu_mulai}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          waktu_mulai: e.target.value,
+                        })
+                      }
+                      required
+                      className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1">
+                      Waktu Selesai
+                    </label>
+                    <input
+                      type="time"
+                      value={formData.waktu_selesai}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          waktu_selesai: e.target.value,
+                        })
+                      }
+                      required
+                      className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Kategori Pekerjaan
+                  </label>
+                  <select
+                    value={formData.kategori}
+                    onChange={(e) =>
+                      setFormData({ ...formData, kategori: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                  >
+                    {LOGBOOK_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {LOGBOOK_CATEGORY_LABELS[cat]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    Rincian Aktivitas
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={formData.aktivitas}
+                    onChange={(e) =>
+                      setFormData({ ...formData, aktivitas: e.target.value })
+                    }
+                    required
+                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-5 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold transition-all shadow-md disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Spinner size="sm" />
+                        Memperbarui...
+                      </>
+                    ) : (
+                      "Simpan Perubahan"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {isDetailModalOpen && selectedLogbook && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
+            <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
+                    <Info className="w-5 h-5" />
+                  </span>
+                  <h3 className="text-base font-black text-foreground">
+                    Rincian Aktivitas Logbook
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsDetailModalOpen(false)}
+                  className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <div className="space-y-3 text-xs">
+                <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                    Peserta Magang
+                  </span>
+                  <p className="font-extrabold text-foreground text-sm">
+                    {selectedLogbook.user_nama ||
+                      selectedLogbook.userName ||
+                      "Mahasiswa Magang"}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {selectedLogbook.user_institution ||
+                      selectedLogbook.user_sekolah ||
+                      "-"}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                      Tanggal
+                    </span>
+                    <p className="font-extrabold text-foreground">
+                      {formatTanggalIndo(selectedLogbook.tanggal)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                      Waktu & Durasi
+                    </span>
+                    <p className="font-extrabold text-foreground">
+                      {formatWaktu(selectedLogbook.waktu_mulai)} -{" "}
+                      {formatWaktu(selectedLogbook.waktu_selesai)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                    Kategori
+                  </span>
+                  <div>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${getKategoriBadgeClass(selectedLogbook.kategori)}`}
+                    >
+                      {getKategoriIcon(selectedLogbook.kategori)}
+                      <span className="capitalize">
+                        {LOGBOOK_CATEGORY_LABELS[
+                          selectedLogbook.kategori as LogBookCategory
+                        ] || selectedLogbook.kategori}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-muted/40 border border-border space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                    Uraian Aktivitas
+                  </span>
+                  <p className="text-foreground leading-relaxed whitespace-pre-wrap font-medium">
+                    {selectedLogbook.aktivitas}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-border">
+                <button
+                  onClick={() => setIsDetailModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {isDeleteModalOpen && selectedLogbook && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
+            <div className="bg-card border border-border rounded-2xl max-w-sm w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+              <div className="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="text-center space-y-1">
+                <h3 className="text-base font-black text-foreground">
+                  Hapus Entri Logbook?
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Tindakan ini tidak dapat dibatalkan. Data logbook aktivitas
+                  ini akan dihapus permanen.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold transition-all cursor-pointer"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleDeleteSubmit}
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold transition-all shadow-md disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs font-bold shadow-md cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Memperbarui...
-                    </>
-                  ) : (
-                    "Simpan Perubahan"
-                  )}
+                  {isSubmitting ? "Menghapus" : "Ya, Hapus"}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      </ModalPortal>
-    )}
-
-    {isDetailModalOpen && selectedLogbook && (
-      <ModalPortal>
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
-          <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                  <Info className="w-5 h-5" />
-                </span>
-                <h3 className="text-base font-black text-foreground">
-                  Rincian Aktivitas Logbook
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsDetailModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                  Peserta Magang
-                </span>
-                <p className="font-extrabold text-foreground text-sm">
-                  {selectedLogbook.user_nama ||
-                    selectedLogbook.userName ||
-                    "Mahasiswa Magang"}
-                </p>
-                <p className="text-muted-foreground">
-                  {selectedLogbook.user_institution ||
-                    selectedLogbook.user_sekolah ||
-                    "-"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Tanggal
-                  </span>
-                  <p className="font-extrabold text-foreground">
-                    {formatTanggalIndo(selectedLogbook.tanggal)}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Waktu & Durasi
-                  </span>
-                  <p className="font-extrabold text-foreground">
-                    {formatWaktu(selectedLogbook.waktu_mulai)} -{" "}
-                    {formatWaktu(selectedLogbook.waktu_selesai)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                  Kategori
-                </span>
-                <div>
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${getKategoriBadgeClass(selectedLogbook.kategori)}`}
-                  >
-                    {getKategoriIcon(selectedLogbook.kategori)}
-                    <span className="capitalize">
-                      {LOGBOOK_CATEGORY_LABELS[
-                        selectedLogbook.kategori as LogBookCategory
-                      ] || selectedLogbook.kategori}
-                    </span>
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-muted/40 border border-border space-y-1">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                  Uraian Aktivitas
-                </span>
-                <p className="text-foreground leading-relaxed whitespace-pre-wrap font-medium">
-                  {selectedLogbook.aktivitas}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2 border-t border-border">
-              <button
-                onClick={() => setIsDetailModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold"
-              >
-                Tutup
-              </button>
             </div>
           </div>
-        </div>
-      </ModalPortal>
-    )}
+        </ModalPortal>
+      )}
 
-    {isDeleteModalOpen && selectedLogbook && (
-      <ModalPortal>
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
-          <div className="bg-card border border-border rounded-2xl max-w-sm w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
-              <Trash2 className="w-6 h-6" />
-            </div>
-            <div className="text-center space-y-1">
-              <h3 className="text-base font-black text-foreground">
-                Hapus Entri Logbook?
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Tindakan ini tidak dapat dibatalkan. Data logbook aktivitas ini
-                akan dihapus permanen.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteSubmit}
-                disabled={isSubmitting}
-                className="px-4 py-2 rounded-xl bg-rose-500 text-white hover:bg-rose-600 text-xs font-bold shadow-md"
-              >
-                {isSubmitting ? "Menghapus..." : "Ya, Hapus"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </ModalPortal>
-    )}
-
-    {isPrintModalOpen && (
-      <ModalPortal>
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
-          <div className="bg-card border border-border rounded-2xl max-w-4xl w-full max-h-[calc(100vh-2rem)] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="p-4 md:p-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
-              <div className="flex items-center gap-2">
-                <div>
-                  <h3 className="text-base md:text-lg font-black text-foreground">
-                    Pratinjau & Cetak Laporan PDF Logbook
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {logbooks.length} aktivitas siap dicetak ke format laporan
-                    resmi A4.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsPrintModalOpen(false)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-4 border-b border-border bg-muted/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div>
-                <label className="block font-bold text-foreground mb-1">
-                  Nama Pembimbing Lapangan
-                </label>
-                <input
-                  type="text"
-                  value={printSupervisorName}
-                  onChange={(e) => setPrintSupervisorName(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-input border border-border rounded-xl font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="Contoh: Budi Santoso, S.Kom"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-foreground mb-1">
-                  NIP / Jabatan
-                </label>
-                <input
-                  type="text"
-                  value={printSupervisorNip}
-                  onChange={(e) => setPrintSupervisorNip(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-input border border-border rounded-xl font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="Contoh: 19850712 201001 1 008"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-foreground mb-1">
-                  Kota / Lokasi Surat
-                </label>
-                <input
-                  type="text"
-                  value={printLocation}
-                  onChange={(e) => setPrintLocation(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-input border border-border rounded-xl font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="Contoh: Jakarta"
-                />
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-neutral-900/10 dark:bg-black/40">
-              <div className="bg-white text-black p-8 rounded-lg shadow-md max-w-3xl mx-auto space-y-6 text-xs font-sans">
-                <div className="border-b-2 border-black pb-3 text-center space-y-1">
-                  <h2 className="text-base font-black uppercase tracking-wider text-black">
-                    DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL
-                  </h2>
-                  <h3 className="text-xs font-bold text-neutral-800 uppercase">
-                    SISTEM INFORMASI PRESENSI & LOGBOOK MAGANG (HADIR.IN)
-                  </h3>
-                  <p className="text-[10px] text-neutral-600">
-                    Jl. Sultan Agung No.23 Gajah Timur, Magersari, Kec.
-                    Sidoarjo, Telp: (031) 8960188, Email:
-                    disdukcapil@layanan.go.id
-                  </p>
-                </div>
-
-                <div className="text-center space-y-0.5">
-                  <h4 className="text-sm font-black uppercase underline tracking-wide">
-                    LEMBAR LAPORAN AKTIVITAS LOGBOOK MAGANG
-                  </h4>
-                  <p className="text-[11px] text-neutral-700">
-                    Periode: {startDate ? formatTanggalIndo(startDate) : "Awal"}{" "}
-                    s/d {endDate ? formatTanggalIndo(endDate) : "Sekarang"}
-                  </p>
-                </div>
-
-                {selectedInternObj && (
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 p-3 rounded-lg border border-neutral-300 bg-neutral-50 text-[11px]">
-                    <div>
-                      <span className="font-semibold text-neutral-600">
-                        Nama Mahasiswa:{" "}
-                      </span>
-                      <strong className="text-black">
-                        {selectedInternObj.name || selectedInternObj.nama}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-neutral-600">
-                        Instansi / Kampus:{" "}
-                      </span>
-                      <strong className="text-black">
-                        {selectedInternObj.institution ||
-                          selectedInternObj.sekolah_kampus ||
-                          "-"}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-neutral-600">
-                        Program Studi / Divisi:{" "}
-                      </span>
-                      <strong className="text-black">
-                        {selectedInternObj.study_program ||
-                          selectedInternObj.studyProgram ||
-                          selectedInternObj.bagian ||
-                          "-"}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-neutral-600">
-                        No. Identitas / NIM:{" "}
-                      </span>
-                      <strong className="text-black">
-                        {selectedInternObj.identityNumber ||
-                          selectedInternObj.identity_number ||
-                          "-"}
-                      </strong>
-                    </div>
-                  </div>
-                )}
-
-                <table className="w-full border-collapse border border-black text-[10px]">
-                  <thead>
-                    <tr className="bg-neutral-200 border-b border-black text-black font-bold uppercase text-center">
-                      <th className="border border-black p-1.5 w-8">No</th>
-                      {!selectedInternObj && (
-                        <th className="border border-black p-1.5 min-w-[100px]">
-                          Peserta
-                        </th>
-                      )}
-                      <th className="border border-black p-1.5 w-24">
-                        Tanggal
-                      </th>
-                      <th className="border border-black p-1.5 w-24">
-                        Waktu (Jam)
-                      </th>
-                      <th className="border border-black p-1.5 w-24">
-                        Kategori
-                      </th>
-                      <th className="border border-black p-1.5 text-left">
-                        Uraian Aktivitas & Capaian Pekerjaan
-                      </th>
-                      <th className="border border-black p-1.5 w-16">Durasi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {logbooks.map((item, idx) => {
-                      const durasiJam = item.durasi_menit
-                        ? `${Math.floor(item.durasi_menit / 60)}j ${item.durasi_menit % 60}m`
-                        : "—";
-                      const kat =
-                        LOGBOOK_CATEGORY_LABELS[
-                          item.kategori as LogBookCategory
-                        ] || item.kategori;
-                      return (
-                        <tr
-                          key={item.id}
-                          className="border-b border-neutral-400"
-                        >
-                          <td className="border border-black p-1.5 text-center font-semibold">
-                            {idx + 1}
-                          </td>
-                          {!selectedInternObj && (
-                            <td className="border border-black p-1.5 font-bold">
-                              {item.user_nama ||
-                                item.userName ||
-                                "Mahasiswa Magang"}
-                            </td>
-                          )}
-                          <td className="border border-black p-1.5 text-center font-medium">
-                            {formatTanggalIndo(item.tanggal)}
-                          </td>
-                          <td className="border border-black p-1.5 text-center font-mono">
-                            {formatWaktu(item.waktu_mulai)} -{" "}
-                            {formatWaktu(item.waktu_selesai)}
-                          </td>
-                          <td className="border border-black p-1.5 text-center capitalize font-semibold">
-                            {kat}
-                          </td>
-                          <td className="border border-black p-1.5 text-left whitespace-pre-wrap">
-                            {item.aktivitas}
-                          </td>
-                          <td className="border border-black p-1.5 text-center font-bold">
-                            {durasiJam}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-
-                <div className="flex justify-between items-center p-2.5 rounded-lg border border-black bg-neutral-100 text-[11px] font-bold">
-                  <span>
-                    Total Aktivitas Tercatat: {stats.totalCount} kegiatan
-                  </span>
-                  <span>Total Akumulasi Waktu: {stats.totalHours} Jam</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-8 pt-6 text-[11px] text-center">
-                  <div className="space-y-16">
-                    <p className="font-semibold">Mahasiswa / Siswa Magang,</p>
-                    <div>
-                      <p className="font-bold underline uppercase">
-                        {selectedInternObj?.name ||
-                          selectedInternObj?.nama ||
-                          "( ........................................ )"}
-                      </p>
-                      <p className="text-[10px] text-neutral-600">
-                        Peserta Magang
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-16">
-                    <p className="font-semibold">
-                      {printLocation},{" "}
-                      {new Intl.DateTimeFormat("id-ID", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                        timeZone: "Asia/Jakarta",
-                      }).format(new Date())}
-                      <br />
-                      Mengetahui, Pembimbing Lapangan
+      {isPrintModalOpen && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
+            <div className="bg-card border border-border rounded-2xl max-w-4xl w-full max-h-[calc(100vh-2rem)] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+              <div className="p-4 md:p-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <div>
+                    <h3 className="text-base md:text-lg font-black text-foreground">
+                      Pratinjau & Cetak Laporan PDF Logbook
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {logbooks.length} aktivitas siap dicetak ke format laporan
+                      resmi A4.
                     </p>
-                    <div>
-                      <p className="font-bold underline uppercase">
-                        {printSupervisorName}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsPrintModalOpen(false)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-4 border-b border-border bg-muted/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="block font-bold text-foreground mb-1">
+                    Nama Pembimbing Lapangan
+                  </label>
+                  <input
+                    type="text"
+                    value={printSupervisorName}
+                    onChange={(e) => setPrintSupervisorName(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Contoh: Budi Santoso, S.Kom"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-foreground mb-1">
+                    NIP / Jabatan
+                  </label>
+                  <input
+                    type="text"
+                    value={printSupervisorNip}
+                    onChange={(e) => setPrintSupervisorNip(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Contoh: 19850712 201001 1 008"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-foreground mb-1">
+                    Kota / Lokasi Surat
+                  </label>
+                  <input
+                    type="text"
+                    value={printLocation}
+                    onChange={(e) => setPrintLocation(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Contoh: Jakarta"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-neutral-900/10 dark:bg-black/40">
+                <div className="bg-white text-black p-8 rounded-lg shadow-md max-w-3xl mx-auto space-y-6 text-xs font-sans">
+                  <div className="border-b-2 border-black pb-3 text-center space-y-1">
+                    <h2 className="text-base font-black uppercase tracking-wider text-black">
+                      DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL
+                    </h2>
+                    <h3 className="text-xs font-bold text-neutral-800 uppercase">
+                      SISTEM INFORMASI PRESENSI & LOGBOOK MAGANG (HADIR.IN)
+                    </h3>
+                    <p className="text-[10px] text-neutral-600">
+                      Jl. Sultan Agung No.23 Gajah Timur, Magersari, Kec.
+                      Sidoarjo, Telp: (031) 8960188, Email:
+                      disdukcapil@layanan.go.id
+                    </p>
+                  </div>
+
+                  <div className="text-center space-y-0.5">
+                    <h4 className="text-sm font-black uppercase underline tracking-wide">
+                      LEMBAR LAPORAN AKTIVITAS LOGBOOK MAGANG
+                    </h4>
+                    <p className="text-[11px] text-neutral-700">
+                      Periode:{" "}
+                      {startDate ? formatTanggalIndo(startDate) : "Awal"} s/d{" "}
+                      {endDate ? formatTanggalIndo(endDate) : "Sekarang"}
+                    </p>
+                  </div>
+
+                  {selectedInternObj && (
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 p-3 rounded-lg border border-neutral-300 bg-neutral-50 text-[11px]">
+                      <div>
+                        <span className="font-semibold text-neutral-600">
+                          Nama Mahasiswa:{" "}
+                        </span>
+                        <strong className="text-black">
+                          {selectedInternObj.name || selectedInternObj.nama}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-neutral-600">
+                          Instansi / Kampus:{" "}
+                        </span>
+                        <strong className="text-black">
+                          {selectedInternObj.institution ||
+                            selectedInternObj.sekolah_kampus ||
+                            "-"}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-neutral-600">
+                          Program Studi / Divisi:{" "}
+                        </span>
+                        <strong className="text-black">
+                          {selectedInternObj.study_program ||
+                            selectedInternObj.studyProgram ||
+                            selectedInternObj.bagian ||
+                            "-"}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-neutral-600">
+                          No. Identitas / NIM:{" "}
+                        </span>
+                        <strong className="text-black">
+                          {selectedInternObj.identityNumber ||
+                            selectedInternObj.identity_number ||
+                            "-"}
+                        </strong>
+                      </div>
+                    </div>
+                  )}
+
+                  <table className="w-full border-collapse border border-black text-[10px]">
+                    <thead>
+                      <tr className="bg-neutral-200 border-b border-black text-black font-bold uppercase text-center">
+                        <th className="border border-black p-1.5 w-8">No</th>
+                        {!selectedInternObj && (
+                          <th className="border border-black p-1.5 min-w-[100px]">
+                            Peserta
+                          </th>
+                        )}
+                        <th className="border border-black p-1.5 w-24">
+                          Tanggal
+                        </th>
+                        <th className="border border-black p-1.5 w-24">
+                          Waktu (Jam)
+                        </th>
+                        <th className="border border-black p-1.5 w-24">
+                          Kategori
+                        </th>
+                        <th className="border border-black p-1.5 text-left">
+                          Uraian Aktivitas & Capaian Pekerjaan
+                        </th>
+                        <th className="border border-black p-1.5 w-16">
+                          Durasi
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logbooks.map((item, idx) => {
+                        const durasiJam = item.durasi_menit
+                          ? `${Math.floor(item.durasi_menit / 60)}j ${item.durasi_menit % 60}m`
+                          : "0";
+                        const kat =
+                          LOGBOOK_CATEGORY_LABELS[
+                            item.kategori as LogBookCategory
+                          ] || item.kategori;
+                        return (
+                          <tr
+                            key={item.id}
+                            className="border-b border-neutral-400"
+                          >
+                            <td className="border border-black p-1.5 text-center font-semibold">
+                              {idx + 1}
+                            </td>
+                            {!selectedInternObj && (
+                              <td className="border border-black p-1.5 font-bold">
+                                {item.user_nama ||
+                                  item.userName ||
+                                  "Mahasiswa Magang"}
+                              </td>
+                            )}
+                            <td className="border border-black p-1.5 text-center font-medium">
+                              {formatTanggalIndo(item.tanggal)}
+                            </td>
+                            <td className="border border-black p-1.5 text-center font-mono">
+                              {formatWaktu(item.waktu_mulai)} -{" "}
+                              {formatWaktu(item.waktu_selesai)}
+                            </td>
+                            <td className="border border-black p-1.5 text-center capitalize font-semibold">
+                              {kat}
+                            </td>
+                            <td className="border border-black p-1.5 text-left whitespace-pre-wrap">
+                              {item.aktivitas}
+                            </td>
+                            <td className="border border-black p-1.5 text-center font-bold">
+                              {durasiJam}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  <div className="flex justify-between items-center p-2.5 rounded-lg border border-black bg-neutral-100 text-[11px] font-bold">
+                    <span>
+                      Total Aktivitas Tercatat: {stats.totalCount} kegiatan
+                    </span>
+                    <span>Total Akumulasi Waktu: {stats.totalHours} Jam</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-8 pt-6 text-[11px] text-center">
+                    <div className="space-y-16">
+                      <p className="font-semibold">Mahasiswa / Siswa Magang,</p>
+                      <div>
+                        <p className="font-bold underline uppercase">
+                          {selectedInternObj?.name ||
+                            selectedInternObj?.nama ||
+                            "( ........................................ )"}
+                        </p>
+                        <p className="text-[10px] text-neutral-600">
+                          Peserta Magang
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-16">
+                      <p className="font-semibold">
+                        {printLocation},{" "}
+                        {new Intl.DateTimeFormat("id-ID", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          timeZone: "Asia/Jakarta",
+                        }).format(new Date())}
+                        <br />
+                        Mengetahui, Pembimbing Lapangan
                       </p>
-                      <p className="text-[10px] text-neutral-600">
-                        NIP: {printSupervisorNip}
-                      </p>
+                      <div>
+                        <p className="font-bold underline uppercase">
+                          {printSupervisorName}
+                        </p>
+                        <p className="text-[10px] text-neutral-600">
+                          NIP: {printSupervisorNip}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-3 shrink-0">
-              <span className="text-xs text-muted-foreground">
-                Tip: Pilih opsi <strong>Save as PDF</strong> pada jendela cetak
-                browser.
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsPrintModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-muted text-foreground hover:bg-muted/80 text-xs font-bold transition-all"
-                >
-                  Tutup
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExecutePrint}
-                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold shadow-md"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Cetak / Download PDF</span>
-                </button>
+              <div className="p-4 border-t border-border bg-card flex items-center justify-between gap-3 shrink-0">
+                <span className="text-xs text-muted-foreground">
+                  Tip: Pilih opsi <strong>Save as PDF</strong> pada jendela
+                  cetak browser.
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPrintModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-muted text-foreground hover:bg-muted/80 text-xs font-bold transition-all"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExecutePrint}
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold shadow-md"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Cetak / Download PDF</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </ModalPortal>
-    )}
+        </ModalPortal>
+      )}
 
       <div className="hidden print:block text-black bg-white p-6 space-y-6 text-xs font-sans">
         <div className="border-b-2 border-black pb-3 text-center space-y-1">

@@ -333,8 +333,8 @@ export default function LoginPage() {
       fallback={
         <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-card text-card-foreground border border-border rounded-2xl p-5 md:p-6 space-y-4 text-center shadow-card">
-            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground font-black text-lg flex items-center justify-center mx-auto animate-pulse">
-              H
+            <div className="flex justify-center">
+              <Spinner size="lg" />
             </div>
 
             <p className="text-xs font-sans font-bold text-muted-foreground animate-pulse">

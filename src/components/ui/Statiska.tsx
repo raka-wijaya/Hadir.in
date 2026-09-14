@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { BarChart3 } from "lucide-react";
+import { Spinner } from "./Spinner";
 
 interface Absensi {
   id: string;
@@ -76,13 +77,7 @@ interface StatiskaProps {
   role?: string;
 }
 
-const HARI = [
-  "Senin",
-  "Selasa",
-  "Rabu",
-  "Kamis",
-  "Jumat",
-];
+const HARI = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
 function getTanggalIndonesia(date: Date): string {
   return new Intl.DateTimeFormat("sv-SE", {
@@ -158,29 +153,21 @@ function isStatusAlpa(status: string | null): boolean {
 }
 
 function isStatusTerlambat(absensi: Absensi): boolean {
-  if (
-    Number(absensi.menit_terlambat ?? 0) > 0
-  ) {
+  if (Number(absensi.menit_terlambat ?? 0) > 0) {
     return true;
   }
 
   const status = absensi.status?.toLowerCase() || "";
   const statusMasuk = absensi.status_masuk?.toLowerCase() || "";
 
-  return (
-    status === "terlambat" ||
-    statusMasuk === "terlambat"
-  );
+  return status === "terlambat" || statusMasuk === "terlambat";
 }
 
 function isStatusHadir(absensi: Absensi): boolean {
   const status = absensi.status?.toLowerCase() || "";
   const statusMasuk = absensi.status_masuk?.toLowerCase() || "";
 
-  if (
-    isStatusIzin(absensi.status) ||
-    isStatusAlpa(absensi.status)
-  ) {
+  if (isStatusIzin(absensi.status) || isStatusAlpa(absensi.status)) {
     return false;
   }
 
@@ -199,9 +186,7 @@ function isStatusHadir(absensi: Absensi): boolean {
   );
 }
 
-export function Statiska({
-  role = "SUPER_ADMIN",
-}: StatiskaProps) {
+export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
   const [data, setData] = useState<StatistikHarian[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -266,9 +251,7 @@ export function Statiska({
         const result = await absResponse.json().catch(() => ({}));
 
         if (!absResponse.ok || !result.success) {
-          throw new Error(
-            result.message || "Gagal mengambil data absensi"
-          );
+          throw new Error(result.message || "Gagal mengambil data absensi");
         }
 
         const absensi: Absensi[] = result.data ?? [];
@@ -294,7 +277,7 @@ export function Statiska({
           const mResult = await magangResponse.json().catch(() => ({}));
           if (mResult.success && Array.isArray(mResult.data)) {
             totalActiveUsers += mResult.data.filter(
-              (u: any) => !u.status || u.status === "ACTIVE"
+              (u: any) => !u.status || u.status === "ACTIVE",
             ).length;
           }
         }
@@ -302,17 +285,14 @@ export function Statiska({
           const osResult = await osResponse.json().catch(() => ({}));
           if (osResult.success && Array.isArray(osResult.data)) {
             totalActiveUsers += osResult.data.filter(
-              (u: any) => !u.status || u.status === "ACTIVE"
+              (u: any) => !u.status || u.status === "ACTIVE",
             ).length;
           }
         }
 
         const absensiMingguIni = filteredAbsensi.filter((item) => {
           if (!item.tanggal) return false;
-          return (
-            item.tanggal >= tanggalMulai &&
-            item.tanggal <= tanggalSelesai
-          );
+          return item.tanggal >= tanggalMulai && item.tanggal <= tanggalSelesai;
         });
 
         const statistik: StatistikHarian[] = [];
@@ -341,12 +321,14 @@ export function Statiska({
           const isToday = tanggalString === todayString;
 
           const dataHariIni = absensiMingguIni.filter(
-            (item) => item.tanggal === tanggalString
+            (item) => item.tanggal === tanggalString,
           );
 
           const uniqueUsers = new Map<string, Absensi>();
           dataHariIni.forEach((item) => {
-            const uid = String(item.peserta_magang_id || item.karyawan_os_id || item.id);
+            const uid = String(
+              item.peserta_magang_id || item.karyawan_os_id || item.id,
+            );
             uniqueUsers.set(uid, item);
           });
 
@@ -358,7 +340,9 @@ export function Statiska({
           let alpa = 0;
 
           const absenUserIds = new Set(
-            records.map((r) => String(r.peserta_magang_id || r.karyawan_os_id || r.id))
+            records.map((r) =>
+              String(r.peserta_magang_id || r.karyawan_os_id || r.id),
+            ),
           );
 
           records.forEach((item) => {
@@ -397,26 +381,20 @@ export function Statiska({
           statistik.push({
             hari,
             tanggal: tanggalString,
-            hadir:     total > 0 ? Math.round((hadir            / total) * 100) : 0,
-            terlambat: total > 0 ? Math.round((terlambat        / total) * 100) : 0,
-            izinSakit: total > 0 ? Math.round((izinSakit        / total) * 100) : 0,
-            alpa:      total > 0 ? Math.round((calculatedAlpa   / total) * 100) : 0,
+            hadir: total > 0 ? Math.round((hadir / total) * 100) : 0,
+            terlambat: total > 0 ? Math.round((terlambat / total) * 100) : 0,
+            izinSakit: total > 0 ? Math.round((izinSakit / total) * 100) : 0,
+            alpa: total > 0 ? Math.round((calculatedAlpa / total) * 100) : 0,
           });
         }
 
         setData(statistik);
       } catch (err) {
-        if (
-          err instanceof DOMException &&
-          err.name === "AbortError"
-        ) {
+        if (err instanceof DOMException && err.name === "AbortError") {
           return;
         }
 
-        console.error(
-          "Gagal mengambil statistik absensi:",
-          err
-        );
+        console.error("Gagal mengambil statistik absensi:", err);
 
         setError("Gagal memuat statistik presensi.");
       } finally {
@@ -443,7 +421,7 @@ export function Statiska({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary" />
+          {/* <BarChart3 className="w-5 h-5 text-primary" /> */}
           <h3 className="font-extrabold text-base text-foreground">
             Diagram Batang Presensi Mingguan
           </h3>
@@ -457,10 +435,7 @@ export function Statiska({
       {loading ? (
         <div className="w-full h-[300px] flex items-center justify-center">
           <div className="flex flex-col items-center gap-2">
-            <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-            <span className="text-xs font-semibold text-muted-foreground">
-              Memuat statistik...
-            </span>
+            <Spinner />
           </div>
         </div>
       ) : error ? (
@@ -469,9 +444,7 @@ export function Statiska({
         </div>
       ) : chartData.length === 0 ? (
         <div className="w-full h-[300px] flex items-center justify-center">
-          <p className="text-xs font-semibold text-muted-foreground">
-            Belum ada data statistik.
-          </p>
+          <p className="text-xs text-foreground">Tidak ada data statistik</p>
         </div>
       ) : (
         <div className="w-full h-[320px]">
@@ -515,14 +488,25 @@ export function Statiska({
                     const d = payload[0].payload;
                     const items = [
                       { label: "Hadir", value: d.hadir, color: "#16a34a" },
-                      { label: "Terlambat", value: d.terlambat, color: "#d97706" },
-                      { label: "Izin / Sakit", value: d.izin, color: "#2563eb" },
+                      {
+                        label: "Terlambat",
+                        value: d.terlambat,
+                        color: "#d97706",
+                      },
+                      {
+                        label: "Izin / Sakit",
+                        value: d.izin,
+                        color: "#2563eb",
+                      },
                       { label: "Tanpa Ket.", value: d.alpa, color: "#dc2626" },
                     ];
                     return (
                       <div className="bg-card/95 backdrop-blur-md border border-border rounded-xl p-3.5 shadow-xl min-w-[165px] space-y-2">
                         <p className="font-extrabold text-xs text-foreground pb-1 border-b border-border">
-                          {label} <span className="font-normal text-[11px] text-muted-foreground">({formatDisplayDate(d.tanggal)})</span>
+                          {label}{" "}
+                          <span className="font-normal text-[11px] text-muted-foreground">
+                            ({formatDisplayDate(d.tanggal)})
+                          </span>
                         </p>
                         <div className="space-y-1.5 text-xs font-semibold">
                           {items.map((it) => (

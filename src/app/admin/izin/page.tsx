@@ -15,6 +15,7 @@ import {
   AlertModal,
 } from "@/components/ui/Alert";
 import { ModalPortal } from "@/components/ui/ModalPortal";
+import { Spinner } from "@/components/ui/Spinner";
 import {
   FileCheck,
   Calendar,
@@ -728,9 +729,9 @@ export default function AdminIzinPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Izin Sakit
               </span>
-              <AlertCircle className="w-4 h-4 text-rose-500" />
+              <AlertCircle className="w-4 h-4 text-status-sakit" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-400">
+            <p className="text-2xl md:text-3xl font-black text-status-sakit">
               {stats.sakit}
             </p>
             <p className="text-[11px] text-muted-foreground">
@@ -743,9 +744,9 @@ export default function AdminIzinPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Izin
               </span>
-              <Users className="w-4 h-4 text-blue-500" />
+              <Users className="w-4 h-4 text-status-izin" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400">
+            <p className="text-2xl md:text-3xl font-black text-status-izin">
               {stats.izin}
             </p>
             <p className="text-[11px] text-muted-foreground">
@@ -758,7 +759,7 @@ export default function AdminIzinPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Izin Hari Ini
               </span>
-              <Clock className="w-4 h-4 text-amber-500" />
+              <Clock className="w-4 h-4 text-status-terlambat" />
             </div>
             <p className="text-2xl md:text-3xl font-black text-foreground">
               {stats.activeToday}
@@ -768,13 +769,14 @@ export default function AdminIzinPage() {
             </p>
           </div>
         </div>
+
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
             <div className="relative md:col-span-2">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Cari nama, institusi, atau alasan..."
+                placeholder="Cari nama, institusi, atau alasan"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -782,7 +784,7 @@ export default function AdminIzinPage() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -851,9 +853,10 @@ export default function AdminIzinPage() {
             </div>
           )}
         </div>
+
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[1000px]">
+            <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr
                   className="
@@ -867,25 +870,28 @@ export default function AdminIzinPage() {
                   whitespace-nowrap
                 "
                 >
-                  <th className="py-3.5 px-4 whitespace-nowrap w-12 text-center">
-                    No
-                  </th>
-                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">
+                  <th className="py-3.5 px-4 min-w-[200px] whitespace-nowrap">
                     Nama
                   </th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Role</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">
+                  <th className="py-3.5 px-4 min-w-[120px] whitespace-nowrap">
+                    Role
+                  </th>
+                  <th className="py-3.5 px-4 min-w-[180px] whitespace-nowrap">
                     Institusi
                   </th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Jenis</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[220px]">
+                  <th className="py-3.5 px-4 min-w-[110px] text-center whitespace-nowrap">
+                    Jenis
+                  </th>
+                  <th className="py-3.5 px-4 min-w-[190px] whitespace-nowrap">
                     Periode Izin
                   </th>
-                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">
+                  <th className="py-3.5 px-4 min-w-[200px] whitespace-nowrap">
                     Alasan
                   </th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Diajukan</th>
-                  <th className="py-3.5 px-4 text-right whitespace-nowrap">
+                  <th className="py-3.5 px-4 min-w-[130px] whitespace-nowrap">
+                    Diajukan
+                  </th>
+                  <th className="py-3.5 px-4 min-w-[90px] text-right whitespace-nowrap">
                     Aksi
                   </th>
                 </tr>
@@ -896,28 +902,23 @@ export default function AdminIzinPage() {
                   <tr>
                     <td
                       colSpan={9}
-                      className="
-                        py-14
-                        text-center
-                        text-muted-foreground
-                        font-semibold
-                      "
+                      className="py-16 text-center text-muted-foreground font-semibold"
                     >
-                      Memuat data izin...
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <Spinner size="lg" />
+                      </div>
                     </td>
                   </tr>
                 ) : izinList.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={9}
-                      className="
-                        py-14
-                        text-center
-                        text-muted-foreground
-                        font-semibold
-                      "
-                    >
-                      Tidak ada data pengajuan izin yang cocok
+                    <td colSpan={9} className="py-16 text-center">
+                      <div className="flex flex-col items-center justify-center gap-3 max-w-sm mx-auto px-4">
+                        <div className="space-y-1">
+                          <p className="text-xs text-foreground">
+                            Tidak ada data pengajuan izin yang cocok
+                          </p>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -997,9 +998,9 @@ export default function AdminIzinPage() {
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 whitespace-nowrap text-center">
                         <span
-                          className={`px-2.5 py-1 rounded-lg text-xs font-extrabold border ${getJenisBadgeClass(
+                          className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-extrabold border ${getJenisBadgeClass(
                             item.jenis,
                           )}`}
                         >
@@ -1131,8 +1132,8 @@ export default function AdminIzinPage() {
         {isCreateModalOpen && (
           <ModalPortal>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <div
-              className="
+              <div
+                className="
         bg-card
         border border-border
         rounded-2xl
@@ -1145,22 +1146,22 @@ export default function AdminIzinPage() {
         max-h-[calc(100vh-2rem)]
         overflow-y-auto
       "
-            >
-              <div className="flex items-center justify-between border-b border-border pb-3">
-                <div>
-                  <h3 className="font-black text-base text-foreground">
-                    Tambah Pengajuan Izin Baru
-                  </h3>
+              >
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div>
+                    <h3 className="font-black text-base text-foreground">
+                      Tambah Pengajuan Izin Baru
+                    </h3>
 
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Buat pengajuan izin baru untuk peserta atau pegawai.
-                  </p>
-                </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Buat pengajuan izin baru untuk peserta atau pegawai.
+                    </p>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="
             p-1.5
             rounded-lg
             text-muted-foreground
@@ -1169,41 +1170,41 @@ export default function AdminIzinPage() {
             transition-all
             cursor-pointer
           "
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-              <form onSubmit={handleCreateSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="relative" ref={userDropdownRef}>
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Pilih Peserta / User{" "}
-                      <span className="text-destructive">*</span>
-                    </label>
+                <form onSubmit={handleCreateSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="relative" ref={userDropdownRef}>
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Pilih Peserta
+                        <span className="text-status-tolak">*</span>
+                      </label>
 
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-                        {userSearchQuery !== debouncedUserSearch ? (
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
-                        ) : (
-                          <Search className="w-3.5 h-3.5" />
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        value={userSearchQuery}
-                        onChange={(e) => {
-                          setUserSearchQuery(e.target.value);
-                          setIsUserDropdownOpen(true);
-                        }}
-                        onFocus={() => setIsUserDropdownOpen(true)}
-                        placeholder={
-                          selectedUserOption
-                            ? `Ganti: ${selectedUserOption.name} (${selectedUserOption.role})`
-                            : "Cari nama, role, atau instansi peserta..."
-                        }
-                        className="
+                      <div className="relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                          {userSearchQuery !== debouncedUserSearch ? (
+                            <Spinner size="sm" />
+                          ) : (
+                            <Search className="w-3.5 h-3.5" />
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          value={userSearchQuery}
+                          onChange={(e) => {
+                            setUserSearchQuery(e.target.value);
+                            setIsUserDropdownOpen(true);
+                          }}
+                          onFocus={() => setIsUserDropdownOpen(true)}
+                          placeholder={
+                            selectedUserOption
+                              ? `Ganti: ${selectedUserOption.name} (${selectedUserOption.role})`
+                              : "Cari nama, role, atau instansi peserta"
+                          }
+                          className="
                           w-full
                           pl-9 pr-8 py-2
                           bg-input
@@ -1217,187 +1218,188 @@ export default function AdminIzinPage() {
                           focus:ring-2
                           focus:ring-primary
                         "
+                        />
+                        {userSearchQuery ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUserSearchQuery("");
+                            }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-md hover:bg-muted cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setIsUserDropdownOpen((prev) => !prev)
+                            }
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
+                          >
+                            <ChevronDown
+                              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                isUserDropdownOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                        )}
+                      </div>
+
+                      {selectedUserOption && (
+                        <div className="mt-1.5 p-2 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-[10px] shrink-0">
+                              {selectedUserOption.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-foreground truncate">
+                                {selectedUserOption.name}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                <span className="font-semibold text-primary">
+                                  {selectedUserOption.role}
+                                </span>
+                                {selectedUserOption.institution
+                                  ? ` • ${selectedUserOption.institution}`
+                                  : ""}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                selectedUserId: "",
+                                selectedUserRole: "",
+                              }));
+                              setUserSearchQuery("");
+                            }}
+                            className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-background/80 transition-colors cursor-pointer"
+                            title="Hapus pilihan"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+
+                      <input
+                        type="text"
+                        className="sr-only"
+                        required
+                        value={formData.selectedUserId}
+                        onChange={() => {}}
                       />
-                      {userSearchQuery ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setUserSearchQuery("");
-                          }}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-md hover:bg-muted cursor-pointer"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setIsUserDropdownOpen((prev) => !prev)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
-                        >
-                          <ChevronDown
-                            className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                              isUserDropdownOpen ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
+
+                      {isUserDropdownOpen && (
+                        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-2xl max-h-56 overflow-y-auto divide-y divide-border/60">
+                          <div className="p-2 bg-muted/40 border-b border-border flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>
+                              {userSearchQuery !== debouncedUserSearch ? (
+                                <span className="inline-flex items-center gap-1 text-primary">
+                                  <Spinner size="sm" />
+                                </span>
+                              ) : (
+                                <span>
+                                  Ditemukan{" "}
+                                  <strong className="text-foreground">
+                                    {filteredUserOptions.length}
+                                  </strong>{" "}
+                                  peserta
+                                </span>
+                              )}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setIsUserDropdownOpen(false)}
+                              className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          {filteredUserOptions.length === 0 ? (
+                            <div className="p-4 text-center text-xs text-muted-foreground">
+                              Tidak ada peserta yang cocok dengan &quot;
+                              {debouncedUserSearch}&quot;
+                            </div>
+                          ) : (
+                            filteredUserOptions.map((u) => {
+                              const isSelected =
+                                u.rawId === formData.selectedUserId &&
+                                u.role === formData.selectedUserRole;
+                              return (
+                                <button
+                                  key={u.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      selectedUserId: u.rawId,
+                                      selectedUserRole: u.role,
+                                    }));
+                                    setUserSearchQuery("");
+                                    setIsUserDropdownOpen(false);
+                                  }}
+                                  className={`w-full text-left p-2.5 flex items-center justify-between gap-2 hover:bg-primary/10 transition-colors cursor-pointer ${
+                                    isSelected ? "bg-primary/15 font-bold" : ""
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div
+                                      className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                                        isSelected
+                                          ? "bg-primary text-primary-foreground"
+                                          : "bg-muted text-foreground"
+                                      }`}
+                                    >
+                                      {u.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <p className="text-xs font-bold text-foreground truncate">
+                                          {u.name}
+                                        </p>
+                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-foreground">
+                                          {u.role}
+                                        </span>
+                                      </div>
+                                      {(u.institution || u.study_program) && (
+                                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                          {u.institution}{" "}
+                                          {u.study_program
+                                            ? `• ${u.study_program}`
+                                            : ""}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {isSelected && (
+                                    <Check className="w-4 h-4 text-primary shrink-0" />
+                                  )}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
                       )}
                     </div>
 
-                    {selectedUserOption && (
-                      <div className="mt-1.5 p-2 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-[10px] shrink-0">
-                            {selectedUserOption.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-foreground truncate">
-                              {selectedUserOption.name}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              <span className="font-semibold text-primary">
-                                {selectedUserOption.role}
-                              </span>
-                              {selectedUserOption.institution
-                                ? ` • ${selectedUserOption.institution}`
-                                : ""}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              selectedUserId: "",
-                              selectedUserRole: "",
-                            }));
-                            setUserSearchQuery("");
-                          }}
-                          className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-background/80 transition-colors cursor-pointer"
-                          title="Hapus pilihan"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
+                    <div>
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Jenis Izin <span className="text-status-tolak">*</span>
+                      </label>
 
-                    <input
-                      type="text"
-                      className="sr-only"
-                      required
-                      value={formData.selectedUserId}
-                      onChange={() => {}}
-                    />
-
-                    {isUserDropdownOpen && (
-                      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-2xl max-h-56 overflow-y-auto divide-y divide-border/60">
-                        <div className="p-2 bg-muted/40 border-b border-border flex items-center justify-between text-[11px] text-muted-foreground">
-                          <span>
-                            {userSearchQuery !== debouncedUserSearch ? (
-                              <span className="inline-flex items-center gap-1 text-primary">
-                                <RefreshCw className="w-3 h-3 animate-spin" />{" "}
-                                Menunggu input...
-                              </span>
-                            ) : (
-                              <span>
-                                Ditemukan{" "}
-                                <strong className="text-foreground">
-                                  {filteredUserOptions.length}
-                                </strong>{" "}
-                                peserta
-                              </span>
-                            )}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setIsUserDropdownOpen(false)}
-                            className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        {filteredUserOptions.length === 0 ? (
-                          <div className="p-4 text-center text-xs text-muted-foreground">
-                            Tidak ada peserta yang cocok dengan &quot;
-                            {debouncedUserSearch}&quot;
-                          </div>
-                        ) : (
-                          filteredUserOptions.map((u) => {
-                            const isSelected =
-                              u.rawId === formData.selectedUserId &&
-                              u.role === formData.selectedUserRole;
-                            return (
-                              <button
-                                key={u.id}
-                                type="button"
-                                onClick={() => {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    selectedUserId: u.rawId,
-                                    selectedUserRole: u.role,
-                                  }));
-                                  setUserSearchQuery("");
-                                  setIsUserDropdownOpen(false);
-                                }}
-                                className={`w-full text-left p-2.5 flex items-center justify-between gap-2 hover:bg-primary/10 transition-colors cursor-pointer ${
-                                  isSelected ? "bg-primary/15 font-bold" : ""
-                                }`}
-                              >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div
-                                    className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                                      isSelected
-                                        ? "bg-primary text-primary-foreground"
-                                        : "bg-muted text-foreground"
-                                    }`}
-                                  >
-                                    {u.name.charAt(0).toUpperCase()}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <p className="text-xs font-bold text-foreground truncate">
-                                        {u.name}
-                                      </p>
-                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-foreground">
-                                        {u.role}
-                                      </span>
-                                    </div>
-                                    {(u.institution || u.study_program) && (
-                                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                                        {u.institution}{" "}
-                                        {u.study_program
-                                          ? `• ${u.study_program}`
-                                          : ""}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                                {isSelected && (
-                                  <Check className="w-4 h-4 text-primary shrink-0" />
-                                )}
-                              </button>
-                            );
+                      <select
+                        value={formData.jenis}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            jenis: e.target.value,
                           })
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Jenis Izin <span className="text-destructive">*</span>
-                    </label>
-
-                    <select
-                      value={formData.jenis}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          jenis: e.target.value,
-                        })
-                      }
-                      className="
+                        }
+                        className="
                 w-full
                 px-3 py-2
                 bg-input
@@ -1411,28 +1413,28 @@ export default function AdminIzinPage() {
                 focus:ring-primary
                 cursor-pointer
               "
-                    >
-                      <option value="SAKIT">Sakit</option>
-                      <option value="IZIN">Izin</option>
-                    </select>
-                  </div>
+                      >
+                        <option value="SAKIT">Sakit</option>
+                        <option value="IZIN">Izin</option>
+                      </select>
+                    </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Tanggal Mulai
-                    </label>
+                    <div>
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Tanggal Mulai
+                      </label>
 
-                    <input
-                      type="date"
-                      value={formData.tanggalMulai}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          tanggalMulai: e.target.value,
-                        })
-                      }
-                      required
-                      className="
+                      <input
+                        type="date"
+                        value={formData.tanggalMulai}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            tanggalMulai: e.target.value,
+                          })
+                        }
+                        required
+                        className="
                 w-full
                 px-3 py-2
                 bg-input
@@ -1445,25 +1447,25 @@ export default function AdminIzinPage() {
                 focus:ring-2
                 focus:ring-primary
               "
-                    />
-                  </div>
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Tanggal Selesai
-                    </label>
+                    <div>
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Tanggal Selesai
+                      </label>
 
-                    <input
-                      type="date"
-                      value={formData.tanggalSelesai}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          tanggalSelesai: e.target.value,
-                        })
-                      }
-                      required
-                      className="
+                      <input
+                        type="date"
+                        value={formData.tanggalSelesai}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            tanggalSelesai: e.target.value,
+                          })
+                        }
+                        required
+                        className="
                 w-full
                 px-3 py-2
                 bg-input
@@ -1476,60 +1478,27 @@ export default function AdminIzinPage() {
                 focus:ring-2
                 focus:ring-primary
               "
-                    />
-                  </div>
+                      />
+                    </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Alasan Pengajuan Izin{" "}
-                      <span className="text-destructive">*</span>
-                    </label>
+                    <div className="md:col-span-2">
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Alasan Pengajuan Izin
+                        <span className="text-status-tolak">*</span>
+                      </label>
 
-                    <textarea
-                      rows={3}
-                      value={formData.alasan}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          alasan: e.target.value,
-                        })
-                      }
-                      placeholder="Tuliskan keterangan atau alasan pengajuan izin..."
-                      required
-                      className="
-                w-full
-                px-3 py-2
-                bg-input
-                border border-border
-                rounded-xl
-                text-xs
-                font-semibold
-                text-foreground
-                placeholder:text-muted-foreground
-                focus:outline-none
-                focus:ring-2
-                focus:ring-primary
-                resize-none
-              "
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Catatan Admin (Opsional)
-                    </label>
-
-                    <textarea
-                      rows={3}
-                      value={formData.catatanAdmin}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          catatanAdmin: e.target.value,
-                        })
-                      }
-                      placeholder="Tambahkan catatan tindak lanjut dari admin..."
-                      className="
+                      <textarea
+                        rows={3}
+                        value={formData.alasan}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            alasan: e.target.value,
+                          })
+                        }
+                        placeholder="Masukkan alasan pengajuan izin"
+                        required
+                        className="
                 w-full
                 px-3 py-2
                 bg-input
@@ -1544,16 +1513,49 @@ export default function AdminIzinPage() {
                 focus:ring-primary
                 resize-none
               "
-                    />
-                  </div>
-                </div>
+                      />
+                    </div>
 
-                <div className="flex justify-end gap-2 pt-3 border-t border-border">
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    disabled={isSaving}
-                    className="
+                    <div className="md:col-span-2">
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Catatan Admin (Opsional)
+                      </label>
+
+                      <textarea
+                        rows={3}
+                        value={formData.catatanAdmin}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            catatanAdmin: e.target.value,
+                          })
+                        }
+                        placeholder="Masukkan catatan admin"
+                        className="
+                w-full
+                px-3 py-2
+                bg-input
+                border border-border
+                rounded-xl
+                text-xs
+                font-semibold
+                text-foreground
+                placeholder:text-muted-foreground
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary
+                resize-none
+              "
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3 border-t border-border">
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateModalOpen(false)}
+                      disabled={isSaving}
+                      className="
               px-5
               py-2.5
               rounded-xl
@@ -1567,14 +1569,14 @@ export default function AdminIzinPage() {
               cursor-pointer
               disabled:opacity-50
             "
-                  >
-                    Batal
-                  </button>
+                    >
+                      Batal
+                    </button>
 
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="
               px-5
               py-2.5
               rounded-xl
@@ -1591,307 +1593,301 @@ export default function AdminIzinPage() {
               cursor-pointer
               disabled:opacity-50
             "
-                  >
-                    {isSaving ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        Menyimpan...
-                      </>
-                    ) : (
-                      "Simpan Pengajuan"
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </ModalPortal>
-      )}
-
-      {isEditModalOpen && selectedIzin && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto shadow-2xl p-4 space-y-2.5 animate-in zoom-in-95">
-              <div className="flex items-center justify-between border-b border-border pb-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-black text-sm text-foreground">
-                    Edit Data Pengajuan Izin
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="p-1 rounded-lg text-muted-foreground hover:bg-muted transition-all cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="px-3 py-1.5 bg-muted/40 border border-border rounded-xl flex items-center justify-between text-xs">
-                <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
-                  Pemohon
-                </span>
-                <p className="font-extrabold text-foreground text-xs">
-                  {selectedIzin.userName}{" "}
-                  <span className="text-[10px] text-muted-foreground font-normal">
-                    ({selectedIzin.userRole})
-                  </span>
-                </p>
-              </div>
-
-              <form onSubmit={handleEditSubmit} className="space-y-2.5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Jenis Izin <span className="text-destructive">*</span>
-                    </label>
-                    <select
-                      value={formData.jenis}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          jenis: e.target.value,
-                        })
-                      }
-                      className="w-full px-2.5 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
                     >
-                      <option value="SAKIT">Sakit</option>
-                      <option value="IZIN">Izin</option>
-                    </select>
+                      {isSaving ? (
+                        <>
+                          <Spinner size="sm" />
+                        </>
+                      ) : (
+                        "Simpan Pengajuan"
+                      )}
+                    </button>
                   </div>
+                </form>
+              </div>
+            </div>
+          </ModalPortal>
+        )}
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Tanggal Mulai <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.tanggalMulai}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          tanggalMulai: e.target.value,
-                        })
-                      }
-                      required
-                      className="w-full px-2.5 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+        {isEditModalOpen && selectedIzin && (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <div className="bg-card border border-border rounded-2xl w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto shadow-2xl p-4 space-y-2.5 animate-in zoom-in-95">
+                <div className="flex items-center justify-between border-b border-border pb-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-black text-sm text-foreground">
+                      Edit Data Pengajuan Izin
+                    </h3>
                   </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Tanggal Selesai{" "}
-                      <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.tanggalSelesai}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          tanggalSelesai: e.target.value,
-                        })
-                      }
-                      required
-                      className="w-full px-2.5 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Alasan Pengajuan Izin{" "}
-                      <span className="text-destructive">*</span>
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={formData.alasan}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          alasan: e.target.value,
-                        })
-                      }
-                      required
-                      placeholder="Tuliskan keterangan atau alasan pengajuan izin..."
-                      className="w-full px-2.5 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-[11px] font-bold text-foreground mb-1">
-                      Catatan Admin (Opsional)
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={formData.catatanAdmin}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          catatanAdmin: e.target.value,
-                        })
-                      }
-                      placeholder="Tambahkan catatan tindak lanjut dari admin..."
-                      className="w-full px-2.5 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-border">
                   <button
                     type="button"
                     onClick={() => setIsEditModalOpen(false)}
+                    className="p-1 rounded-lg text-muted-foreground hover:bg-muted transition-all cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="px-3 py-1.5 bg-muted/40 border border-border rounded-xl flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                    Pemohon
+                  </span>
+                  <p className="font-extrabold text-foreground text-xs">
+                    {selectedIzin.userName}{" "}
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      ({selectedIzin.userRole})
+                    </span>
+                  </p>
+                </div>
+
+                <form onSubmit={handleEditSubmit} className="space-y-2.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Jenis Izin <span className="text-status-tolak">*</span>
+                      </label>
+                      <select
+                        value={formData.jenis}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            jenis: e.target.value,
+                          })
+                        }
+                        className="w-full px-2.5 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                      >
+                        <option value="SAKIT">Sakit</option>
+                        <option value="IZIN">Izin</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Tanggal Mulai
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.tanggalMulai}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            tanggalMulai: e.target.value,
+                          })
+                        }
+                        required
+                        className="w-full px-2.5 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Tanggal Selesai
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.tanggalSelesai}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            tanggalSelesai: e.target.value,
+                          })
+                        }
+                        required
+                        className="w-full px-2.5 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Alasan Pengajuan Izin
+                        <span className="text-status-tolak">*</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={formData.alasan}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            alasan: e.target.value,
+                          })
+                        }
+                        required
+                        placeholder="Masukkan alasan pengajuan izin"
+                        className="w-full px-2.5 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-[11px] font-bold text-foreground mb-1">
+                        Catatan Admin (Opsional)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={formData.catatanAdmin}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            catatanAdmin: e.target.value,
+                          })
+                        }
+                        placeholder="Masukkan catatan admin"
+                        className="w-full px-2.5 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditModalOpen(false)}
+                      disabled={isSaving}
+                      className="px-4 py-1.5 rounded-xl border border-border bg-card text-foreground font-bold text-xs hover:bg-muted transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="px-4 py-1.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Spinner size="sm" />
+                          Menyimpan...
+                        </>
+                      ) : (
+                        "Perbarui Izin"
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </ModalPortal>
+        )}
+
+        {isNoteModalOpen && selectedIzin && (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <div className="bg-card border border-border rounded-2xl w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto shadow-2xl p-5 space-y-4 animate-in zoom-in-95">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
+                      <MessageSquare className="w-5 h-5" />
+                    </span>
+                    <h3 className="font-black text-lg text-foreground">
+                      Catatan Admin
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsNoteModalOpen(false)}
+                    className="p-1 rounded-lg text-muted-foreground hover:bg-muted transition-all"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-3 rounded-xl bg-muted/50 border border-border text-xs space-y-0.5">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                    Pemohon
+                  </span>
+                  <p className="font-extrabold text-foreground">
+                    {selectedIzin.userName}
+                  </p>
+                  <p className="text-muted-foreground text-[11px]">
+                    {selectedIzin.jenis} • {fmtDate(selectedIzin.tanggalMulai)}
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground">
+                    Isi Catatan Admin
+                  </label>
+                  <textarea
+                    value={adminNote}
+                    onChange={(e) => setAdminNote(e.target.value)}
+                    placeholder="Masukkan catatan admin..."
+                    className="w-full rounded-xl border border-border bg-input p-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none h-28"
                     disabled={isSaving}
-                    className="px-4 py-1.5 rounded-xl border border-border bg-card text-foreground font-bold text-xs hover:bg-muted transition-all cursor-pointer disabled:opacity-50"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setIsNoteModalOpen(false)}
+                    disabled={isSaving}
+                    className="flex-1 py-2.5 rounded-xl border border-border bg-card text-foreground font-bold text-xs hover:bg-muted transition-all cursor-pointer"
                   >
                     Batal
                   </button>
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={handleUpdateNote}
                     disabled={isSaving}
-                    className="px-4 py-1.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <Spinner size="sm" />
                         Menyimpan...
                       </>
                     ) : (
-                      "Perbarui Izin"
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        Simpan Catatan
+                      </>
                     )}
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
-          </div>
-        </ModalPortal>
-      )}
+          </ModalPortal>
+        )}
 
-      {isNoteModalOpen && selectedIzin && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto shadow-2xl p-5 space-y-4 animate-in zoom-in-95">
-              <div className="flex items-center justify-between border-b border-border pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                    <MessageSquare className="w-5 h-5" />
-                  </span>
-                  <h3 className="font-black text-lg text-foreground">
-                    Catatan Admin
-                  </h3>
+        {isDeleteModalOpen && selectedIzin && (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <div className="bg-card border border-border rounded-2xl max-w-sm w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 shadow-2xl space-y-4 animate-in zoom-in-95 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+                  <Trash2 className="w-6 h-6" />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsNoteModalOpen(false)}
-                  className="p-1 rounded-lg text-muted-foreground hover:bg-muted transition-all"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-3 rounded-xl bg-muted/50 border border-border text-xs space-y-0.5">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                  Pemohon
-                </span>
-                <p className="font-extrabold text-foreground">
-                  {selectedIzin.userName}
-                </p>
-                <p className="text-muted-foreground text-[11px]">
-                  {selectedIzin.jenis} • {fmtDate(selectedIzin.tanggalMulai)}
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground">
-                  Isi Catatan Admin
-                </label>
-                <textarea
-                  value={adminNote}
-                  onChange={(e) => setAdminNote(e.target.value)}
-                  placeholder="Masukkan catatan admin..."
-                  className="w-full rounded-xl border border-border bg-input p-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none h-28"
-                  disabled={isSaving}
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setIsNoteModalOpen(false)}
-                  disabled={isSaving}
-                  className="flex-1 py-2.5 rounded-xl border border-border bg-card text-foreground font-bold text-xs hover:bg-muted transition-all cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={handleUpdateNote}
-                  disabled={isSaving}
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  {isSaving ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Menyimpan...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-3.5 h-3.5" />
-                      Simpan Catatan
-                    </>
-                  )}
-                </button>
+                <div>
+                  <h3 className="text-base font-black text-foreground">
+                    Hapus Pengajuan Izin?
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    Pengajuan izin milik{" "}
+                    <span className="font-bold text-foreground">
+                      {selectedIzin.userName}
+                    </span>{" "}
+                    ({fmtDate(selectedIzin.tanggalMulai)}) akan dihapus dari
+                    data izin dan presensi. Tindakan ini tidak dapat dibatalkan.
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    disabled={isSaving}
+                    className="px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    onClick={handleDeleteSubmit}
+                    className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {isSaving ? <Spinner size="sm" /> : "Ya, Hapus"}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </ModalPortal>
-      )}
-
-      {isDeleteModalOpen && selectedIzin && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl max-w-sm w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 shadow-2xl space-y-4 animate-in zoom-in-95 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
-                <Trash2 className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-black text-foreground">
-                  Hapus Pengajuan Izin?
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Pengajuan izin milik{" "}
-                  <span className="font-bold text-foreground">
-                    {selectedIzin.userName}
-                  </span>{" "}
-                  ({fmtDate(selectedIzin.tanggalMulai)}) akan dihapus dari data
-                  izin dan presensi. Tindakan ini tidak dapat dibatalkan.
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  disabled={isSaving}
-                  className="px-4 py-2 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  disabled={isSaving}
-                  onClick={handleDeleteSubmit}
-                  className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  {isSaving ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    "Ya, Hapus"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalPortal>
-      )}
+          </ModalPortal>
+        )}
       </div>
     </DashboardLayout>
   );

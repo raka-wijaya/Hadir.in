@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useAuth } from "@/lib/auth/context";
 import { Absensi } from "@/types";
+import { Spinner } from "@/components/ui/Spinner";
 
 function formatDisplayDate(dateStr?: string | null): string {
   if (!dateStr) return "-";
@@ -181,7 +182,6 @@ export default function KehadiranPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
           <div>
@@ -206,7 +206,6 @@ export default function KehadiranPage() {
 
         {/* SUMMARY */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-
           {/* HADIR */}
           <div className="bg-card border border-border rounded-2xl p-4 space-y-1 shadow-card text-center">
             <span className="text-[10px] uppercase font-extrabold text-muted-foreground">
@@ -225,9 +224,7 @@ export default function KehadiranPage() {
             </span>
 
             <div className="text-2xl font-black text-status-terlambat">
-              {isLoading
-                ? "..."
-                : terlambatCount}
+              {isLoading ? "..." : terlambatCount}
             </div>
           </div>
 
@@ -238,9 +235,7 @@ export default function KehadiranPage() {
             </span>
 
             <div className="text-2xl font-black text-status-izin">
-              {isLoading
-                ? "..."
-                : izinCount}
+              {isLoading ? "..." : izinCount}
             </div>
           </div>
 
@@ -251,16 +246,13 @@ export default function KehadiranPage() {
             </span>
 
             <div className="text-2xl font-black text-primary">
-              {isLoading
-                ? "..."
-                : `${persentase}%`}
+              {isLoading ? "..." : `${persentase}%`}
             </div>
           </div>
         </div>
 
         {/* TABLE */}
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
-
           <div className="px-4 py-4 border-b border-border">
             <h2 className="font-black text-sm text-foreground">
               Presensi {monthLabel}
@@ -273,44 +265,32 @@ export default function KehadiranPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-
               <thead>
                 <tr className="bg-muted/60 border-b border-border text-muted-foreground font-extrabold text-xs uppercase">
-                  <th className="py-3 px-4">
-                    Tanggal
-                  </th>
+                  <th className="py-3 px-4">Tanggal</th>
 
-                  <th className="py-3 px-4">
-                    Jam Masuk
-                  </th>
+                  <th className="py-3 px-4">Jam Masuk</th>
 
-                  <th className="py-3 px-4">
-                    Status Masuk
-                  </th>
+                  <th className="py-3 px-4">Status Masuk</th>
 
-                  <th className="py-3 px-4">
-                    Jam Pulang
-                  </th>
+                  <th className="py-3 px-4">Jam Pulang</th>
 
-                  <th className="py-3 px-4">
-                    Status Pulang
-                  </th>
+                  <th className="py-3 px-4">Status Pulang</th>
 
-                  <th className="py-3 px-4">
-                    Status
-                  </th>
+                  <th className="py-3 px-4">Status</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-border">
-
                 {isLoading ? (
                   <tr>
                     <td
                       colSpan={6}
                       className="py-8 text-center text-muted-foreground font-semibold"
                     >
-                      Memuat data kehadiran...
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Spinner size="lg" />
+                      </div>
                     </td>
                   </tr>
                 ) : monthlyRecords.length === 0 ? (
@@ -323,100 +303,72 @@ export default function KehadiranPage() {
                     </td>
                   </tr>
                 ) : (
-                  monthlyRecords.map(
-                    (record) => (
-                      <tr
-                        key={record.id}
-                        className="hover:bg-accent/40 transition-colors"
-                      >
-                        {/* TANGGAL */}
-                        <td className="py-3.5 px-4 font-mono font-extrabold text-xs text-foreground">
-                          {formatDisplayDate(
-                            record.tanggal ||
-                              record.attendanceDate
-                          )}
-                        </td>
+                  monthlyRecords.map((record) => (
+                    <tr
+                      key={record.id}
+                      className="hover:bg-accent/40 transition-colors"
+                    >
+                      {/* TANGGAL */}
+                      <td className="py-3.5 px-4 font-mono font-extrabold text-xs text-foreground">
+                        {formatDisplayDate(
+                          record.tanggal || record.attendanceDate,
+                        )}
+                      </td>
 
-                        {/* JAM MASUK */}
-                        <td className="py-3.5 px-4 font-mono text-xs font-bold text-foreground">
-                          {record.jam_masuk ||
-                            record.checkIn ||
-                            "--:--"}
-                        </td>
+                      {/* JAM MASUK */}
+                      <td className="py-3.5 px-4 font-mono text-xs font-bold text-foreground">
+                        {record.jam_masuk || record.checkIn || "--:--"}
+                      </td>
 
-                        {/* STATUS MASUK */}
-                        <td className="py-3.5 px-4">
-                          {String(
-                            record.status_masuk ||
-                              ""
-                          ).toUpperCase() ===
-                          "TEPAT_WAKTU" ? (
-                            <span className="font-bold text-status-hadir">
-                              Tepat Waktu
-                            </span>
-                          ) : String(
-                              record.status_masuk ||
-                                ""
-                            ).toUpperCase() ===
-                            "TERLAMBAT" ? (
-                            <span className="font-bold text-status-terlambat">
-                              Terlambat
-                              {record.menit_terlambat
-                                ? ` (+${record.menit_terlambat} mnt)`
-                                : ""}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              --
-                            </span>
-                          )}
-                        </td>
+                      {/* STATUS MASUK */}
+                      <td className="py-3.5 px-4">
+                        {String(record.status_masuk || "").toUpperCase() ===
+                        "TEPAT_WAKTU" ? (
+                          <span className="font-bold text-status-hadir">
+                            Tepat Waktu
+                          </span>
+                        ) : String(record.status_masuk || "").toUpperCase() ===
+                          "TERLAMBAT" ? (
+                          <span className="font-bold text-status-terlambat">
+                            Terlambat
+                            {record.menit_terlambat
+                              ? ` (+${record.menit_terlambat} mnt)`
+                              : ""}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">--</span>
+                        )}
+                      </td>
 
-                        {/* JAM PULANG */}
-                        <td className="py-3.5 px-4 font-mono text-xs font-bold text-foreground">
-                          {record.jam_pulang ||
-                            record.checkOut ||
-                            "--:--"}
-                        </td>
+                      {/* JAM PULANG */}
+                      <td className="py-3.5 px-4 font-mono text-xs font-bold text-foreground">
+                        {record.jam_pulang || record.checkOut || "--:--"}
+                      </td>
 
-                        {/* STATUS PULANG */}
-                        <td className="py-3.5 px-4">
-                          {String(
-                            record.status_pulang ||
-                              ""
-                          ).toUpperCase() ===
-                          "TEPAT_WAKTU" ? (
-                            <span className="font-bold text-status-hadir">
-                              Tepat Waktu
-                            </span>
-                          ) : String(
-                              record.status_pulang ||
-                                ""
-                            ).toUpperCase() ===
-                            "PULANG_CEPAT" ? (
-                            <span className="font-bold text-status-terlambat">
-                              Pulang Cepat
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              --
-                            </span>
-                          )}
-                        </td>
+                      {/* STATUS PULANG */}
+                      <td className="py-3.5 px-4">
+                        {String(record.status_pulang || "").toUpperCase() ===
+                        "TEPAT_WAKTU" ? (
+                          <span className="font-bold text-status-hadir">
+                            Tepat Waktu
+                          </span>
+                        ) : String(record.status_pulang || "").toUpperCase() ===
+                          "PULANG_CEPAT" ? (
+                          <span className="font-bold text-status-terlambat">
+                            Pulang Cepat
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">--</span>
+                        )}
+                      </td>
 
-                        {/* STATUS TOTAL */}
-                        <td className="py-3.5 px-4">
-                          <StatusBadge
-                            status={
-                              record.status
-                            }
-                          />
-                        </td>
-                      </tr>
-                    )
-                  )
+                      {/* STATUS TOTAL */}
+                      <td className="py-3.5 px-4">
+                        <StatusBadge status={record.status} />
+                      </td>
+                    </tr>
+                  ))
                 )}
-
               </tbody>
             </table>
           </div>

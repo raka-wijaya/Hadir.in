@@ -54,7 +54,6 @@ export default function AdminRolesPage() {
           </p>
         </div>
 
-        {/* Roles List Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {roles.map((r) => (
             <div key={r.code} className="bg-card border border-border rounded-2xl p-4 space-y-2 shadow-sm">
@@ -69,7 +68,6 @@ export default function AdminRolesPage() {
           ))}
         </div>
 
-        {/* Permission Matrix Table */}
         <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-border font-bold text-sm text-foreground flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-primary" />

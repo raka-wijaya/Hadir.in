@@ -9,12 +9,12 @@ import React, {
 
 import {
   Camera,
-  RefreshCw,
   AlertTriangle,
   ShieldCheck,
   Check,
   Info,
 } from "lucide-react";
+import { Spinner } from "../ui/Spinner";
 
 interface CameraCaptureProps {
   onCapture: (imageDataUrl: string) => void;
@@ -609,7 +609,7 @@ export function CameraCapture({
             {isCameraLoading && (
               <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white space-y-2 z-30">
 
-                <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+                <Spinner size="lg" />
 
                 <span className="text-xs font-medium">
                   Membuka kamera...

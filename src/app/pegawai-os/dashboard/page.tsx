@@ -22,6 +22,7 @@ import {
   FileText,
   X,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 export default function PegawaiOsDashboardPage() {
   const { user } = useAuth();
@@ -621,7 +622,11 @@ export default function PegawaiOsDashboardPage() {
                     disabled={isSubmittingCheckout}
                     className="w-full rounded-xl border border-border bg-card text-foreground px-4 py-3 text-sm font-extrabold flex items-center justify-center gap-2 hover:bg-muted transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Camera className="w-4 h-4" />
+                    {isSubmittingCheckout ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <Camera className="w-4 h-4" />
+                    )}
 
                     {isSubmittingCheckout
                       ? "Memproses..."

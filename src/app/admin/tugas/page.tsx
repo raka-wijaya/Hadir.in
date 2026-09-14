@@ -21,7 +21,6 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  Loader2,
   Layers,
   ArrowUpDown,
   BookOpen,
@@ -39,6 +38,7 @@ import {
   Clock,
   Check,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 const KATEGORI_OPTIONS = [
   "programmer",
@@ -97,10 +97,10 @@ function getKategoriBadgeClass(kategori: string): string {
 
   switch (k) {
     case "akta kelahiran":
-      return "bg-primary/15 text-primary border-primary/30";
+      return "status-hadir";
 
     case "akta kematian":
-      return "bg-destructive/15 text-destructive border-destructive/30";
+      return "bg-muted text-foreground border-border";
 
     case "tambah bio data":
       return "status-izin";
@@ -109,7 +109,7 @@ function getKategoriBadgeClass(kategori: string): string {
       return "status-terlambat";
 
     case "pindah datang":
-      return "status-hadir";
+      return "status-pending";
 
     case "media":
       return "status-sakit";
@@ -360,15 +360,17 @@ export default function AdminTugasPage() {
 
     const belum = total - selesai;
 
-    const prog = tugasList.filter(
-      (t) => (t.kategori || "").toLowerCase() === "programmer",
-    ).length;
+    const todayStr = new Date().toISOString().split("T")[0];
+    const today = tugasList.filter((t) => {
+      if (!t.created_at) return false;
+      return t.created_at.startsWith(todayStr);
+    }).length;
 
     return {
       total,
       selesai,
       belum,
-      prog,
+      today,
     };
   }, [tugasList]);
 
@@ -601,10 +603,6 @@ export default function AdminTugasPage() {
     return (
       <DashboardLayout>
         <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-4 max-w-lg mx-auto my-12 shadow-card">
-          <div className="w-12 h-12 rounded-full bg-status-alpa/10 text-status-alpa flex items-center justify-center mx-auto">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-
           <h2 className="text-lg font-black text-foreground">
             Akses Tidak Tersedia
           </h2>
@@ -685,8 +683,6 @@ export default function AdminTugasPage() {
               <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
                 Total Tugas
               </span>
-
-              <Briefcase className="w-4 h-4 text-primary" />
             </div>
 
             {isLoading ? (
@@ -705,8 +701,6 @@ export default function AdminTugasPage() {
               <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
                 Belum Dikerjakan
               </span>
-
-              <Clock className="w-4 h-4 text-status-terlambat" />
             </div>
 
             {isLoading ? (
@@ -727,8 +721,6 @@ export default function AdminTugasPage() {
               <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
                 Selesai
               </span>
-
-              <CheckCircle2 className="w-4 h-4 text-status-hadir" />
             </div>
 
             {isLoading ? (
@@ -747,35 +739,32 @@ export default function AdminTugasPage() {
           <div className="bg-card border border-border hover:border-status-izin/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
-                Programmer
+                Tugas Hari Ini
               </span>
-
-              <Code className="w-4 h-4 text-status-izin" />
             </div>
 
             {isLoading ? (
               <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
             ) : (
               <p className="text-2xl font-black text-status-izin">
-                {stats.prog}
+                {stats.today}
               </p>
             )}
 
             <span className="text-[10px] font-semibold text-muted-foreground">
-              Tugas koding &amp; IT
+              Dibuat hari ini
             </span>
           </div>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            {/* Search */}
             <div className="relative md:col-span-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
 
               <input
                 type="text"
-                placeholder="Cari tugas..."
+                placeholder="Cari tugas"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-8 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -1019,32 +1008,19 @@ export default function AdminTugasPage() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       className="py-12 text-center text-muted-foreground"
                     >
                       <div className="flex flex-col items-center justify-center gap-2">
-                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-
-                        <span className="font-semibold text-xs">
-                          Memuat data tugas...
-                        </span>
+                        <Spinner size="lg" />
                       </div>
                     </td>
                   </tr>
                 ) : displayedTugas.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center space-y-2">
-                      <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
-                        <Briefcase className="w-6 h-6" />
-                      </div>
-
-                      <p className="font-extrabold text-foreground text-sm">
+                    <td colSpan={8} className="py-12 text-center space-y-2">
+                      <p className="text-foreground text-xs">
                         Tidak ada tugas ditemukan
-                      </p>
-
-                      <p className="text-xs text-muted-foreground">
-                        Silakan buat tugas baru atau sesuaikan kata kunci
-                        pencarian Anda.
                       </p>
                     </td>
                   </tr>
@@ -1125,13 +1101,13 @@ export default function AdminTugasPage() {
                               task.statusPengerjaan ||
                               ""
                             ).toUpperCase() === "SELESAI" ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold status-hadir border hover:opacity-85 transition-all">
+                                <CheckCircle2 className="w-3 h-3" />
                                 <span>Selesai</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-all">
-                                <Clock className="w-3 h-3 text-amber-500" />
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold status-terlambat border hover:opacity-85 transition-all">
+                                <Clock className="w-3 h-3" />
                                 <span>Belum Dikerjakan</span>
                               </span>
                             )}
@@ -1257,11 +1233,9 @@ export default function AdminTugasPage() {
 
         {isCreateModalOpen && (
           <ModalPortal>
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
-            >
-            <div
-              className="
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <div
+                className="
         bg-card
         border border-border
         rounded-2xl
@@ -1274,22 +1248,22 @@ export default function AdminTugasPage() {
         max-h-[calc(100vh-2rem)]
         overflow-y-auto
       "
-            >
-              <div className="flex items-center justify-between border-b border-border pb-2">
-                <div>
-                  <h3 className="font-extrabold text-foreground text-sm leading-tight">
-                    Tambah Tugas Baru
-                  </h3>
+              >
+                <div className="flex items-center justify-between border-b border-border pb-2">
+                  <div>
+                    <h3 className="font-extrabold text-foreground text-sm leading-tight">
+                      Tambah Tugas Baru
+                    </h3>
 
-                  <p className="text-[10px] text-muted-foreground">
-                    Berikan penugasan kepada peserta magang
-                  </p>
-                </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Berikan penugasan kepada peserta magang
+                    </p>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="
             p-1
             rounded-lg
             hover:bg-muted
@@ -1297,14 +1271,14 @@ export default function AdminTugasPage() {
             hover:text-foreground
             cursor-pointer
           "
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-              {errorMessage && (
-                <div
-                  className="
+                {errorMessage && (
+                  <div
+                    className="
             p-2
             rounded-xl
             bg-destructive/15
@@ -1314,23 +1288,23 @@ export default function AdminTugasPage() {
             font-bold
             flex items-center gap-1.5
           "
-                >
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
 
-              <form onSubmit={handleCreateSubmit} className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1 md:col-span-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-extrabold text-foreground flex items-center gap-1">
-                        <span>Peserta Magang</span>
+                <form onSubmit={handleCreateSubmit} className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1 md:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-extrabold text-foreground flex items-center gap-1">
+                          <span>Peserta Magang</span>
 
-                        <span className="text-destructive">*</span>
+                          <span className="text-status-tolak">*</span>
 
-                        <span
-                          className="
+                          <span
+                            className="
                     text-[9px]
                     font-black
                     px-1.5 py-0.5
@@ -1339,52 +1313,52 @@ export default function AdminTugasPage() {
                     text-primary
                     border border-primary/20
                   "
-                        >
-                          {selectedCreateInternIds.length} Dipilih
-                        </span>
-                      </label>
+                          >
+                            {selectedCreateInternIds.length} Dipilih
+                          </span>
+                        </label>
 
-                      <div className="flex items-center gap-1 text-[10px]">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSelectedCreateInternIds(
-                              interns.map((i) => String(i.id)),
-                            )
-                          }
-                          className="
+                        <div className="flex items-center gap-1 text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedCreateInternIds(
+                                interns.map((i) => String(i.id)),
+                              )
+                            }
+                            className="
                     text-primary
                     hover:underline
                     font-bold
                     cursor-pointer
                   "
-                        >
-                          Semua ({interns.length})
-                        </button>
+                          >
+                            Semua ({interns.length})
+                          </button>
 
-                        <span className="text-muted-foreground">•</span>
+                          <span className="text-muted-foreground">•</span>
 
-                        <button
-                          type="button"
-                          onClick={() => setSelectedCreateInternIds([])}
-                          className="
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCreateInternIds([])}
+                            className="
                     text-muted-foreground
                     hover:text-destructive
                     font-bold
                     cursor-pointer
                   "
-                        >
-                          Reset
-                        </button>
+                          >
+                            Reset
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setIsModalInternDropdownOpen((prev) => !prev)
-                      }
-                      className="
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIsModalInternDropdownOpen((prev) => !prev)
+                        }
+                        className="
                 w-full
                 flex items-center justify-between
                 px-2.5 py-2
@@ -1402,36 +1376,36 @@ export default function AdminTugasPage() {
                 transition-all
                 text-left
               "
-                    >
-                      <div className="flex items-center gap-1.5 truncate">
-                        {selectedCreateInternIds.length === 0 ? (
-                          <span className="text-muted-foreground text-[11px]">
-                            Pilih Peserta Magang...
-                          </span>
-                        ) : selectedCreateInternIds.length === 1 ? (
-                          (() => {
-                            const selected = interns.find(
-                              (i) =>
-                                String(i.id) === selectedCreateInternIds[0],
-                            );
+                      >
+                        <div className="flex items-center gap-1.5 truncate">
+                          {selectedCreateInternIds.length === 0 ? (
+                            <span className="text-muted-foreground text-[11px]">
+                              Pilih Peserta Magang
+                            </span>
+                          ) : selectedCreateInternIds.length === 1 ? (
+                            (() => {
+                              const selected = interns.find(
+                                (i) =>
+                                  String(i.id) === selectedCreateInternIds[0],
+                              );
 
-                            return (
-                              <div className="flex items-center gap-1.5 truncate">
-                                {selected?.avatar ? (
-                                  <img
-                                    src={selected.avatar}
-                                    alt="avatar"
-                                    className="
+                              return (
+                                <div className="flex items-center gap-1.5 truncate">
+                                  {selected?.avatar ? (
+                                    <img
+                                      src={selected.avatar}
+                                      alt="avatar"
+                                      className="
                               w-4 h-4
                               rounded-full
                               object-cover
                               border border-border
                               shrink-0
                             "
-                                  />
-                                ) : (
-                                  <div
-                                    className="
+                                    />
+                                  ) : (
+                                    <div
+                                      className="
                               w-4 h-4
                               rounded-full
                               bg-primary
@@ -1441,51 +1415,52 @@ export default function AdminTugasPage() {
                               font-black
                               shrink-0
                             "
-                                  >
-                                    {getInitial(
-                                      selected?.name || selected?.nama,
-                                    )}
-                                  </div>
-                                )}
+                                    >
+                                      {getInitial(
+                                        selected?.name || selected?.nama,
+                                      )}
+                                    </div>
+                                  )}
 
-                                <span
-                                  className="
+                                  <span
+                                    className="
                             truncate
                             text-[11px]
                             font-bold
                             text-foreground
                           "
-                                >
-                                  {selected?.name || selected?.nama}
-                                </span>
-                              </div>
-                            );
-                          })()
-                        ) : (
-                          <div className="flex items-center gap-1.5 truncate">
-                            <Users className="w-3.5 h-3.5 text-primary shrink-0" />
+                                  >
+                                    {selected?.name || selected?.nama}
+                                  </span>
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            <div className="flex items-center gap-1.5 truncate">
+                              <Users className="w-3.5 h-3.5 text-primary shrink-0" />
 
-                            <span className="font-bold text-foreground text-[11px]">
-                              {selectedCreateInternIds.length === interns.length
-                                ? `Semua Peserta (${interns.length}) Dipilih`
-                                : `${selectedCreateInternIds.length} Peserta Dipilih`}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                              <span className="font-bold text-foreground text-[11px]">
+                                {selectedCreateInternIds.length ===
+                                interns.length
+                                  ? `Semua Peserta (${interns.length}) Dipilih`
+                                  : `${selectedCreateInternIds.length} Peserta Dipilih`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
 
-                      <div className="text-muted-foreground shrink-0 ml-1">
-                        {isModalInternDropdownOpen ? (
-                          <ChevronUp className="w-3.5 h-3.5 text-primary" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        )}
-                      </div>
-                    </button>
+                        <div className="text-muted-foreground shrink-0 ml-1">
+                          {isModalInternDropdownOpen ? (
+                            <ChevronUp className="w-3.5 h-3.5 text-primary" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )}
+                        </div>
+                      </button>
 
-                    {isModalInternDropdownOpen && (
-                      <div
-                        className="
+                      {isModalInternDropdownOpen && (
+                        <div
+                          className="
                   p-1.5
                   bg-card
                   border border-border
@@ -1496,26 +1471,26 @@ export default function AdminTugasPage() {
                   animate-in fade-in
                   duration-150
                 "
-                      >
-                        <div className="relative">
-                          <Search
-                            className="
+                        >
+                          <div className="relative">
+                            <Search
+                              className="
                       w-3 h-3
                       absolute left-2
                       top-1/2
                       -translate-y-1/2
                       text-muted-foreground
                     "
-                          />
+                            />
 
-                          <input
-                            type="text"
-                            placeholder="Cari peserta..."
-                            value={internSearchModal}
-                            onChange={(e) =>
-                              setInternSearchModal(e.target.value)
-                            }
-                            className="
+                            <input
+                              type="text"
+                              placeholder="Cari peserta"
+                              value={internSearchModal}
+                              onChange={(e) =>
+                                setInternSearchModal(e.target.value)
+                              }
+                              className="
                       w-full
                       pl-6 pr-5 py-1.5
                       bg-input
@@ -1529,13 +1504,13 @@ export default function AdminTugasPage() {
                       focus:ring-1
                       focus:ring-primary/50
                     "
-                          />
+                            />
 
-                          {internSearchModal && (
-                            <button
-                              type="button"
-                              onClick={() => setInternSearchModal("")}
-                              className="
+                            {internSearchModal && (
+                              <button
+                                type="button"
+                                onClick={() => setInternSearchModal("")}
+                                className="
                         absolute right-1.5
                         top-1/2
                         -translate-y-1/2
@@ -1543,14 +1518,14 @@ export default function AdminTugasPage() {
                         hover:text-foreground
                         cursor-pointer
                       "
-                            >
-                              <X className="w-2.5 h-2.5" />
-                            </button>
-                          )}
-                        </div>
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
 
-                        <div
-                          className="
+                          <div
+                            className="
                     max-h-32
                     overflow-y-auto
                     rounded-lg
@@ -1560,36 +1535,36 @@ export default function AdminTugasPage() {
                     p-0.5
                     space-y-0.5
                   "
-                        >
-                          {filteredInternsInModal.length === 0 ? (
-                            <p className="text-[10px] text-muted-foreground text-center py-2">
-                              Peserta tidak ditemukan
-                            </p>
-                          ) : (
-                            filteredInternsInModal.map((i) => {
-                              const idStr = String(i.id);
+                          >
+                            {filteredInternsInModal.length === 0 ? (
+                              <p className="text-[10px] text-muted-foreground text-center py-2">
+                                Peserta tidak ditemukan
+                              </p>
+                            ) : (
+                              filteredInternsInModal.map((i) => {
+                                const idStr = String(i.id);
 
-                              const isChecked =
-                                selectedCreateInternIds.includes(idStr);
+                                const isChecked =
+                                  selectedCreateInternIds.includes(idStr);
 
-                              return (
-                                <div
-                                  key={i.id}
-                                  onClick={() => {
-                                    if (isChecked) {
-                                      setSelectedCreateInternIds(
-                                        selectedCreateInternIds.filter(
-                                          (x) => x !== idStr,
-                                        ),
-                                      );
-                                    } else {
-                                      setSelectedCreateInternIds([
-                                        ...selectedCreateInternIds,
-                                        idStr,
-                                      ]);
-                                    }
-                                  }}
-                                  className={`
+                                return (
+                                  <div
+                                    key={i.id}
+                                    onClick={() => {
+                                      if (isChecked) {
+                                        setSelectedCreateInternIds(
+                                          selectedCreateInternIds.filter(
+                                            (x) => x !== idStr,
+                                          ),
+                                        );
+                                      } else {
+                                        setSelectedCreateInternIds([
+                                          ...selectedCreateInternIds,
+                                          idStr,
+                                        ]);
+                                      }
+                                    }}
+                                    className={`
                             flex items-center
                             gap-2
                             px-1.5 py-1
@@ -1602,12 +1577,12 @@ export default function AdminTugasPage() {
                                 : "hover:bg-muted/70 text-foreground/80"
                             }
                           `}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => {}}
-                                    className="
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => {}}
+                                      className="
                               rounded
                               text-primary
                               focus:ring-primary
@@ -1616,23 +1591,23 @@ export default function AdminTugasPage() {
                               accent-primary
                               shrink-0
                             "
-                                  />
+                                    />
 
-                                  {i.avatar ? (
-                                    <img
-                                      src={i.avatar}
-                                      alt={i.name || i.nama || "Avatar"}
-                                      className="
+                                    {i.avatar ? (
+                                      <img
+                                        src={i.avatar}
+                                        alt={i.name || i.nama || "Avatar"}
+                                        className="
                                 w-4 h-4
                                 rounded-full
                                 object-cover
                                 border border-border
                                 shrink-0
                               "
-                                    />
-                                  ) : (
-                                    <div
-                                      className="
+                                      />
+                                    ) : (
+                                      <div
+                                        className="
                                 w-4 h-4
                                 rounded-full
                                 bg-primary
@@ -1643,43 +1618,46 @@ export default function AdminTugasPage() {
                                 font-black
                                 shrink-0
                               "
-                                    >
-                                      {getInitial(i.name || i.nama)}
+                                      >
+                                        {getInitial(i.name || i.nama)}
+                                      </div>
+                                    )}
+
+                                    <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
+                                      <span className="text-[10px] text-foreground truncate">
+                                        {i.name || i.nama || "Peserta"}
+                                      </span>
+
+                                      <span className="text-[8px] text-muted-foreground truncate max-w-[140px]">
+                                        {i.institution ||
+                                          i.sekolah_kampus ||
+                                          ""}
+                                      </span>
                                     </div>
-                                  )}
-
-                                  <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
-                                    <span className="text-[10px] text-foreground truncate">
-                                      {i.name || i.nama || "Peserta"}
-                                    </span>
-
-                                    <span className="text-[8px] text-muted-foreground truncate max-w-[140px]">
-                                      {i.institution || i.sekolah_kampus || ""}
-                                    </span>
                                   </div>
-                                </div>
-                              );
-                            })
-                          )}
+                                );
+                              })
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-extrabold text-foreground">
-                      Kategori Tugas <span className="text-destructive">*</span>
-                    </label>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold text-foreground">
+                        Kategori Tugas{" "}
+                        <span className="text-status-tolak">*</span>
+                      </label>
 
-                    <select
-                      value={formData.kategori}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          kategori: e.target.value,
-                        })
-                      }
-                      className="
+                      <select
+                        value={formData.kategori}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            kategori: e.target.value,
+                          })
+                        }
+                        className="
                 w-full
                 px-2.5 py-2
                 bg-input
@@ -1694,29 +1672,29 @@ export default function AdminTugasPage() {
                 capitalize
                 cursor-pointer
               "
-                    >
-                      {KATEGORI_OPTIONS.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      >
+                        {KATEGORI_OPTIONS.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-extrabold text-foreground">
-                      Tautkan Logbook (Opsional)
-                    </label>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold text-foreground">
+                        Tautkan Logbook (Opsional)
+                      </label>
 
-                    <select
-                      value={formData.log_book_id}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          log_book_id: e.target.value,
-                        })
-                      }
-                      className="
+                      <select
+                        value={formData.log_book_id}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            log_book_id: e.target.value,
+                          })
+                        }
+                        className="
                 w-full
                 px-2.5 py-2
                 bg-input
@@ -1730,33 +1708,33 @@ export default function AdminTugasPage() {
                 focus:ring-primary/50
                 cursor-pointer
               "
-                    >
-                      <option value="">Tidak Ditautkan</option>
+                      >
+                        <option value="">Tidak Ditautkan</option>
 
-                      {logbooks.map((lb) => (
-                        <option key={lb.id} value={lb.id}>
-                          #{lb.id} • {lb.user_nama || "Peserta"}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                        {logbooks.map((lb) => (
+                          <option key={lb.id} value={lb.id}>
+                            #{lb.id} • {lb.user_nama || "Peserta"}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="space-y-1 md:col-span-2">
-                    <label className="text-[10px] font-extrabold text-foreground">
-                      Judul Tugas <span className="text-destructive">*</span>
-                    </label>
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-[10px] font-extrabold text-foreground">
+                        Judul Tugas <span className="text-status-tolak">*</span>
+                      </label>
 
-                    <input
-                      type="text"
-                      placeholder="Contoh: Pembuatan Modul Cetak PDF Presensi"
-                      value={formData.judul_tugas}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          judul_tugas: e.target.value,
-                        })
-                      }
-                      className="
+                      <input
+                        type="text"
+                        placeholder="Masukkan judul tugas"
+                        value={formData.judul_tugas}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            judul_tugas: e.target.value,
+                          })
+                        }
+                        className="
                 w-full
                 px-2.5 py-2
                 bg-input
@@ -1770,26 +1748,26 @@ export default function AdminTugasPage() {
                 focus:ring-2
                 focus:ring-primary/50
               "
-                      required
-                    />
-                  </div>
+                        required
+                      />
+                    </div>
 
-                  <div className="space-y-1 md:col-span-2">
-                    <label className="text-[10px] font-extrabold text-foreground">
-                      Deskripsi &amp; Rincian Instruksi
-                    </label>
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-[10px] font-extrabold text-foreground">
+                        Deskripsi &amp; Rincian Instruksi
+                      </label>
 
-                    <textarea
-                      rows={3}
-                      placeholder="Jelaskan detail instruksi atau poin pekerjaan yang harus diselesaikan..."
-                      value={formData.deskripsi}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          deskripsi: e.target.value,
-                        })
-                      }
-                      className="
+                      <textarea
+                        rows={3}
+                        placeholder="Masukkan deskripsi tugas"
+                        value={formData.deskripsi}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            deskripsi: e.target.value,
+                          })
+                        }
+                        className="
                 w-full
                 px-2.5 py-2
                 bg-input
@@ -1804,23 +1782,23 @@ export default function AdminTugasPage() {
                 focus:ring-primary/50
                 resize-none
               "
-                    />
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div
-                  className="
+                  <div
+                    className="
             flex items-center
             justify-end
             gap-2
             pt-3
             border-t border-border
           "
-                >
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateModalOpen(false)}
+                      className="
               px-4 py-2
               rounded-xl
               border border-border
@@ -1832,14 +1810,14 @@ export default function AdminTugasPage() {
               cursor-pointer
               transition-all
             "
-                  >
-                    Batal
-                  </button>
+                    >
+                      Batal
+                    </button>
 
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="
               px-4 py-2
               rounded-xl
               bg-primary
@@ -1855,450 +1833,448 @@ export default function AdminTugasPage() {
               items-center
               gap-1.5
             "
-                  >
-                    {isSubmitting && (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    )}
+                    >
+                      {isSubmitting && <Spinner size="sm" />}
 
-                    <span>Simpan Tugas</span>
+                      <span>Simpan Tugas</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </ModalPortal>
+        )}
+
+        {isEditModalOpen && selectedTugas && (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-4 shadow-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-border pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-xl bg-primary/10 text-primary">
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </div>
+
+                    <div>
+                      <h3 className="font-extrabold text-foreground text-sm">
+                        Ubah Data Tugas
+                      </h3>
+
+                      <p className="text-[11px] text-muted-foreground">
+                        ID Tugas #{selectedTugas.id}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
-              </form>
-            </div>
-          </div>
-        </ModalPortal>
-      )}
 
-      {isEditModalOpen && selectedTugas && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-4 shadow-2xl space-y-3">
-              <div className="flex items-center justify-between border-b border-border pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                    <Edit3 className="w-3.5 h-3.5" />
+                {errorMessage && (
+                  <div className="p-2.5 rounded-xl bg-destructive/15 border border-destructive/30 text-destructive text-xs font-bold flex items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+
+                    <span>{errorMessage}</span>
                   </div>
+                )}
 
-                  <div>
-                    <h3 className="font-extrabold text-foreground text-sm">
-                      Ubah Data Tugas
-                    </h3>
-
-                    <p className="text-[11px] text-muted-foreground">
-                      ID Tugas #{selectedTugas.id}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {errorMessage && (
-                <div className="p-2.5 rounded-xl bg-destructive/15 border border-destructive/30 text-destructive text-xs font-bold flex items-center gap-2">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleEditSubmit} className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground">
-                    Peserta Magang <span className="text-destructive">*</span>
-                  </label>
-
-                  <select
-                    value={formData.peserta_magang_id}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        peserta_magang_id: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  >
-                    <option value="">Pilih Peserta Magang</option>
-
-                    {interns.map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.name || i.nama} (
-                        {i.institution || i.sekolah_kampus || "Anak Magang"})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
+                <form onSubmit={handleEditSubmit} className="space-y-3">
                   <div className="space-y-1">
                     <label className="text-[11px] font-extrabold text-foreground">
-                      Kategori Tugas <span className="text-destructive">*</span>
+                      Peserta Magang{" "}
+                      <span className="text-status-tolak">*</span>
                     </label>
 
                     <select
-                      value={formData.kategori}
+                      value={formData.peserta_magang_id}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          kategori: e.target.value,
+                          peserta_magang_id: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 capitalize cursor-pointer"
+                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     >
-                      {KATEGORI_OPTIONS.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
+                      <option value="">Pilih Peserta Magang</option>
+
+                      {interns.map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.name || i.nama} (
+                          {i.institution || i.sekolah_kampus || "Anak Magang"})
                         </option>
                       ))}
                     </select>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-extrabold text-foreground">
+                        Kategori Tugas
+                        <span className="text-status-tolak">*</span>
+                      </label>
+
+                      <select
+                        value={formData.kategori}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            kategori: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 capitalize cursor-pointer"
+                      >
+                        {KATEGORI_OPTIONS.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-extrabold text-foreground">
+                        Status Pengerjaan
+                      </label>
+
+                      <select
+                        value={formData.status_pengerjaan}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            status_pengerjaan: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                      >
+                        <option value="BELUM_DIKERJAKAN">
+                          Belum Dikerjakan
+                        </option>
+                        <option value="SELESAI">Selesai</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="space-y-1">
                     <label className="text-[11px] font-extrabold text-foreground">
-                      Status Pengerjaan
+                      Judul Tugas <span className="text-status-tolak">*</span>
                     </label>
 
-                    <select
-                      value={formData.status_pengerjaan}
+                    <input
+                      type="text"
+                      value={formData.judul_tugas}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          status_pengerjaan: e.target.value,
+                          judul_tugas: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground">
+                      Deskripsi & Rincian Instruksi
+                    </label>
+
+                    <textarea
+                      rows={2}
+                      value={formData.deskripsi}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          deskripsi: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground">
+                      Tautkan ke Logbook (Opsional)
+                    </label>
+
+                    <select
+                      value={formData.log_book_id}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          log_book_id: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     >
-                      <option value="BELUM_DIKERJAKAN">Belum Dikerjakan</option>
-                      <option value="SELESAI">Selesai</option>
+                      <option value="">Tidak Dihubungkan ke Logbook</option>
+
+                      {logbooks.map((lb) => (
+                        <option key={lb.id} value={lb.id}>
+                          #{lb.id} • {lb.user_nama || "Peserta"} • {lb.kategori}{" "}
+                          • {lb.aktivitas?.slice(0, 45)}
+                          ...
+                        </option>
+                      ))}
                     </select>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-border">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditModalOpen(false)}
+                      className="px-3.5 py-1.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-all"
+                    >
+                      Batal
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:opacity-95 transition-all shadow-card cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                    >
+                      {isSubmitting && <Spinner size="sm" />}
+
+                      <span>Perbarui Tugas</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </ModalPortal>
+        )}
+
+        {isDetailModalOpen && selectedTugas && (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-4 shadow-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-border pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-xl bg-primary/10 text-primary">
+                      <Briefcase className="w-3.5 h-3.5" />
+                    </div>
+
+                    <div>
+                      <h3 className="font-extrabold text-foreground text-sm">
+                        Detail Penugasan
+                      </h3>
+
+                      <p className="text-[11px] text-muted-foreground">
+                        ID Tugas #{selectedTugas.id}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setIsDetailModalOpen(false)}
+                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center gap-2.5">
+                  {selectedTugas.user_avatar ? (
+                    <img
+                      src={selectedTugas.user_avatar}
+                      alt={selectedTugas.user_nama || "Avatar"}
+                      className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground border border-border shrink-0 flex items-center justify-center text-xs font-black">
+                      {getInitial(selectedTugas.user_nama)}
+                    </div>
+                  )}
+
+                  <div className="min-w-0">
+                    <p className="font-black text-foreground text-xs">
+                      {selectedTugas.user_nama || "Belum Ditentukan"}
+                    </p>
+
+                    <p className="text-[11px] text-muted-foreground">
+                      {selectedTugas.user_institution || "Peserta Magang"}
+                    </p>
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground">
-                    Judul Tugas <span className="text-destructive">*</span>
-                  </label>
+                <div className="space-y-2.5">
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                      Judul Tugas
+                    </span>
 
-                  <input
-                    type="text"
-                    value={formData.judul_tugas}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        judul_tugas: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    required
-                  />
+                    <p className="text-xs font-black text-foreground mt-0.5">
+                      {selectedTugas.judul_tugas ||
+                        selectedTugas.judulTugas ||
+                        "—"}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                        Kategori Pekerjaan
+                      </span>
+
+                      <div className="mt-0.5">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
+                            selectedTugas.kategori,
+                          )}`}
+                        >
+                          {getKategoriIcon(selectedTugas.kategori)}
+
+                          <span className="capitalize">
+                            {selectedTugas.kategori}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                        Status Pengerjaan
+                      </span>
+
+                      <div className="mt-0.5">
+                        {(
+                          selectedTugas.status_pengerjaan ||
+                          selectedTugas.statusPengerjaan ||
+                          ""
+                        ).toUpperCase() === "SELESAI" ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold status-hadir border">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Selesai</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold status-terlambat border">
+                            <Clock className="w-3 h-3" />
+                            <span>Belum Dikerjakan</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                      Deskripsi Tugas
+                    </span>
+
+                    <p className="text-xs text-foreground/90 font-medium leading-relaxed bg-input/50 p-2.5 rounded-xl border border-border mt-0.5">
+                      {selectedTugas.deskripsi || "Tidak ada deskripsi rinci."}
+                    </p>
+                  </div>
+
+                  {selectedTugas.log_book_aktivitas && (
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                        Logbook Terkait
+                      </span>
+
+                      <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 mt-0.5 space-y-1">
+                        <div className="flex items-center gap-1 text-primary font-bold text-xs">
+                          <BookOpen className="w-3.5 h-3.5" />
+
+                          <span>Logbook #{selectedTugas.log_book_id}</span>
+                        </div>
+
+                        <p className="text-xs text-foreground/80">
+                          {selectedTugas.log_book_aktivitas}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-1.5 border-t border-border">
+                    <span>Waktu Dibuat:</span>
+
+                    <span className="font-semibold text-foreground">
+                      {formatTanggalIndo(selectedTugas.created_at)}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground">
-                    Deskripsi & Rincian Instruksi
-                  </label>
-
-                  <textarea
-                    rows={2}
-                    value={formData.deskripsi}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        deskripsi: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-foreground">
-                    Tautkan ke Logbook (Opsional)
-                  </label>
-
-                  <select
-                    value={formData.log_book_id}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        log_book_id: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  >
-                    <option value="">Tidak Dihubungkan ke Logbook</option>
-
-                    {logbooks.map((lb) => (
-                      <option key={lb.id} value={lb.id}>
-                        #{lb.id} • {lb.user_nama || "Peserta"} • {lb.kategori} •{" "}
-                        {lb.aktivitas?.slice(0, 45)}
-                        ...
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-border">
+                <div className="flex justify-end pt-1.5 border-t border-border">
                   <button
                     type="button"
-                    onClick={() => setIsEditModalOpen(false)}
-                    className="px-3.5 py-1.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-all"
+                    onClick={() => setIsDetailModalOpen(false)}
+                    className="px-3.5 py-1.5 rounded-xl bg-card border border-border text-xs font-bold text-foreground hover:bg-muted cursor-pointer transition-all"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ModalPortal>
+        )}
+
+        {isDeleteModalOpen && selectedTugas && (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-6 shadow-2xl space-y-4">
+                <div className="flex items-center gap-3 text-destructive">
+                  <div className="p-3 rounded-2xl bg-destructive/10">
+                    <Trash2 className="w-6 h-6" />
+                  </div>
+
+                  <div>
+                    <h3 className="font-extrabold text-foreground text-base">
+                      Hapus Tugas Ini?
+                    </h3>
+
+                    <p className="text-xs text-muted-foreground">
+                      Tindakan ini tidak dapat dibatalkan.
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Apakah Anda yakin ingin menghapus tugas{" "}
+                  <span className="font-bold text-foreground">
+                    &ldquo;
+                    {selectedTugas.judul_tugas || selectedTugas.judulTugas}
+                    &rdquo;
+                  </span>{" "}
+                  (ID #{selectedTugas.id})?
+                </p>
+
+                {errorMessage && (
+                  <div className="p-3 rounded-xl bg-destructive/15 border border-destructive/30 text-destructive text-xs font-bold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    disabled={isSubmitting}
+                    className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-all disabled:opacity-50"
                   >
                     Batal
                   </button>
 
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={handleDeleteSubmit}
                     disabled={isSubmitting}
-                    className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:opacity-95 transition-all shadow-card cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground text-xs font-black hover:opacity-90 cursor-pointer transition-all shadow-xs disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
-                    {isSubmitting && (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    )}
+                    {isSubmitting && <Spinner size="sm" />}
 
-                    <span>Perbarui Tugas</span>
+                    <span>Ya, Hapus Tugas</span>
                   </button>
                 </div>
-              </form>
-            </div>
-          </div>
-        </ModalPortal>
-      )}
-
-      {isDetailModalOpen && selectedTugas && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-4 shadow-2xl space-y-3">
-              <div className="flex items-center justify-between border-b border-border pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                    <Briefcase className="w-3.5 h-3.5" />
-                  </div>
-
-                  <div>
-                    <h3 className="font-extrabold text-foreground text-sm">
-                      Detail Penugasan
-                    </h3>
-
-                    <p className="text-[11px] text-muted-foreground">
-                      ID Tugas #{selectedTugas.id}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-muted/40 border border-border flex items-center gap-2.5">
-                {selectedTugas.user_avatar ? (
-                  <img
-                    src={selectedTugas.user_avatar}
-                    alt={selectedTugas.user_nama || "Avatar"}
-                    className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground border border-border shrink-0 flex items-center justify-center text-xs font-black">
-                    {getInitial(selectedTugas.user_nama)}
-                  </div>
-                )}
-
-                <div className="min-w-0">
-                  <p className="font-black text-foreground text-xs">
-                    {selectedTugas.user_nama || "Belum Ditentukan"}
-                  </p>
-
-                  <p className="text-[11px] text-muted-foreground">
-                    {selectedTugas.user_institution || "Peserta Magang"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2.5">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                    Judul Tugas
-                  </span>
-
-                  <p className="text-xs font-black text-foreground mt-0.5">
-                    {selectedTugas.judul_tugas ||
-                      selectedTugas.judulTugas ||
-                      "—"}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                      Kategori Pekerjaan
-                    </span>
-
-                    <div className="mt-0.5">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                          selectedTugas.kategori,
-                        )}`}
-                      >
-                        {getKategoriIcon(selectedTugas.kategori)}
-
-                        <span className="capitalize">
-                          {selectedTugas.kategori}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                      Status Pengerjaan
-                    </span>
-
-                    <div className="mt-0.5">
-                      {(
-                        selectedTugas.status_pengerjaan ||
-                        selectedTugas.statusPengerjaan ||
-                        ""
-                      ).toUpperCase() === "SELESAI" ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                          <span>Selesai</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                          <Clock className="w-3 h-3 text-amber-500" />
-                          <span>Belum Dikerjakan</span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                    Deskripsi Tugas
-                  </span>
-
-                  <p className="text-xs text-foreground/90 font-medium leading-relaxed bg-input/50 p-2.5 rounded-xl border border-border mt-0.5">
-                    {selectedTugas.deskripsi || "Tidak ada deskripsi rinci."}
-                  </p>
-                </div>
-
-                {selectedTugas.log_book_aktivitas && (
-                  <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                      Logbook Terkait
-                    </span>
-
-                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 mt-0.5 space-y-1">
-                      <div className="flex items-center gap-1 text-primary font-bold text-xs">
-                        <BookOpen className="w-3.5 h-3.5" />
-
-                        <span>Logbook #{selectedTugas.log_book_id}</span>
-                      </div>
-
-                      <p className="text-xs text-foreground/80">
-                        {selectedTugas.log_book_aktivitas}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground pt-1.5 border-t border-border">
-                  <span>Waktu Dibuat:</span>
-
-                  <span className="font-semibold text-foreground">
-                    {formatTanggalIndo(selectedTugas.created_at)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-1.5 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-xl bg-card border border-border text-xs font-bold text-foreground hover:bg-muted cursor-pointer transition-all"
-                >
-                  Tutup
-                </button>
               </div>
             </div>
-          </div>
-        </ModalPortal>
-      )}
-
-      {isDeleteModalOpen && selectedTugas && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-6 shadow-2xl space-y-4">
-              <div className="flex items-center gap-3 text-destructive">
-                <div className="p-3 rounded-2xl bg-destructive/10">
-                  <Trash2 className="w-6 h-6" />
-                </div>
-
-                <div>
-                  <h3 className="font-extrabold text-foreground text-base">
-                    Hapus Tugas Ini?
-                  </h3>
-
-                  <p className="text-xs text-muted-foreground">
-                    Tindakan ini tidak dapat dibatalkan.
-                  </p>
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                Apakah Anda yakin ingin menghapus tugas{" "}
-                <span className="font-bold text-foreground">
-                  &ldquo;
-                  {selectedTugas.judul_tugas || selectedTugas.judulTugas}
-                  &rdquo;
-                </span>{" "}
-                (ID #{selectedTugas.id})?
-              </p>
-
-              {errorMessage && (
-                <div className="p-3 rounded-xl bg-destructive/15 border border-destructive/30 text-destructive text-xs font-bold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  disabled={isSubmitting}
-                  className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-all disabled:opacity-50"
-                >
-                  Batal
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDeleteSubmit}
-                  disabled={isSubmitting}
-                  className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground text-xs font-black hover:opacity-90 cursor-pointer transition-all shadow-xs disabled:opacity-50 inline-flex items-center gap-1.5"
-                >
-                  {isSubmitting && (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  )}
-
-                  <span>Ya, Hapus Tugas</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalPortal>
-      )}
+          </ModalPortal>
+        )}
       </div>
     </DashboardLayout>
   );

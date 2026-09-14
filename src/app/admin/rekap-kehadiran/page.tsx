@@ -16,12 +16,12 @@ import {
   Users,
   RefreshCw,
   X,
-  Loader2,
   ArrowUpDown,
   CheckCircle2,
   AlertCircle,
   FileText,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 function formatTanggalIndo(dateStr?: string | null): string {
   if (!dateStr) return "—";
@@ -204,7 +204,6 @@ export default function RekapKehadiranPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Total Presensi
               </span>
-              <Users className="w-4 h-4 text-primary" />
             </div>
             <p className="text-2xl md:text-3xl font-black text-foreground">
               {stats.total}
@@ -217,9 +216,8 @@ export default function RekapKehadiranPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Tepat Waktu
               </span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400">
+            <p className="text-2xl md:text-3xl font-black text-status-hadir dark:text-status-hadir">
               {stats.hadirTepat}
             </p>
             <p className="text-[11px] text-muted-foreground">Hadir disiplin</p>
@@ -230,9 +228,8 @@ export default function RekapKehadiranPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Terlambat
               </span>
-              <Clock className="w-4 h-4 text-amber-500" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-amber-600 dark:text-amber-400">
+            <p className="text-2xl md:text-3xl font-black text-status-terlambat dark:text-status-terlambat">
               {stats.terlambat}
             </p>
             <p className="text-[11px] text-muted-foreground">Masuk lewat jam</p>
@@ -243,7 +240,6 @@ export default function RekapKehadiranPage() {
               <span className="text-[11px] font-extrabold uppercase tracking-wider">
                 Izin / Sakit / Alpa
               </span>
-              <AlertCircle className="w-4 h-4 text-rose-500" />
             </div>
             <p className="text-2xl md:text-3xl font-black text-foreground">
               {stats.izin + stats.sakit + stats.alpa}{" "}
@@ -251,7 +247,7 @@ export default function RekapKehadiranPage() {
                 ({stats.izin}I / {stats.sakit}S / {stats.alpa}A)
               </span>
             </p>
-            <p className="text-[11px] text-muted-foreground">Ketidakhadiran</p>
+            <p className="text-[11px] text-muted-foreground">Ketidak hadiran</p>
           </div>
         </div>
 
@@ -261,7 +257,7 @@ export default function RekapKehadiranPage() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Cari NIP, nama, vendor, atau divisi..."
+                placeholder="Cari NIP, nama, vendor, atau divisi"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-8 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -373,10 +369,7 @@ export default function RekapKehadiranPage() {
 
           {isLoading ? (
             <div className="py-16 flex flex-col items-center justify-center text-muted-foreground space-y-3">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-xs font-semibold">
-                Memuat rekapitulasi presensi...
-              </p>
+              <Spinner size="lg" />
             </div>
           ) : sortedRecords.length === 0 ? (
             <div className="py-16 text-center space-y-3">
@@ -704,7 +697,6 @@ export default function RekapKehadiranPage() {
 
             <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-neutral-900/10 dark:bg-black/40">
               <div className="bg-white text-black p-8 rounded-lg shadow-md max-w-3xl mx-auto space-y-6 text-xs font-sans">
-                {/* Kop Dokumen */}
                 <div className="border-b-2 border-black pb-3 text-center space-y-1">
                   <h2 className="text-base font-black uppercase tracking-wider text-black">
                     DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL

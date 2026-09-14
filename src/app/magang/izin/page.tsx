@@ -21,11 +21,11 @@ import {
   MessageSquare,
   FileText,
   X,
-  Loader2,
   Clock,
   Trash2,
   ExternalLink,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 /**
  * ============================================================
@@ -920,7 +920,7 @@ export default function MagangIzinPage() {
 
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner size="md" />
 
                 <span>
                   Mengirim Pengajuan...
@@ -964,7 +964,7 @@ export default function MagangIzinPage() {
 
             <div className="flex flex-col items-center justify-center py-12 gap-2">
 
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <Spinner size="lg" />
 
               <p className="text-xs font-bold text-muted-foreground">
                 Memuat riwayat
@@ -1063,7 +1063,7 @@ export default function MagangIzinPage() {
                       className="p-2 rounded-xl text-status-alpa hover:bg-status-alpa/10 transition-colors disabled:opacity-50 cursor-pointer"
                     >
                       {deletingId === item.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Spinner size="md" />
                       ) : (
                         <Trash2 className="w-4 h-4" />
                       )}

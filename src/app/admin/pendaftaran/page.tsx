@@ -11,6 +11,7 @@ import {
   AlertModal,
   ConfirmModal,
 } from "@/components/ui/Alert";
+import { Spinner } from "@/components/ui/Spinner";
 import {
   ClipboardList,
   Search,
@@ -464,6 +465,7 @@ export default function AdminPendaftaranPage() {
               transition-all
               flex items-center gap-1.5
               shadow-card
+              cursor-pointer
             "
           >
             <Plus className="w-4 h-4" />
@@ -472,42 +474,58 @@ export default function AdminPendaftaranPage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-card border border-border rounded-md p-4 shadow-card space-y-1">
-            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
-              Total Pendaftar
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 transition-all">
+            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">
+              <span>Total Calon Peserta</span>
             </span>
 
             <p className="text-2xl font-black text-foreground">{total}</p>
+
+            <span className="text-[10px] font-semibold text-muted-foreground block">
+              <span>Semua calon peserta</span>
+            </span>
           </div>
 
-          <div className="bg-card border border-border rounded-md p-4 shadow-card space-y-1">
-            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
-              Pending
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 transition-all">
+            <span className="text-[10px] font-extrabold text-status-pending uppercase tracking-wider block">
+              <span>Total Menunggu Seleksi</span>
             </span>
 
             <p className="text-2xl font-black text-status-pending">
               {pendingCount}
             </p>
+
+            <span className="text-[10px] font-semibold text-muted-foreground block">
+              <span>Menunggu seleksi</span>
+            </span>
           </div>
 
-          <div className="bg-card border border-border rounded-md p-4 shadow-card space-y-1">
-            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
-              Lolos
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 transition-all">
+            <span className="text-[10px] font-extrabold text-status-lolos uppercase tracking-wider block">
+              <span>Total Diterima Magang</span>
             </span>
 
             <p className="text-2xl font-black text-status-lolos">
               {lolosCount}
             </p>
+
+            <span className="text-[10px] font-semibold text-muted-foreground block">
+              <span>Diterima magang</span>
+            </span>
           </div>
 
-          <div className="bg-card border border-border rounded-md p-4 shadow-card space-y-1">
-            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
-              Tidak Lolos
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 transition-all">
+            <span className="text-[10px] font-extrabold text-status-tolak uppercase tracking-wider block">
+              <span>Total Pendaftaran Ditolak</span>
             </span>
 
             <p className="text-2xl font-black text-status-tolak">
               {tidakLolosCount}
             </p>
+
+            <span className="text-[10px] font-semibold text-muted-foreground block">
+              <span>Pendaftaran ditolak</span>
+            </span>
           </div>
         </div>
 
@@ -524,7 +542,7 @@ export default function AdminPendaftaranPage() {
 
             <input
               type="text"
-              placeholder="Cari kode, nama, kampus, divisi..."
+              placeholder="Cari kode, nama, kampus, divisi"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="
@@ -549,16 +567,7 @@ export default function AdminPendaftaranPage() {
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="
-                  absolute right-2.5 top-1/2
-                  -translate-y-1/2
-                  text-muted-foreground
-                  hover:text-foreground
-                  hover:bg-accent
-                  p-1 rounded-md
-                  transition-colors
-                  cursor-pointer
-                "
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -588,9 +597,9 @@ export default function AdminPendaftaranPage() {
               "
             >
               <option value="ALL">Semua Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="DITERIMA">Diterima</option>
-              <option value="DITOLAK">Ditolak</option>
+              <option value="PENDING">Menunggu Seleksi</option>
+              <option value="DITERIMA">Diterima Magang</option>
+              <option value="DITOLAK">Pendaftaran Ditolak</option>
             </select>
           </div>
         </div>
@@ -629,20 +638,7 @@ export default function AdminPendaftaranPage() {
                   <tr>
                     <td colSpan={6} className="py-10 text-center">
                       <div className="flex flex-col items-center justify-center gap-2">
-                        <div
-                          className="
-                          w-6 h-6
-                          rounded-full
-                          border-2
-                          border-primary
-                          border-t-transparent
-                          animate-spin
-                        "
-                        />
-
-                        <span className="text-xs font-semibold text-muted-foreground">
-                          Memuat data pendaftar...
-                        </span>
+                        <Spinner size="lg" />
                       </div>
                     </td>
                   </tr>
@@ -650,14 +646,8 @@ export default function AdminPendaftaranPage() {
                   <tr>
                     <td colSpan={6} className="py-10 text-center">
                       <div className="flex flex-col items-center justify-center gap-2">
-                        <ClipboardList className="w-8 h-8 text-muted-foreground" />
-
-                        <span className="text-xs font-bold text-foreground">
+                        <span className="text-xs text-foreground">
                           Tidak ada data pendaftar
-                        </span>
-
-                        <span className="text-[11px] text-muted-foreground">
-                          Coba gunakan kata kunci pencarian lain.
                         </span>
                       </div>
                     </td>
@@ -1285,7 +1275,6 @@ export default function AdminPendaftaranPage() {
                   </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {/* File CV */}
                     <div className="p-2.5 rounded-default border border-border bg-muted/40 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
@@ -1419,7 +1408,6 @@ export default function AdminPendaftaranPage() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div
                 className="
                 flex

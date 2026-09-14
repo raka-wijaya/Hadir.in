@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Check,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 type LiburTipe = "Nasional" | "Khusus";
 
@@ -114,7 +115,6 @@ export default function AdminPengaturanPage() {
       return "";
     }
 
-    // Date object
     if (value instanceof Date) {
       return new Intl.DateTimeFormat(
         "sv-SE",
@@ -196,16 +196,6 @@ export default function AdminPengaturanPage() {
 
     return `${day}-${month}-${year}`;
   };
-
-  // ============================================================
-  // FORMAT API DATE
-  //
-  // INTERNAL:
-  // YYYY-MM-DD
-  //
-  // API:
-  // DD-MM-YYYY
-  // ============================================================
 
   const toApiDate = (
     value: unknown
@@ -301,10 +291,6 @@ export default function AdminPengaturanPage() {
     return found ?? null;
   };
 
-  // ============================================================
-  // CEK APAKAH TANGGAL LIBUR
-  // ============================================================
-
   const isTanggalLibur = (
     tanggal: string
   ): boolean => {
@@ -314,16 +300,6 @@ export default function AdminPengaturanPage() {
       ) !== null
     );
   };
-
-  // ============================================================
-  // CEK STATUS TANGGAL
-  //
-  // PRIORITAS:
-  //
-  // 1. Tanggal ada di hari_libur
-  // 2. Hari tersebut bukan hari kerja
-  // 3. Hari kerja
-  // ============================================================
 
   const getStatusTanggal = (
     tanggal: string
@@ -343,11 +319,6 @@ export default function AdminPengaturanPage() {
       };
     }
 
-    // ==========================================================
-    // PRIORITAS 1
-    // CEK HARI LIBUR YANG DIINPUT
-    // ==========================================================
-
     const hariLibur =
       getHariLiburByTanggal(
         normalized
@@ -365,11 +336,6 @@ export default function AdminPengaturanPage() {
       };
     }
 
-    // ==========================================================
-    // PRIORITAS 2
-    // CEK HARI KERJA MINGGUAN
-    // ==========================================================
-
     const namaHari =
       getNamaHari(normalized);
 
@@ -385,20 +351,12 @@ export default function AdminPengaturanPage() {
       };
     }
 
-    // ==========================================================
-    // HARI KERJA
-    // ==========================================================
-
     return {
       status: "HARI_KERJA",
       keterangan: "",
       tipe: "",
     };
   };
-
-  // ============================================================
-  // STATUS HARI INI
-  // ============================================================
 
   const getStatusHariIni = () => {
     const today =
@@ -416,11 +374,6 @@ export default function AdminPengaturanPage() {
       ...status,
     };
   };
-
-  // ============================================================
-  // LOAD SETTINGS
-  // GET /api/settings
-  // ============================================================
 
   const loadSettings = async () => {
     try {
@@ -457,10 +410,6 @@ export default function AdminPengaturanPage() {
         );
       }
 
-      // ========================================================
-      // JAM KERJA
-      // ========================================================
-
       setJamMasuk(
         settings.jam_masuk_standar ||
           "07:30"
@@ -483,10 +432,6 @@ export default function AdminPengaturanPage() {
         )
       );
 
-      // ========================================================
-      // HARI KERJA
-      // ========================================================
-
       if (
         Array.isArray(
           settings.hari_kerja
@@ -505,10 +450,6 @@ export default function AdminPengaturanPage() {
         ]);
       }
 
-      // ========================================================
-      // WHATSAPP
-      // ========================================================
-
       setNoWaMagang(
         settings.no_wa_admin_magang ||
           ""
@@ -518,10 +459,6 @@ export default function AdminPengaturanPage() {
         settings.no_wa_admin_os ||
           ""
       );
-
-      // ========================================================
-      // PERIODE
-      // ========================================================
 
       setTanggalBuka(
         toInputDate(
@@ -543,16 +480,6 @@ export default function AdminPengaturanPage() {
             true
         )
       );
-
-      // ========================================================
-      // HARI LIBUR
-      //
-      // Data API:
-      // DD-MM-YYYY
-      //
-      // Frontend:
-      // YYYY-MM-DD
-      // ========================================================
 
       if (
         Array.isArray(
@@ -623,42 +550,19 @@ export default function AdminPengaturanPage() {
     }
   };
 
-  // ============================================================
-  // INITIAL LOAD
-  // ============================================================
-
   useEffect(() => {
     loadSettings();
   }, []);
 
-  // ============================================================
-  // TOGGLE HARI KERJA
-  // ============================================================
-
-  const handleToggleDay = (
-    day: string
-  ) => {
+  const handleToggleDay = (day: string) => {
     setHariKerja((prev) => {
-      if (
-        prev.includes(day)
-      ) {
-        return prev.filter(
-          (item) =>
-            item !== day
-        );
+      if (prev.includes(day)) {
+        return prev.filter((item) => item !== day);
       }
 
-      return [
-        ...prev,
-        day,
-      ];
+      return [...prev, day];
     });
   };
-
-  // ============================================================
-  // TAMBAH HARI LIBUR
-  // ============================================================
-
   const handleAddLibur = () => {
     if (
       !newLiburTanggal ||
@@ -685,10 +589,6 @@ export default function AdminPengaturanPage() {
 
       return;
     }
-
-    // ==========================================================
-    // CEK DUPLIKAT
-    // ==========================================================
 
     const duplicate =
       hariLiburList.some(
@@ -754,10 +654,6 @@ export default function AdminPengaturanPage() {
       )} berhasil ditambahkan. Klik Simpan untuk menyimpan ke database.`
     );
   };
-
-  // ============================================================
-  // EDIT HARI LIBUR
-  // ============================================================
 
   const openEditModal = (
     item: HariLibur,
@@ -1028,10 +924,6 @@ export default function AdminPengaturanPage() {
           })
         );
 
-      // ======================================================
-      // REQUEST
-      // ======================================================
-
       const res =
         await fetch(
           "/api/settings",
@@ -1124,10 +1016,6 @@ export default function AdminPengaturanPage() {
     }
   };
 
-  // ============================================================
-  // RENDER
-  // ============================================================
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -1148,98 +1036,64 @@ export default function AdminPengaturanPage() {
           onCancel={() => setDeleteHolidayIndex(null)}
         />
 
-        {/* ====================================================
-            HEADER
-        ==================================================== */}
-
         <div className="bg-card border border-border p-4 rounded-2xl shadow-card space-y-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <Settings className="w-6 h-6 text-primary" />
-
               <h1 className="text-2xl font-black text-foreground">
-                Pengaturan Presensi &
-                Sistem
+                Pengaturan Presensi & Sistem
               </h1>
             </div>
 
             <p className="text-xs text-muted-foreground font-semibold mt-1">
-              Konfigurasi jam kerja,
-              hari kerja, periode
-              pendaftaran, kontak admin,
-              dan hari libur.
+              Konfigurasi jam kerja, hari kerja, periode pendaftaran, kontak
+              admin, dan hari libur.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={
-              loadSettings
-            }
-            disabled={
-              isLoading
-            }
+            onClick={loadSettings}
+            disabled={isLoading}
             className="px-3.5 py-2 rounded-xl border border-border bg-input hover:bg-accent text-xs font-bold text-foreground flex items-center gap-1.5 transition-all self-start sm:self-auto disabled:opacity-50"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${
-                isLoading
-                  ? "animate-spin text-primary"
-                  : ""
+                isLoading ? "animate-spin text-primary" : ""
               }`}
             />
 
-            <span>
-              Muat Ulang
-            </span>
+            <span>Muat Ulang</span>
           </button>
         </div>
 
-        {/* ====================================================
-            TOAST
-        ==================================================== */}
 
         {toastMsg && (
           <div
             className={`rounded-2xl p-4 flex items-center justify-between text-xs font-bold animate-in fade-in ${
-              toastMsg.type ===
-              "error"
+              toastMsg.type === "error"
                 ? "bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300"
                 : "bg-primary/15 border border-primary/30 text-foreground"
             }`}
           >
             <div className="flex items-center gap-2">
-              {toastMsg.type ===
-              "error" ? (
+              {toastMsg.type === "error" ? (
                 <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
               ) : (
                 <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
               )}
 
-              <span>
-                {
-                  toastMsg.message
-                }
-              </span>
+              <span>{toastMsg.message}</span>
             </div>
 
             <button
               type="button"
-              onClick={() =>
-                setToastMsg(
-                  null
-                )
-              }
+              onClick={() => setToastMsg(null)}
               className="hover:underline ml-4 shrink-0 font-extrabold"
             >
               Tutup
             </button>
           </div>
         )}
-
-        {/* ====================================================
-            STATUS HARI INI
-        ==================================================== */}
 
         {!isLoading && (
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card">
@@ -1250,65 +1104,45 @@ export default function AdminPengaturanPage() {
                 </p>
 
                 <h3 className="text-lg font-black text-foreground mt-1">
-                  {
-                    statusHariIni.namaHari
-                  }
-                  ,{" "}
-                  {formatTanggalIndonesia(
-                    statusHariIni.tanggal
-                  )}
+                  {statusHariIni.namaHari},{" "}
+                  {formatTanggalIndonesia(statusHariIni.tanggal)}
                 </h3>
 
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Zona waktu:
-                  Asia/Jakarta
-                  (WIB)
+                  Zona waktu: Asia/Jakarta (WIB)
                 </p>
               </div>
 
               <span
                 className={`px-3 py-1.5 rounded-full text-xs font-black ${
-                  statusHariIni.status ===
-                  "LIBUR"
+                  statusHariIni.status === "LIBUR"
                     ? "bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/20"
                     : "bg-primary/15 text-primary border border-primary/20"
                 }`}
               >
-                {statusHariIni.status ===
-                "LIBUR"
-                  ? "LIBUR"
-                  : "HARI KERJA"}
+                {statusHariIni.status === "LIBUR" ? "LIBUR" : "HARI KERJA"}
               </span>
             </div>
 
-            {statusHariIni.status ===
-              "LIBUR" && (
+            {statusHariIni.status === "LIBUR" && (
               <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
 
                   <div>
                     <p className="text-sm font-black text-red-600 dark:text-red-400">
-                      {
-                        statusHariIni.keterangan
-                      }
+                      {statusHariIni.keterangan}
                     </p>
 
                     <p className="text-[11px] text-muted-foreground mt-1">
-                      Tipe:{" "}
-                      <strong>
-                        {
-                          statusHariIni.tipe
-                        }
-                      </strong>
+                      Tipe: <strong>{statusHariIni.tipe}</strong>
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {statusHariIni.status ===
-              "HARI_KERJA" && (
+            {statusHariIni.status === "HARI_KERJA" && (
               <div className="mt-4 p-4 rounded-xl bg-primary/10 border border-primary/20">
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-primary" />
@@ -1319,9 +1153,7 @@ export default function AdminPengaturanPage() {
                     </p>
 
                     <p className="text-[11px] text-muted-foreground mt-1">
-                      Tidak ditemukan
-                      tanggal hari libur
-                      untuk hari ini.
+                      Tidak ditemukan tanggal hari libur untuk hari ini.
                     </p>
                   </div>
                 </div>
@@ -1330,99 +1162,52 @@ export default function AdminPengaturanPage() {
           </div>
         )}
 
-        {/* ====================================================
-            FORM
-        ==================================================== */}
-
-        <form
-          onSubmit={
-            handleSaveAll
-          }
-          className="space-y-6"
-        >
-
-          {/* ==================================================
-              JAM KERJA
-          ================================================== */}
-
+        <form onSubmit={handleSaveAll} className="space-y-6">
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
             <h3 className="font-extrabold text-base text-foreground border-b border-border pb-3 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-primary" />
-
-              <span>
-                Jam Kerja Standar &
-                Toleransi
-              </span>
+              <span>Jam Kerja Standar &amp; Toleransi</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-
               <div className="space-y-1">
                 <label className="text-xs font-extrabold text-foreground">
-                  Jam Masuk Standar{" "}
-                  <span className="text-red-500">
-                    *
-                  </span>
+                  Jam Masuk Standar
                 </label>
 
                 <input
                   type="time"
                   required
-                  value={
-                    jamMasuk
-                  }
-                  onChange={(e) =>
-                    setJamMasuk(
-                      e.target.value
-                    )
-                  }
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={jamMasuk}
+                  onChange={(e) => setJamMasuk(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2 text-sm font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary [color-scheme:light] dark:[color-scheme:dark]"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-extrabold text-foreground">
-                  Jam Pulang Standar{" "}
-                  <span className="text-red-500">
-                    *
-                  </span>
+                  Jam Pulang Standar
                 </label>
 
                 <input
                   type="time"
                   required
-                  value={
-                    jamPulang
-                  }
-                  onChange={(e) =>
-                    setJamPulang(
-                      e.target.value
-                    )
-                  }
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={jamPulang}
+                  onChange={(e) => setJamPulang(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2 text-sm font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary [color-scheme:light] dark:[color-scheme:dark]"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-extrabold text-foreground">
-                  Jam Pulang Jumat{" "}
-                  <span className="text-red-500">
-                    *
-                  </span>
+                  Jam Pulang Jumat
                 </label>
 
                 <input
                   type="time"
                   required
-                  value={
-                    jamPulangJumat
-                  }
-                  onChange={(e) =>
-                    setJamPulangJumat(
-                      e.target.value
-                    )
-                  }
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={jamPulangJumat}
+                  onChange={(e) => setJamPulangJumat(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2 text-sm font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary [color-scheme:light] dark:[color-scheme:dark]"
                 />
               </div>
 
@@ -1436,17 +1221,9 @@ export default function AdminPengaturanPage() {
                     type="number"
                     min={0}
                     max={60}
-                    value={
-                      toleransi
-                    }
-                    onChange={(e) =>
-                      setToleransi(
-                        Number(
-                          e.target.value
-                        )
-                      )
-                    }
-                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2 pr-14 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+                    value={toleransi}
+                    onChange={(e) => setToleransi(Number(e.target.value))}
+                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2 pr-14 text-sm font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
 
                   <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
@@ -1457,83 +1234,59 @@ export default function AdminPengaturanPage() {
             </div>
           </div>
 
-          {/* ==================================================
-              HARI KERJA
-          ================================================== */}
-
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
             <div className="border-b border-border pb-3">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-primary" />
-
-                <span>
-                  Jadwal Hari Kerja Mingguan
-                </span>
+                <span>Jadwal Hari Kerja Mingguan</span>
               </h3>
 
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Hari libur berdasarkan
-                tanggal tertentu tetap
-                menjadi pengecualian.
+                Hari libur berdasarkan tanggal tertentu tetap menjadi
+                pengecualian.
               </p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-              {allDays.map(
-                (day) => {
-                  const isSelected =
-                    hariKerja.includes(
-                      day
-                    );
+              {allDays.map((day) => {
+                const isSelected = hariKerja.includes(day);
 
-                  return (
-                    <button
-                      key={day}
-                      type="button"
-                      onClick={() =>
-                        handleToggleDay(
-                          day
-                        )
-                      }
-                      className={`flex flex-col items-center justify-center p-3 rounded-2xl text-xs font-extrabold transition-all border text-center cursor-pointer ${
-                        isSelected
-                          ? "bg-primary/15 text-primary border-primary/50 shadow-card ring-1 ring-primary/20"
-                          : "bg-muted/40 text-muted-foreground border-border hover:border-primary/40 hover:bg-muted/70"
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <div
-                          className={`w-4 h-4 rounded-md flex items-center justify-center border ${
-                            isSelected
-                              ? "bg-primary border-primary text-primary-foreground"
-                              : "border-muted-foreground/40 bg-background"
-                          }`}
-                        >
-                          {isSelected && (
-                            <Check className="w-3 h-3 stroke-[3]" />
-                          )}
-                        </div>
-
-                        <span className="font-black text-sm">
-                          {day}
-                        </span>
-                      </div>
-
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => handleToggleDay(day)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl text-xs font-extrabold transition-all border text-center cursor-pointer ${
+                      isSelected
+                        ? "bg-primary/15 text-primary border-primary/50 shadow-card ring-1 ring-primary/20"
+                        : "bg-muted/40 text-muted-foreground border-border hover:border-primary/40 hover:bg-muted/70"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <div
+                        className={`w-4 h-4 rounded-md flex items-center justify-center border ${
                           isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "border-muted-foreground/40 bg-background"
                         }`}
                       >
-                        {isSelected
-                          ? "Hari Kerja"
-                          : "Libur"}
-                      </span>
-                    </button>
-                  );
-                }
-              )}
+                        {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
+
+                      <span className="font-black text-sm">{day}</span>
+                    </div>
+
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {isSelected ? "Hari Kerja" : "Libur"}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -1551,8 +1304,7 @@ export default function AdminPengaturanPage() {
                 </h3>
 
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Atur jadwal buka dan
-                  tutup pendaftaran.
+                  Atur jadwal buka dan tutup pendaftaran.
                 </p>
               </div>
             </div>
@@ -1566,9 +1318,7 @@ export default function AdminPengaturanPage() {
                 <div className="flex items-center gap-3 min-w-0">
                   <span
                     className={`relative flex w-3.5 h-3.5 shrink-0 rounded-full ${
-                      systemStatus
-                        ? "bg-primary"
-                        : "bg-red-500"
+                      systemStatus ? "bg-primary" : "bg-red-500"
                     }`}
                   >
                     {systemStatus && (
@@ -1595,12 +1345,10 @@ export default function AdminPengaturanPage() {
                   className={`shrink-0 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
                     systemStatus
                       ? "bg-primary/20 text-primary border border-primary/30"
-                      : "bg-red-500/20 text-red-800 dark:text-red-300 border border-red-500/30"
+                      : "bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30"
                   }`}
                 >
-                  {systemStatus
-                    ? "OPEN"
-                    : "CLOSED"}
+                  {systemStatus ? "OPEN" : "CLOSED"}
                 </span>
               </div>
             </div>
@@ -1614,21 +1362,13 @@ export default function AdminPengaturanPage() {
                 <input
                   type="date"
                   required
-                  value={
-                    tanggalBuka
-                  }
-                  onChange={(e) =>
-                    setTanggalBuka(
-                      e.target.value
-                    )
-                  }
-                  className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={tanggalBuka}
+                  onChange={(e) => setTanggalBuka(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary [color-scheme:light] dark:[color-scheme:dark]"
                 />
 
                 <p className="text-[10px] text-muted-foreground font-semibold">
-                  {formatTanggalIndonesia(
-                    tanggalBuka
-                  )}
+                  {formatTanggalIndonesia(tanggalBuka)}
                 </p>
               </div>
 
@@ -1640,24 +1380,14 @@ export default function AdminPengaturanPage() {
                 <input
                   type="date"
                   required
-                  min={
-                    tanggalBuka
-                  }
-                  value={
-                    tanggalTutup
-                  }
-                  onChange={(e) =>
-                    setTanggalTutup(
-                      e.target.value
-                    )
-                  }
-                  className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  min={tanggalBuka}
+                  value={tanggalTutup}
+                  onChange={(e) => setTanggalTutup(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-input px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary [color-scheme:light] dark:[color-scheme:dark]"
                 />
 
                 <p className="text-[10px] text-muted-foreground font-semibold">
-                  {formatTanggalIndonesia(
-                    tanggalTutup
-                  )}
+                  {formatTanggalIndonesia(tanggalTutup)}
                 </p>
               </div>
             </div>
@@ -1668,28 +1398,19 @@ export default function AdminPengaturanPage() {
                   htmlFor="toggle-manual"
                   className="text-xs font-extrabold text-foreground cursor-pointer"
                 >
-                  Status Manual
-                  (Aktifkan / Tutup Manual)
+                  Status Manual (Aktifkan / Tutup Manual)
                 </label>
 
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Jika dinonaktifkan,
-                  pendaftaran otomatis
-                  ditutup.
+                  Jika dinonaktifkan, pendaftaran otomatis ditutup.
                 </p>
               </div>
 
               <input
                 id="toggle-manual"
                 type="checkbox"
-                checked={
-                  aktifManual
-                }
-                onChange={(e) =>
-                  setAktifManual(
-                    e.target.checked
-                  )
-                }
+                checked={aktifManual}
+                onChange={(e) => setAktifManual(e.target.checked)}
                 className="w-5 h-5 accent-primary cursor-pointer rounded shrink-0"
               />
             </div>
@@ -1702,10 +1423,7 @@ export default function AdminPengaturanPage() {
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
             <h3 className="font-extrabold text-base text-foreground border-b border-border pb-3 flex items-center gap-2">
               <Phone className="w-4 h-4 text-primary" />
-
-              <span>
-                Kontak WhatsApp Admin
-              </span>
+              <span>Kontak WhatsApp Admin</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1716,17 +1434,11 @@ export default function AdminPengaturanPage() {
 
                 <input
                   type="text"
-                  value={
-                    noWaMagang
-                  }
-                  onChange={(e) =>
-                    setNoWaMagang(
-                      e.target.value
-                    )
-                  }
+                  value={noWaMagang}
+                  onChange={(e) => setNoWaMagang(e.target.value)}
                   placeholder="081234567891"
                   maxLength={20}
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
@@ -1737,17 +1449,11 @@ export default function AdminPengaturanPage() {
 
                 <input
                   type="text"
-                  value={
-                    noWaOS
-                  }
-                  onChange={(e) =>
-                    setNoWaOS(
-                      e.target.value
-                    )
-                  }
+                  value={noWaOS}
+                  onChange={(e) => setNoWaOS(e.target.value)}
                   placeholder="081234567892"
                   maxLength={20}
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-xl border border-border bg-input px-3.5 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
@@ -1758,21 +1464,14 @@ export default function AdminPengaturanPage() {
           ================================================== */}
 
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
-
             <div className="border-b border-border pb-3">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
                 <CalendarDays className="w-4 h-4 text-primary" />
-
-                <span>
-                  Kelola Hari Libur Nasional &
-                  Khusus
-                </span>
+                <span>Kelola Hari Libur Nasional &amp; Khusus</span>
               </h3>
 
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Hari libur hanya berlaku
-                pada tanggal yang
-                didaftarkan.
+                Hari libur hanya berlaku pada tanggal yang didaftarkan.
               </p>
             </div>
 
@@ -1786,26 +1485,17 @@ export default function AdminPengaturanPage() {
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-
                 <div>
                   <input
                     type="date"
-                    value={
-                      newLiburTanggal
-                    }
-                    onChange={(e) =>
-                      setNewLiburTanggal(
-                        e.target.value
-                      )
-                    }
-                    className="w-full rounded-xl border border-border bg-input px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                    value={newLiburTanggal}
+                    onChange={(e) => setNewLiburTanggal(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-input px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary [color-scheme:light] dark:[color-scheme:dark]"
                   />
 
                   {newLiburTanggal && (
                     <p className="text-[10px] text-muted-foreground mt-1 font-mono font-bold">
-                      {formatTanggalIndonesia(
-                        newLiburTanggal
-                      )}
+                      {formatTanggalIndonesia(newLiburTanggal)}
                     </p>
                   )}
                 </div>
@@ -1813,49 +1503,27 @@ export default function AdminPengaturanPage() {
                 <input
                   type="text"
                   placeholder="Keterangan Libur"
-                  value={
-                    newLiburKet
-                  }
-                  onChange={(e) =>
-                    setNewLiburKet(
-                      e.target.value
-                    )
-                  }
-                  className="rounded-xl border border-border bg-input px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={newLiburKet}
+                  onChange={(e) => setNewLiburKet(e.target.value)}
+                  className="rounded-xl border border-border bg-input px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
 
                 <select
-                  value={
-                    newLiburTipe
-                  }
-                  onChange={(e) =>
-                    setNewLiburTipe(
-                      e.target.value as LiburTipe
-                    )
-                  }
-                  className="rounded-xl border border-border bg-input px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary font-bold"
+                  value={newLiburTipe}
+                  onChange={(e) => setNewLiburTipe(e.target.value as LiburTipe)}
+                  className="rounded-xl border border-border bg-input px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-bold"
                 >
-                  <option value="Nasional">
-                    Nasional
-                  </option>
-
-                  <option value="Khusus">
-                    Keagamaan
-                  </option>
+                  <option value="Nasional">Nasional</option>
+                  <option value="Khusus">Keagamaan</option>
                 </select>
 
                 <button
                   type="button"
-                  onClick={
-                    handleAddLibur
-                  }
-                  className="py-2 px-4 rounded-xl bg-primary text-primary-foreground font-extrabold text-xs hover:opacity-95 transition-all flex items-center justify-center gap-1 shadow-card"
+                  onClick={handleAddLibur}
+                  className="py-2 px-4 rounded-xl bg-primary text-primary-foreground font-extrabold text-xs hover:opacity-95 transition-all flex items-center justify-center gap-1 shadow-card cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-
-                  <span>
-                    Tambah
-                  </span>
+                  <span>Tambah</span>
                 </button>
               </div>
             </div>
@@ -1868,22 +1536,10 @@ export default function AdminPengaturanPage() {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-border text-muted-foreground uppercase tracking-wider">
-                    <th className="py-2.5 px-3 font-extrabold">
-                      Tanggal
-                    </th>
-
-                    <th className="py-2.5 px-3 font-extrabold">
-                      Hari
-                    </th>
-
-                    <th className="py-2.5 px-3 font-extrabold">
-                      Keterangan
-                    </th>
-
-                    <th className="py-2.5 px-3 font-extrabold">
-                      Tipe
-                    </th>
-
+                    <th className="py-2.5 px-3 font-extrabold">Tanggal</th>
+                    <th className="py-2.5 px-3 font-extrabold">Hari</th>
+                    <th className="py-2.5 px-3 font-extrabold">Keterangan</th>
+                    <th className="py-2.5 px-3 font-extrabold">Tipe</th>
                     <th className="py-2.5 px-3 font-extrabold text-right">
                       Aksi
                     </th>
@@ -1891,106 +1547,68 @@ export default function AdminPengaturanPage() {
                 </thead>
 
                 <tbody className="divide-y divide-border">
-                  {hariLiburList.length >
-                  0 ? (
-                    hariLiburList.map(
-                      (
-                        item,
-                        index
-                      ) => (
-                        <tr
-                          key={
-                            item.id ??
-                            `${item.tanggal}-${index}`
-                          }
-                          className="hover:bg-accent/50 transition-colors"
-                        >
+                  {hariLiburList.length > 0 ? (
+                    hariLiburList.map((item, index) => (
+                      <tr
+                        key={item.id ?? `${item.tanggal}-${index}`}
+                        className="hover:bg-accent/50 transition-colors"
+                      >
+                        {/* TANGGAL */}
+                        <td className="py-2.5 px-3 font-bold text-foreground font-mono whitespace-nowrap">
+                          {formatTanggalIndonesia(item.tanggal)}
+                        </td>
 
-                          {/* TANGGAL */}
+                        {/* HARI */}
+                        <td className="py-2.5 px-3 font-bold text-foreground whitespace-nowrap">
+                          {getNamaHari(item.tanggal)}
+                        </td>
 
-                          <td className="py-2.5 px-3 font-bold text-foreground font-mono whitespace-nowrap">
-                            {formatTanggalIndonesia(
-                              item.tanggal
-                            )}
-                          </td>
+                        {/* KETERANGAN */}
+                        <td className="py-2.5 px-3 text-foreground font-semibold">
+                          {item.keterangan}
+                        </td>
 
-                          {/* HARI */}
+                        {/* TIPE */}
+                        <td className="py-2.5 px-3">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                              item.tipe === "Nasional"
+                                ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                                : "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+                            }`}
+                          >
+                            {item.tipe}
+                          </span>
+                        </td>
 
-                          <td className="py-2.5 px-3 font-bold text-foreground whitespace-nowrap">
-                            {getNamaHari(
-                              item.tanggal
-                            )}
-                          </td>
+                        {/* AKSI */}
+                        <td className="py-2.5 px-3 text-right space-x-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(item, index)}
+                            className="p-1.5 rounded-lg border border-border bg-input hover:bg-accent text-foreground hover:text-primary transition-all inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span className="text-[10px] font-bold">Edit</span>
+                          </button>
 
-                          {/* KETERANGAN */}
-
-                          <td className="py-2.5 px-3 text-foreground font-semibold">
-                            {
-                              item.keterangan
-                            }
-                          </td>
-
-                          {/* TIPE */}
-
-                          <td className="py-2.5 px-3">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                                item.tipe ===
-                                "Nasional"
-                                  ? "bg-blue-500/15 text-blue-800 dark:text-blue-300"
-                                  : "bg-purple-500/15 text-purple-800 dark:text-purple-300"
-                              }`}
-                            >
-                              {
-                                item.tipe
-                              }
-                            </span>
-                          </td>
-
-                          {/* AKSI */}
-
-                          <td className="py-2.5 px-3 text-right space-x-1">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openEditModal(
-                                  item,
-                                  index
-                                )
-                              }
-                              className="p-1.5 rounded-lg border border-border bg-input hover:bg-accent text-foreground hover:text-primary transition-all inline-flex items-center gap-1"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-
-                              <span className="text-[10px] font-bold">
-                                Edit
-                              </span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setDeleteHolidayIndex(
-                                  index
-                                )
-                              }
-                              className="p-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all inline-flex items-center cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    )
+                          <button
+                            type="button"
+                            onClick={() => setDeleteHolidayIndex(index)}
+                            className="p-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all inline-flex items-center cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
                   ) : (
                     <tr>
                       <td
                         colSpan={5}
                         className="py-6 text-center text-muted-foreground"
                       >
-                        Belum ada data
-                        hari libur yang
-                        tersimpan.
+                        Belum ada data hari libur yang tersimpan.
                       </td>
                     </tr>
                   )}
@@ -2005,17 +1623,10 @@ export default function AdminPengaturanPage() {
 
           <button
             type="submit"
-            disabled={
-              isSaving ||
-              isLoading
-            }
-            className="w-full py-3.5 px-4 rounded-xl bg-primary text-primary-foreground font-black text-sm hover:opacity-95 transition-all flex items-center justify-center gap-2 shadow-card min-h-[50px] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSaving || isLoading}
+            className="w-full py-3.5 px-4 rounded-xl bg-primary text-primary-foreground font-black text-sm hover:opacity-95 transition-all flex items-center justify-center gap-2 shadow-card min-h-[50px] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            {isSaving ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
+            {isSaving ? <Spinner size="md" /> : <Save className="w-4 h-4" />}
 
             <span>
               {isSaving
@@ -2029,35 +1640,24 @@ export default function AdminPengaturanPage() {
             MODAL EDIT
         ==================================================== */}
 
-        {editingIndex !==
-          null && (
+        {editingIndex !== null && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-
             <form
-              onSubmit={
-                handleSaveEditLibur
-              }
+              onSubmit={handleSaveEditLibur}
               className="bg-card border border-border rounded-2xl w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto p-6 shadow-elevated space-y-4 animate-in zoom-in-95"
             >
-
               {/* HEADER */}
 
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <h3 className="font-black text-base text-foreground flex items-center gap-2">
                   <Edit2 className="w-4 h-4 text-primary" />
 
-                  <span>
-                    Edit Hari Libur
-                  </span>
+                  <span>Edit Hari Libur</span>
                 </h3>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setEditingIndex(
-                      null
-                    )
-                  }
+                  onClick={() => setEditingIndex(null)}
                   className="p-1 rounded-lg text-muted-foreground hover:bg-accent"
                 >
                   <X className="w-5 h-5" />
@@ -2067,7 +1667,6 @@ export default function AdminPengaturanPage() {
               {/* FORM */}
 
               <div className="space-y-3 text-xs">
-
                 {/* TANGGAL */}
 
                 <div className="space-y-1">
@@ -2078,23 +1677,14 @@ export default function AdminPengaturanPage() {
                   <input
                     type="date"
                     required
-                    value={
-                      editTanggal
-                    }
-                    onChange={(e) =>
-                      setEditTanggal(
-                        e.target.value
-                      )
-                    }
+                    value={editTanggal}
+                    onChange={(e) => setEditTanggal(e.target.value)}
                     className="w-full rounded-xl border border-border bg-input px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   />
 
                   {editTanggal && (
                     <p className="text-[10px] text-muted-foreground font-mono font-bold">
-                      Tampilan:{" "}
-                      {formatTanggalIndonesia(
-                        editTanggal
-                      )}
+                      Tampilan: {formatTanggalIndonesia(editTanggal)}
                     </p>
                   )}
                 </div>
@@ -2109,14 +1699,8 @@ export default function AdminPengaturanPage() {
                   <input
                     type="text"
                     required
-                    value={
-                      editKet
-                    }
-                    onChange={(e) =>
-                      setEditKet(
-                        e.target.value
-                      )
-                    }
+                    value={editKet}
+                    onChange={(e) => setEditKet(e.target.value)}
                     placeholder="Contoh: Hari Raya Idul Fitri"
                     className="w-full rounded-xl border border-border bg-input px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary font-semibold"
                   />
@@ -2130,23 +1714,13 @@ export default function AdminPengaturanPage() {
                   </label>
 
                   <select
-                    value={
-                      editTipe
-                    }
-                    onChange={(e) =>
-                      setEditTipe(
-                        e.target.value as LiburTipe
-                      )
-                    }
+                    value={editTipe}
+                    onChange={(e) => setEditTipe(e.target.value as LiburTipe)}
                     className="w-full rounded-xl border border-border bg-input px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary font-bold"
                   >
-                    <option value="Nasional">
-                      Nasional
-                    </option>
+                    <option value="Nasional">Nasional</option>
 
-                    <option value="Khusus">
-                      Khusus
-                    </option>
+                    <option value="Khusus">Khusus</option>
                   </select>
                 </div>
               </div>
@@ -2156,11 +1730,7 @@ export default function AdminPengaturanPage() {
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    setEditingIndex(
-                      null
-                    )
-                  }
+                  onClick={() => setEditingIndex(null)}
                   className="flex-1 py-2.5 rounded-xl border border-border bg-secondary font-extrabold text-xs hover:bg-accent"
                 >
                   Batal

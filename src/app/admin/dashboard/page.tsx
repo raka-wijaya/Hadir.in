@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PhotoModal } from "@/components/attendance/PhotoModal";
 import { useAuth } from "@/lib/auth/context";
@@ -498,7 +499,6 @@ export default function AdminDashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* STATISTIK */}
         <div
           className={`grid gap-3 ${
             isSuperAdmin
@@ -512,8 +512,6 @@ export default function AdminDashboardPage() {
                 <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
                   Siswa Magang
                 </span>
-
-                <Users className="w-4 h-4 text-primary" />
               </div>
 
               {isLoading ? (
@@ -536,8 +534,6 @@ export default function AdminDashboardPage() {
                 <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
                   Karyawan OS
                 </span>
-
-                <UserCheck className="w-4 h-4 text-status-izin" />
               </div>
 
               {isLoading ? (
@@ -559,8 +555,6 @@ export default function AdminDashboardPage() {
               <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
                 Hadir
               </span>
-
-              <CheckCircle2 className="w-4 h-4 text-status-hadir" />
             </div>
 
             {isLoading ? (
@@ -581,8 +575,6 @@ export default function AdminDashboardPage() {
               <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
                 Terlambat
               </span>
-
-              <Clock className="w-4 h-4 text-status-terlambat" />
             </div>
 
             {isLoading ? (
@@ -603,8 +595,6 @@ export default function AdminDashboardPage() {
               <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
                 Izin
               </span>
-
-              <FileCheck className="w-4 h-4 text-status-izin" />
             </div>
 
             {isLoading ? (
@@ -625,8 +615,6 @@ export default function AdminDashboardPage() {
               <span className="text-[10px] font-extrabold text-status-alpa uppercase tracking-wider">
                 Tanpa Ket.
               </span>
-
-              <XCircle className="w-4 h-4 text-status-alpa" />
             </div>
 
             {isLoading ? (
@@ -647,7 +635,6 @@ export default function AdminDashboardPage() {
 
         <Kedisiplinan role={role} />
 
-        {/* RIWAYAT LOGBOOK DAN TUGAS */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
             <div>
@@ -657,7 +644,7 @@ export default function AdminDashboardPage() {
 
               <p className="text-xs text-muted-foreground mt-0.5 font-medium">
                 Pantau seluruh catatan aktivitas harian dan progres pengerjaan
-                tugas peserta secara real-time.
+                tugas peserta secara real time.
               </p>
             </div>
 
@@ -684,8 +671,6 @@ export default function AdminDashboardPage() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <BookOpen className="w-3.5 h-3.5 text-primary" />
-
                   <span>Logbook ({logbookList.length})</span>
                 </button>
 
@@ -698,8 +683,6 @@ export default function AdminDashboardPage() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <Briefcase className="w-3.5 h-3.5 text-primary" />
-
                   <span>Tugas ({tugasList.length})</span>
                 </button>
               </div>
@@ -710,15 +693,12 @@ export default function AdminDashboardPage() {
                   className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs"
                 >
                   <span>Kelola Logbook</span>
-
-                  <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground" />
                 </Link>
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* LOGBOOK */}
             {(infoFilterTab === "ALL" || infoFilterTab === "LOGBOOK") && (
               <div
                 className={`bg-card border border-border rounded-2xl p-5 md:p-6 shadow-card space-y-4 ${
@@ -727,10 +707,6 @@ export default function AdminDashboardPage() {
               >
                 <div className="flex items-center justify-between border-b border-border pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="p-2 rounded-xl bg-primary/10 text-primary">
-                      <BookOpen className="w-4 h-4" />
-                    </span>
-
                     <div>
                       <h3 className="font-extrabold text-base text-foreground">
                         Riwayat Logbook Aktivitas Terbaru
@@ -756,121 +732,105 @@ export default function AdminDashboardPage() {
 
                 {isLoading ? (
                   <div className="py-12 flex flex-col items-center justify-center text-muted-foreground space-y-2">
-                    <div className="h-6 w-6 border-2 border-primary border-t-transparent animate-spin rounded-full" />
-
-                    <p className="text-xs font-semibold">
-                      Memuat riwayat logbook...
-                    </p>
+                    <Spinner size="lg" />
                   </div>
                 ) : logbookList.length === 0 ? (
                   <div className="py-10 text-center space-y-2">
-                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
-                      <NotebookPen className="w-5 h-5" />
-                    </div>
-
-                    <p className="text-xs font-bold text-foreground">
-                      Belum ada catatan logbook
-                    </p>
-
-                    <p className="text-[11px] text-muted-foreground">
-                      Aktivitas harian yang dicatat oleh peserta magang akan
-                      tampil di sini.
+                    <p className="text-xs text-foreground">
+                      Tidak ada catatan logbook
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {logbookList
-                      .slice(0, infoFilterTab === "LOGBOOK" ? 8 : 5)
-                      .map((item) => {
-                        const durasiJam = item.durasi_menit
-                          ? `${Math.floor(item.durasi_menit / 60)}j ${
-                              item.durasi_menit % 60
-                            }m`
-                          : "—";
+                  <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
+                    {logbookList.map((item) => {
+                      const durasiJam = item.durasi_menit
+                        ? `${Math.floor(item.durasi_menit / 60)}j ${
+                            item.durasi_menit % 60
+                          }m`
+                        : "—";
 
-                        const katLabel =
-                          LOGBOOK_CATEGORY_LABELS[
-                            item.kategori as LogBookCategory
-                          ] || item.kategori;
+                      const katLabel =
+                        LOGBOOK_CATEGORY_LABELS[
+                          item.kategori as LogBookCategory
+                        ] || item.kategori;
 
-                        return (
-                          <div
-                            key={item.id}
-                            className="p-3.5 rounded-xl bg-muted text-foreground border border-border hover:border-primary/40 hover:bg-input transition-all space-y-2 group"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <img
-                                  src={
-                                    item.user_avatar ||
-                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                      item.user_nama || item.userName || "P",
-                                    )}&background=random&bold=true`
-                                  }
-                                  alt={item.user_nama || "Avatar"}
-                                  className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
-                                />
+                      return (
+                        <div
+                          key={item.id}
+                          className="p-3.5 rounded-xl bg-muted text-foreground border border-border hover:border-primary/40 hover:bg-input transition-all space-y-2 group"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <img
+                                src={
+                                  item.user_avatar ||
+                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                    item.user_nama || item.userName || "P",
+                                  )}&background=random&bold=true`
+                                }
+                                alt={item.user_nama || "Avatar"}
+                                className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
+                              />
 
-                                <div className="min-w-0">
-                                  <h4 className="font-extrabold text-xs text-foreground truncate">
-                                    {item.user_nama ||
-                                      item.userName ||
-                                      "Peserta Magang"}
-                                  </h4>
+                              <div className="min-w-0">
+                                <h4 className="font-extrabold text-xs text-foreground truncate">
+                                  {item.user_nama ||
+                                    item.userName ||
+                                    "Peserta Magang"}
+                                </h4>
 
-                                  <p className="text-[10px] text-muted-foreground truncate">
-                                    {item.user_institution ||
-                                      item.user_sekolah ||
-                                      "Peserta"}
-                                  </p>
-                                </div>
+                                <p className="text-[10px] text-muted-foreground truncate">
+                                  {item.user_institution ||
+                                    item.user_sekolah ||
+                                    "Peserta"}
+                                </p>
                               </div>
-
-                              <span
-                                className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                                  item.kategori,
-                                )}`}
-                              >
-                                {getKategoriIcon(item.kategori)}
-
-                                <span className="capitalize">{katLabel}</span>
-                              </span>
                             </div>
 
-                            <p className="text-xs text-foreground font-medium line-clamp-2 leading-relaxed bg-card p-2 rounded-lg border border-border">
-                              {item.aktivitas}
-                            </p>
+                            <span
+                              className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
+                                item.kategori,
+                              )}`}
+                            >
+                              {getKategoriIcon(item.kategori)}
 
-                            <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground pt-1 border-t border-border">
-                              <div className="flex items-center gap-2">
-                                <span className="flex items-center gap-1 font-medium">
-                                  <Calendar className="w-3 h-3 text-primary" />
-
-                                  {formatTanggalIndo(item.tanggal)}
-                                </span>
-
-                                <span>•</span>
-
-                                <span className="flex items-center gap-1 font-mono">
-                                  <Clock className="w-3 h-3 text-primary" />
-                                  {formatWaktu(item.waktu_mulai)} -{" "}
-                                  {formatWaktu(item.waktu_selesai)}
-                                </span>
-                              </div>
-
-                              <span className="font-bold text-foreground bg-muted px-2 py-0.5 rounded-md border border-border">
-                                {durasiJam}
-                              </span>
-                            </div>
+                              <span className="capitalize">{katLabel}</span>
+                            </span>
                           </div>
-                        );
-                      })}
+
+                          <p className="text-xs text-foreground font-medium line-clamp-2 leading-relaxed bg-card p-2 rounded-lg border border-border">
+                            {item.aktivitas}
+                          </p>
+
+                          <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground pt-1 border-t border-border">
+                            <div className="flex items-center gap-2">
+                              <span className="flex items-center gap-1 font-medium">
+                                <Calendar className="w-3 h-3 text-primary" />
+
+                                {formatTanggalIndo(item.tanggal)}
+                              </span>
+
+                              <span>•</span>
+
+                              <span className="flex items-center gap-1 font-mono">
+                                <Clock className="w-3 h-3 text-primary" />
+                                {formatWaktu(item.waktu_mulai)} -{" "}
+                                {formatWaktu(item.waktu_selesai)}
+                              </span>
+                            </div>
+
+                            <span className="font-bold text-foreground bg-muted px-2 py-0.5 rounded-md border border-border">
+                              {durasiJam}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             )}
 
-            {/* TUGAS */}
             {(infoFilterTab === "ALL" || infoFilterTab === "TUGAS") && (
               <div
                 className={`bg-card border border-border rounded-2xl p-5 md:p-6 shadow-card space-y-4 ${
@@ -879,10 +839,6 @@ export default function AdminDashboardPage() {
               >
                 <div className="flex items-center justify-between border-b border-border pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="p-2 rounded-xl bg-primary/10 text-primary">
-                      <Briefcase className="w-4 h-4" />
-                    </span>
-
                     <div>
                       <h3 className="font-extrabold text-base text-foreground">
                         Riwayat Tugas Terbaru
@@ -902,119 +858,104 @@ export default function AdminDashboardPage() {
 
                 {isLoading ? (
                   <div className="py-12 flex flex-col items-center justify-center text-muted-foreground space-y-2">
-                    <div className="h-6 w-6 border-2 border-primary border-t-transparent animate-spin rounded-full" />
-
-                    <p className="text-xs font-semibold">
-                      Memuat daftar tugas...
-                    </p>
+                    <Spinner size="lg" />
                   </div>
                 ) : tugasList.length === 0 ? (
                   <div className="py-10 text-center space-y-2">
-                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
-                      <Briefcase className="w-5 h-5" />
-                    </div>
-
-                    <p className="text-xs font-bold text-foreground">
-                      Belum ada tugas tercatat
-                    </p>
-
-                    <p className="text-[11px] text-muted-foreground">
-                      Tugas yang didelegasikan ke peserta magang akan tampil di
-                      sini.
+                    <p className="text-xs text-foreground">
+                      Tidak ada tugas tercatat
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {tugasList
-                      .slice(0, infoFilterTab === "TUGAS" ? 8 : 5)
-                      .map((task) => {
-                        const katLabel = task.kategori || "Umum";
+                  <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
+                    {tugasList.map((task) => {
+                      const katLabel = task.kategori || "Umum";
 
-                        return (
-                          <div
-                            key={task.id}
-                            className="p-3.5 rounded-xl bg-input/40 border border-border/80 hover:border-primary/40 hover:bg-input/70 transition-all space-y-2"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <img
-                                  src={
-                                    task.user_avatar ||
-                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                      task.user_nama || "P",
-                                    )}&background=random&bold=true`
-                                  }
-                                  alt={task.user_nama || "Avatar"}
-                                  className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
-                                />
+                      return (
+                        <div
+                          key={task.id}
+                          className="p-3.5 rounded-xl bg-input/40 border border-border/80 hover:border-primary/40 hover:bg-input/70 transition-all space-y-2"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <img
+                                src={
+                                  task.user_avatar ||
+                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                    task.user_nama || "P",
+                                  )}&background=random&bold=true`
+                                }
+                                alt={task.user_nama || "Avatar"}
+                                className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
+                              />
 
-                                <div className="min-w-0">
-                                  <h4 className="font-extrabold text-xs text-foreground truncate">
-                                    {task.user_nama || "Peserta Magang"}
-                                  </h4>
+                              <div className="min-w-0">
+                                <h4 className="font-extrabold text-xs text-foreground truncate">
+                                  {task.user_nama || "Peserta Magang"}
+                                </h4>
 
-                                  <p className="text-[10px] text-muted-foreground truncate">
-                                    {task.user_institution ||
-                                      task.user_sekolah ||
-                                      "—"}
-                                  </p>
-                                </div>
+                                <p className="text-[10px] text-muted-foreground truncate">
+                                  {task.user_institution ||
+                                    task.user_sekolah ||
+                                    "—"}
+                                </p>
                               </div>
-
-                              <span
-                                className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                                  katLabel,
-                                )}`}
-                              >
-                                {getKategoriIcon(katLabel)}
-
-                                <span className="capitalize">{katLabel}</span>
-                              </span>
                             </div>
 
-                            <div className="flex items-start gap-2">
-                              <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                            <span
+                              className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
+                                katLabel,
+                              )}`}
+                            >
+                              {getKategoriIcon(katLabel)}
 
-                              <p className="font-extrabold text-xs text-foreground leading-snug">
-                                {task.judul_tugas || task.judulTugas || "—"}
-                              </p>
-                            </div>
-
-                            {task.deskripsi && (
-                              <p className="text-[11px] text-foreground/80 font-medium leading-relaxed line-clamp-2 bg-card/60 px-2.5 py-2 rounded-lg border border-border/40">
-                                {task.deskripsi}
-                              </p>
-                            )}
-
-                            {task.log_book_aktivitas && (
-                              <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg px-2.5 py-1.5">
-                                <BookOpen className="w-3 h-3 text-primary mt-0.5 shrink-0" />
-
-                                <span className="line-clamp-1">
-                                  <span className="font-bold text-primary">
-                                    Logbook:
-                                  </span>{" "}
-                                  {task.log_book_aktivitas}
-                                </span>
-                              </div>
-                            )}
-
-                            <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground pt-1 border-t border-border/40">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3 text-primary" />
-
-                                {task.log_book_tanggal
-                                  ? formatTanggalIndo(task.log_book_tanggal)
-                                  : formatTanggalIndo(task.created_at)}
-                              </span>
-
-                              <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border/60">
-                                ID #{task.id}
-                              </span>
-                            </div>
+                              <span className="capitalize">{katLabel}</span>
+                            </span>
                           </div>
-                        );
-                      })}
+
+                          <div className="flex items-start gap-2">
+                            <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+
+                            <p className="font-extrabold text-xs text-foreground leading-snug">
+                              {task.judul_tugas || task.judulTugas || "—"}
+                            </p>
+                          </div>
+
+                          {task.deskripsi && (
+                            <p className="text-[11px] text-foreground/80 font-medium leading-relaxed line-clamp-2 bg-card/60 px-2.5 py-2 rounded-lg border border-border/40">
+                              {task.deskripsi}
+                            </p>
+                          )}
+
+                          {task.log_book_aktivitas && (
+                            <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg px-2.5 py-1.5">
+                              <BookOpen className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+
+                              <span className="line-clamp-1">
+                                <span className="font-bold text-primary">
+                                  Logbook:
+                                </span>{" "}
+                                {task.log_book_aktivitas}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground pt-1 border-t border-border/40">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-primary" />
+
+                              {task.log_book_tanggal
+                                ? formatTanggalIndo(task.log_book_tanggal)
+                                : formatTanggalIndo(task.created_at)}
+                            </span>
+
+                            <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border/60">
+                              ID #{task.id}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1022,7 +963,6 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* DAFTAR PRESENSI */}
         <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
             <div>
@@ -1047,7 +987,7 @@ export default function AdminDashboardPage() {
 
                 <input
                   type="text"
-                  placeholder="Cari nama..."
+                  placeholder="Cari nama"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="rounded-xl border border-border bg-input pl-9 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -1058,7 +998,7 @@ export default function AdminDashboardPage() {
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
-                  className="rounded-xl border border-border bg-input px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-bold"
+                  className="rounded-xl border border-border cursor-pointer bg-input px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-bold"
                 >
                   <option value="ALL">Semua Role</option>
 
@@ -1091,7 +1031,15 @@ export default function AdminDashboardPage() {
               </thead>
 
               <tbody className="divide-y divide-border">
-                {filteredTodayList.length > 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center">
+                      <div className="flex items-center justify-center">
+                        <Spinner size="lg" />
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredTodayList.length > 0 ? (
                   filteredTodayList.map((rec) => (
                     <tr
                       key={rec.id}
@@ -1180,7 +1128,7 @@ export default function AdminDashboardPage() {
                       colSpan={7}
                       className="py-8 text-center text-muted-foreground font-semibold"
                     >
-                      Belum ada data presensi yang sesuai.
+                      Tidak ada data presensi hari ini
                     </td>
                   </tr>
                 )}

@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { User } from "@/types";
 import { AlertModal, ConfirmModal } from "@/components/ui/Alert";
 import { ModalPortal } from "@/components/ui/ModalPortal";
+import { Spinner } from "@/components/ui/Spinner";
 import {
   UserCheck,
   Plus,
@@ -523,7 +524,7 @@ export default function AdminPegawaiOsPage() {
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs md:text-sm font-black hover:opacity-95 transition-all flex items-center gap-1.5 shadow-card"
+              className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs md:text-sm font-black hover:opacity-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-card"
             >
               <Plus className="w-4 h-4" />
 
@@ -537,7 +538,7 @@ export default function AdminPegawaiOsPage() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Cari NIP, nama, vendor, atau divisi..."
+              placeholder="Cari NIP, nama, vendor, atau divisi"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-8 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -579,7 +580,9 @@ export default function AdminPegawaiOsPage() {
                       colSpan={6}
                       className="py-10 text-center text-muted-foreground"
                     >
-                      Memuat data pegawai OS...
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Spinner size="lg" />
+                      </div>
                     </td>
                   </tr>
                 ) : paginatedEmployees.length > 0 ? (
@@ -611,9 +614,7 @@ export default function AdminPegawaiOsPage() {
                             </div>
 
                             <div className="text-[11px] text-muted-foreground font-normal">
-                              {item.sekolah_kampus ||
-                                item.institution ||
-                                "PT Sinergi OS"}
+                              {item.sekolah_kampus || item.institution || "-"}
                             </div>
                           </div>
                         </div>
@@ -637,7 +638,7 @@ export default function AdminPegawaiOsPage() {
                         {item.unit_kerja ||
                           item.bagian ||
                           item.studyProgram ||
-                          "Teknisi Operasional"}
+                          "-"}
                       </td>
 
                       <td className="py-3.5 px-4">
@@ -691,10 +692,8 @@ export default function AdminPegawaiOsPage() {
                       className="py-10 text-center text-muted-foreground"
                     >
                       <div className="flex flex-col items-center gap-2">
-                        <UserCheck className="w-8 h-8 opacity-40" />
-
                         <span className="text-xs font-semibold">
-                          Tidak ada data pegawai OS.
+                          Tidak ada data pegawai os.
                         </span>
                       </div>
                     </td>
@@ -810,7 +809,7 @@ export default function AdminPegawaiOsPage() {
                     type="text"
                     value={newNip}
                     onChange={(e) => setNewNip(e.target.value)}
-                    placeholder="Masukkan NIP pegawai OS"
+                    placeholder="Masukkan nip pegawai os"
                     className="
               w-full
               rounded-xl
@@ -837,7 +836,7 @@ export default function AdminPegawaiOsPage() {
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Masukkan nama pegawai OS"
+                    placeholder="Masukkan nama pegawai os"
                     className="
               w-full
               rounded-xl
@@ -864,7 +863,7 @@ export default function AdminPegawaiOsPage() {
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="pegawai@os.sipresma.go.id"
+                    placeholder="Masukkan email"
                     className="
               w-full
               rounded-xl
@@ -891,7 +890,7 @@ export default function AdminPegawaiOsPage() {
                     type="text"
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
-                    placeholder="081234567890"
+                    placeholder="Masukkan no. hp"
                     className="
               w-full
               rounded-xl
@@ -919,7 +918,7 @@ export default function AdminPegawaiOsPage() {
                     type="text"
                     value={newVendor}
                     onChange={(e) => setNewVendor(e.target.value)}
-                    placeholder="PT Sinergi Facility Management"
+                    placeholder="Masukkan vendor outsourcing"
                     className="
               w-full
               rounded-xl
@@ -947,7 +946,7 @@ export default function AdminPegawaiOsPage() {
                     type="text"
                     value={newDivisi}
                     onChange={(e) => setNewDivisi(e.target.value)}
-                    placeholder="Teknisi Operasional / Security / IT Support..."
+                    placeholder="Masukkan divisi"
                     className="
               w-full
               rounded-xl
@@ -1051,7 +1050,7 @@ export default function AdminPegawaiOsPage() {
                     type="text"
                     value={editNip}
                     onChange={(e) => setEditNip(e.target.value)}
-                    placeholder="Masukkan NIP pegawai OS"
+                    placeholder="Masukkan nip pegawai os"
                     className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     required
                   />
@@ -1065,7 +1064,7 @@ export default function AdminPegawaiOsPage() {
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    placeholder="Masukkan nama pegawai OS"
+                    placeholder="Masukkan nama lengkap"
                     className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     required
                   />
@@ -1079,7 +1078,7 @@ export default function AdminPegawaiOsPage() {
                     type="email"
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
-                    placeholder="Masukkan Email Work"
+                    placeholder="Masukkan email"
                     className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     required
                   />
@@ -1093,7 +1092,7 @@ export default function AdminPegawaiOsPage() {
                     type="text"
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    placeholder="Masukkan No. HP / Kontak"
+                    placeholder="Masukkan no. hp"
                     className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     required
                   />
@@ -1108,7 +1107,7 @@ export default function AdminPegawaiOsPage() {
                     type="text"
                     value={editVendor}
                     onChange={(e) => setEditVendor(e.target.value)}
-                    placeholder="Masukkan Vendor Outsourcing"
+                    placeholder="Masukkan vendor outsourcing"
                     className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     required
                   />
@@ -1123,7 +1122,7 @@ export default function AdminPegawaiOsPage() {
                     type="text"
                     value={editDivisi}
                     onChange={(e) => setEditDivisi(e.target.value)}
-                    placeholder="Masukkan Divisi / Unit Kerja"
+                    placeholder="Masukkan divisi"
                     className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     required
                   />
@@ -1143,7 +1142,14 @@ export default function AdminPegawaiOsPage() {
                   disabled={isSavingEdit}
                   className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-card hover:opacity-95 transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  {isSavingEdit ? "Menyimpan..." : "Simpan Perubahan"}
+                  {isSavingEdit ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Spinner size="sm" />
+                      <span>Menyimpan...</span>
+                    </span>
+                  ) : (
+                    "Simpan Perubahan"
+                  )}
                 </button>
               </div>
             </form>
