@@ -343,86 +343,92 @@ export default function AdminVerifikasiAkunPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <div
             onClick={() => setStatusFilter("PENDING")}
-            className={`bg-card border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card transition-all cursor-pointer ${
+            className={`bg-card border rounded-2xl p-4 shadow-card space-y-1 transition-all cursor-pointer ${
               statusFilter === "PENDING"
                 ? "border-status-terlambat ring-2 ring-status-terlambat/20"
                 : "border-border hover:border-status-terlambat/40"
             }`}
           >
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-status-terlambat">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
                 Menunggu Verifikasi
               </span>
             </div>
-            <p className="text-2xl md:text-3xl font-black text-status-terlambat">
+
+            <p className="text-2xl font-black text-status-terlambat">
               {counts.pending}
             </p>
-            <p className="text-[11px] text-muted-foreground">
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
               Perlu tindakan persetujuan
-            </p>
+            </span>
           </div>
 
           <div
             onClick={() => setStatusFilter("APPROVED")}
-            className={`bg-card border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card transition-all cursor-pointer ${
+            className={`bg-card border rounded-2xl p-4 shadow-card space-y-1 transition-all cursor-pointer ${
               statusFilter === "APPROVED"
                 ? "border-status-hadir ring-2 ring-status-hadir/20"
                 : "border-border hover:border-status-hadir/40"
             }`}
           >
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-status-hadir">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
                 Disetujui
               </span>
             </div>
-            <p className="text-2xl md:text-3xl font-black text-status-hadir">
+
+            <p className="text-2xl font-black text-status-hadir">
               {counts.approved}
             </p>
-            <p className="text-[11px] text-muted-foreground">
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
               Akun aktif terverifikasi
-            </p>
+            </span>
           </div>
 
           <div
             onClick={() => setStatusFilter("REJECTED")}
-            className={`bg-card border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card transition-all cursor-pointer ${
+            className={`bg-card border rounded-2xl p-4 shadow-card space-y-1 transition-all cursor-pointer ${
               statusFilter === "REJECTED"
                 ? "border-status-alpa ring-2 ring-status-alpa/20"
                 : "border-border hover:border-status-alpa/40"
             }`}
           >
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-status-alpa">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-alpa uppercase tracking-wider">
                 Ditolak
               </span>
             </div>
-            <p className="text-2xl md:text-3xl font-black text-status-alpa">
+
+            <p className="text-2xl font-black text-status-alpa">
               {counts.rejected}
             </p>
-            <p className="text-[11px] text-muted-foreground">
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
               Pendaftaran ditolak
-            </p>
+            </span>
           </div>
 
           <div
             onClick={() => setStatusFilter("ALL")}
-            className={`bg-card border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card transition-all cursor-pointer ${
+            className={`bg-card border rounded-2xl p-4 shadow-card space-y-1 transition-all cursor-pointer ${
               statusFilter === "ALL"
                 ? "border-primary ring-2 ring-primary/20"
                 : "border-border hover:border-primary/40"
             }`}
           >
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-primary">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
                 Total Pendaftar
               </span>
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">
-              {counts.total}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
+
+            <p className="text-2xl font-black text-primary">{counts.total}</p>
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
               Semua riwayat akun
-            </p>
+            </span>
           </div>
         </div>
 

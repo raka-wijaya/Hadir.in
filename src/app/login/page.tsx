@@ -337,9 +337,6 @@ export default function LoginPage() {
               <Spinner size="lg" />
             </div>
 
-            <p className="text-xs font-sans font-bold text-muted-foreground animate-pulse">
-              Memuat halaman masuk...
-            </p>
           </div>
         </div>
       }

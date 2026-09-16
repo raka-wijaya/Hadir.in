@@ -38,6 +38,11 @@ async function ensurePesertaMagangSchema() {
         `ALTER TABLE peserta_magang ADD COLUMN batch INT NULL AFTER institution`
       );
     }
+    if (!existing.has("divisi")) {
+      await mysqlPool.query(
+        `ALTER TABLE peserta_magang ADD COLUMN divisi VARCHAR(150) NULL AFTER batch`
+      );
+    }
     isPesertaMagangTableChecked = true;
   } catch (err) {
     console.warn("Auto-migration check peserta_magang schema:", err);
@@ -51,6 +56,8 @@ export async function GET(req: Request) {
     const statusParam = searchParams.get("status");
     const search = searchParams.get("q");
 
+    const idParam = searchParams.get("id");
+
     let sql = `
       SELECT
         id,
@@ -60,6 +67,7 @@ export async function GET(req: Request) {
         identity_number,
         institution,
         study_program,
+        divisi,
         avatar,
         start_date,
         end_date,
@@ -73,6 +81,11 @@ export async function GET(req: Request) {
     `;
     const params: any[] = [];
 
+    if (idParam) {
+      sql += " AND id = ?";
+      params.push(idParam);
+    }
+
     if (statusParam && statusParam !== "ALL") {
       sql += " AND status = ?";
       params.push(normalizeStatus(statusParam));
@@ -80,9 +93,9 @@ export async function GET(req: Request) {
 
     if (search) {
       sql +=
-        " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR identity_number LIKE ? OR institution LIKE ? OR study_program LIKE ?)";
+        " AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR identity_number LIKE ? OR institution LIKE ? OR study_program LIKE ? OR divisi LIKE ?)";
       const q = `%${search.trim()}%`;
-      params.push(q, q, q, q, q, q);
+      params.push(q, q, q, q, q, q, q);
     }
 
     sql += " ORDER BY created_at DESC";
@@ -113,6 +126,7 @@ export async function GET(req: Request) {
         last_login_at: row.last_login_at || null,
         created_at: row.created_at || null,
         updated_at: row.updated_at || null,
+        divisi: row.divisi ? String(row.divisi) : null,
         nama: row.name,
         no_hp: row.phone || null,
         identityNumber: row.identity_number || null,
@@ -163,6 +177,7 @@ export async function POST(req: Request) {
       body.start_date || body.startDate || body.periode_mulai;
     const rawEndDate = body.end_date || body.endDate || body.periode_selesai;
     const rawBatch = body.batch;
+    const rawDivisi = body.divisi;
 
     if (!rawName || !rawEmail) {
       return NextResponse.json(
@@ -194,6 +209,9 @@ export async function POST(req: Request) {
       rawBatch !== "-"
         ? Number(rawBatch)
         : null;
+    const divisi = rawDivisi !== undefined && rawDivisi !== null && rawDivisi !== ""
+      ? String(rawDivisi).trim().slice(0, 150)
+      : null;
 
     let finalAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=72e3ad&color=1e2723&bold=true`;
     if (body.avatar && typeof body.avatar === "string") {
@@ -231,8 +249,8 @@ export async function POST(req: Request) {
     const hashedPassword = await hashPassword(rawPassword);
 
     const [insertRes]: any = await mysqlPool.query(
-      `INSERT INTO peserta_magang (name, email, password, status, phone, identity_number, institution, study_program, avatar, start_date, end_date, batch)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO peserta_magang (name, email, password, status, phone, identity_number, institution, study_program, divisi, avatar, start_date, end_date, batch)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name,
         email,
@@ -242,6 +260,7 @@ export async function POST(req: Request) {
         identityNumber,
         institution,
         studyProgram,
+        divisi,
         finalAvatar,
         startDate,
         endDate,
@@ -262,6 +281,7 @@ export async function POST(req: Request) {
           identity_number: identityNumber,
           institution,
           study_program: studyProgram,
+          divisi,
           avatar: finalAvatar,
           start_date: startDate,
           end_date: endDate,
@@ -322,6 +342,7 @@ export async function PATCH(req: Request) {
       rejection_reason,
       rejectionReason,
       batch,
+      divisi,
     } = body;
 
     if (!id) {
@@ -475,6 +496,14 @@ export async function PATCH(req: Request) {
       fields.push("batch = ?");
       params.push(finalBatch);
     }
+    if (divisi !== undefined) {
+      fields.push("divisi = ?");
+      params.push(
+        divisi !== null && divisi !== ""
+          ? String(divisi).trim().slice(0, 150)
+          : null
+      );
+    }
 
     if (fields.length === 0) {
       return NextResponse.json(
@@ -521,6 +550,10 @@ export async function PATCH(req: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function PUT(req: Request) {
+  return PATCH(req);
 }
 
 export async function DELETE(req: Request) {

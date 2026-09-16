@@ -7,12 +7,48 @@ export interface ModalPortalProps {
   children: React.ReactNode;
 }
 
+let activeModalCount = 0;
+let previousOverflow = "";
+let previousPaddingRight = "";
+
+export function lockScroll() {
+  if (typeof document === "undefined") return;
+  if (activeModalCount === 0) {
+    // Save original styles
+    previousOverflow = document.body.style.overflow;
+    previousPaddingRight = document.body.style.paddingRight;
+
+    // Prevent layout shift/jumping when scrollbar disappears
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    document.body.style.overflow = "hidden";
+  }
+  activeModalCount += 1;
+}
+
+export function unlockScroll() {
+  if (typeof document === "undefined") return;
+  activeModalCount = Math.max(0, activeModalCount - 1);
+  if (activeModalCount === 0) {
+    document.body.style.overflow = previousOverflow;
+    document.body.style.paddingRight = previousPaddingRight;
+  }
+}
+
 export function ModalPortal({ children }: ModalPortalProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    return () => setMounted(false);
+    lockScroll();
+
+    return () => {
+      setMounted(false);
+      unlockScroll();
+    };
   }, []);
 
   if (!mounted || typeof document === "undefined") {
@@ -21,3 +57,4 @@ export function ModalPortal({ children }: ModalPortalProps) {
 
   return createPortal(children, document.body);
 }
+

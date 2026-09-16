@@ -11,7 +11,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { BarChart3 } from "lucide-react";
 import { Spinner } from "./Spinner";
 
 interface Absensi {
@@ -175,13 +174,11 @@ function isStatusHadir(absensi: Absensi): boolean {
     return false;
   }
 
-  // Orang yang sudah check-in dan statusnya hadir / tepat waktu
   return (
     status === "hadir" ||
     status === "tepat_waktu" ||
     status === "present" ||
     statusMasuk === "tepat_waktu" ||
-    // Jika ada jam masuk tapi status belum di-set (absen tapi belum ada status)
     (absensi.jam_masuk != null && status === "")
   );
 }
@@ -200,7 +197,7 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
         setError(null);
 
         const today = new Date();
-        // Tanggal hari ini dalam WIB, digunakan untuk membandingkan hari
+
         const todayString = getTanggalIndonesia(today);
         const monday = getMonday(today);
 
@@ -210,7 +207,6 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
         const tanggalMulai = getTanggalIndonesia(monday);
         const tanggalSelesai = getTanggalIndonesia(friday);
 
-        // Fetch absensi dan users secara paralel
         const absUrl = new URL("/api/absensi", window.location.origin);
         absUrl.searchParams.set("role", role);
         absUrl.searchParams.set("startDate", tanggalMulai);
@@ -256,7 +252,6 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
 
         const absensi: Absensi[] = result.data ?? [];
 
-        // Filter absensi sesuai role
         const filteredAbsensi = absensi.filter((item) => {
           const ur = (item.user_role || item.userRole || "").toUpperCase();
           if (roleUpper === "SUPER_ADMIN" || roleUpper === "SUPERADMIN") {
@@ -271,7 +266,6 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
           return true;
         });
 
-        // Hitung total user aktif sesuai role (untuk kalkulasi Alpa)
         let totalActiveUsers = 0;
         if (magangResponse && magangResponse.ok) {
           const mResult = await magangResponse.json().catch(() => ({}));
@@ -304,7 +298,6 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
           const tanggalString = getTanggalIndonesia(tanggal);
           const hari = HARI[i];
 
-          // ── Hari yang akan datang: semua nilai 0, jangan hitung sama sekali ──
           if (tanggalString > todayString) {
             statistik.push({
               hari,
@@ -317,7 +310,6 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
             continue;
           }
 
-          // ── Hari ini & hari yang sudah lewat: hitung dari data DB ──
           const isToday = tanggalString === todayString;
 
           const dataHariIni = absensiMingguIni.filter(
@@ -363,18 +355,13 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
             }
           });
 
-          // Hitung alpa:
-          // - Hari yang sudah lewat: user aktif yang tidak tercatat = alpa
-          // - Hari ini: hanya alpa dari yang sudah presensi (jangan paksa semua user belum absen = alpa)
           let calculatedAlpa = alpa;
           if (!isToday) {
-            // Hari lampau: user yang tidak muncul di DB = alpa
             calculatedAlpa =
               totalActiveUsers > 0
                 ? Math.max(0, totalActiveUsers - absenUserIds.size)
                 : alpa;
           }
-          // Hari ini: pakai alpa dari record saja (tidak paksa user yang belum absen sebagai alpa)
 
           const total = hadir + terlambat + izinSakit + calculatedAlpa;
 
@@ -418,20 +405,17 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
 
   return (
     <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center gap-2">
-          {/* <BarChart3 className="w-5 h-5 text-primary" /> */}
-          <h3 className="font-extrabold text-base text-foreground">
-            Diagram Batang Presensi Mingguan
+          <h3 className="font-sans font-bold text-base text-foreground">
+            Diagram batang presensi mingguan
           </h3>
         </div>
-        <span className="text-xs font-bold text-muted-foreground">
+        <span className="text-xs font-bold font-sans text-muted-foreground">
           Persentase Presensi (%)
         </span>
       </div>
 
-      {/* Loading */}
       {loading ? (
         <div className="w-full h-[300px] flex items-center justify-center">
           <div className="flex flex-col items-center gap-2">
@@ -444,7 +428,9 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
         </div>
       ) : chartData.length === 0 ? (
         <div className="w-full h-[300px] flex items-center justify-center">
-          <p className="text-xs text-foreground">Tidak ada data statistik</p>
+          <p className="text-xs font-sans text-foreground">
+            Tidak ada data statistik
+          </p>
         </div>
       ) : (
         <div className="w-full h-[320px]">
@@ -502,9 +488,9 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
                     ];
                     return (
                       <div className="bg-card/95 backdrop-blur-md border border-border rounded-xl p-3.5 shadow-xl min-w-[165px] space-y-2">
-                        <p className="font-extrabold text-xs text-foreground pb-1 border-b border-border">
+                        <p className="font-sans font-bold text-xs text-foreground pb-1 border-b border-border">
                           {label}{" "}
-                          <span className="font-normal text-[11px] text-muted-foreground">
+                          <span className="font-normal font-sans text-[11px] text-muted-foreground">
                             ({formatDisplayDate(d.tanggal)})
                           </span>
                         </p>
@@ -512,19 +498,19 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
                           {items.map((it) => (
                             <div
                               key={it.label}
-                              className="flex items-center justify-between gap-3"
+                              className="flex font-sans items-center justify-between gap-3"
                             >
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex font-sans items-center gap-1.5">
                                 <span
                                   className="w-2.5 h-2.5 rounded-sm"
                                   style={{ backgroundColor: it.color }}
                                 />
-                                <span className="text-muted-foreground">
+                                <span className="font-sans text-muted-foreground">
                                   {it.label}:
                                 </span>
                               </div>
                               <span
-                                className="font-bold"
+                                className="font-bold font-sans"
                                 style={{ color: it.color }}
                               >
                                 {it.value}%
@@ -551,12 +537,15 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
                       { label: "Izin", color: "#2563eb" },
                       { label: "Tanpa Ket.", color: "#dc2626" },
                     ].map((it) => (
-                      <div key={it.label} className="flex items-center gap-1.5">
+                      <div
+                        key={it.label}
+                        className="flex font-sans items-center gap-1.5"
+                      >
                         <span
                           className="w-2.5 h-2.5 rounded-sm"
                           style={{ backgroundColor: it.color }}
                         />
-                        <span className="text-[11px] font-bold text-foreground">
+                        <span className="text-[11px] font-bold font-sans text-foreground">
                           {it.label}
                         </span>
                       </div>
@@ -565,7 +554,6 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
                 )}
               />
 
-              {/* Hadir — Hijau */}
               <Bar
                 dataKey="hadir"
                 name="Hadir"
@@ -576,7 +564,6 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
                 minPointSize={1}
               />
 
-              {/* Terlambat — Oranye */}
               <Bar
                 dataKey="terlambat"
                 name="Terlambat"
@@ -587,7 +574,6 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
                 minPointSize={1}
               />
 
-              {/* Izin — Biru */}
               <Bar
                 dataKey="izin"
                 name="Izin"
@@ -598,7 +584,6 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
                 minPointSize={1}
               />
 
-              {/* Tanpa Keterangan / Alpa — Merah */}
               <Bar
                 dataKey="alpa"
                 name="Tanpa Ket."

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ConfirmModal } from "@/components/ui/Alert";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 import type { HariLibur } from "@/types";
 
@@ -1290,10 +1291,6 @@ export default function AdminPengaturanPage() {
             </div>
           </div>
 
-          {/* ==================================================
-              PERIODE PENDAFTARAN
-          ================================================== */}
-
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-5">
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <CalendarRange className="w-5 h-5 text-primary" />
@@ -1416,10 +1413,6 @@ export default function AdminPengaturanPage() {
             </div>
           </div>
 
-          {/* ==================================================
-              WHATSAPP
-          ================================================== */}
-
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
             <h3 className="font-extrabold text-base text-foreground border-b border-border pb-3 flex items-center gap-2">
               <Phone className="w-4 h-4 text-primary" />
@@ -1459,10 +1452,6 @@ export default function AdminPengaturanPage() {
             </div>
           </div>
 
-          {/* ==================================================
-              HARI LIBUR
-          ================================================== */}
-
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
             <div className="border-b border-border pb-3">
               <h3 className="font-extrabold text-base text-foreground flex items-center gap-2">
@@ -1474,10 +1463,6 @@ export default function AdminPengaturanPage() {
                 Hari libur hanya berlaku pada tanggal yang didaftarkan.
               </p>
             </div>
-
-            {/* ==================================================
-                TAMBAH HARI LIBUR
-            ================================================== */}
 
             <div className="bg-muted/50 p-4 rounded-xl border border-border space-y-3">
               <span className="text-xs font-extrabold text-foreground block">
@@ -1528,10 +1513,6 @@ export default function AdminPengaturanPage() {
               </div>
             </div>
 
-            {/* ==================================================
-                TABEL HARI LIBUR
-            ================================================== */}
-
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
@@ -1553,22 +1534,15 @@ export default function AdminPengaturanPage() {
                         key={item.id ?? `${item.tanggal}-${index}`}
                         className="hover:bg-accent/50 transition-colors"
                       >
-                        {/* TANGGAL */}
                         <td className="py-2.5 px-3 font-bold text-foreground font-mono whitespace-nowrap">
                           {formatTanggalIndonesia(item.tanggal)}
                         </td>
-
-                        {/* HARI */}
                         <td className="py-2.5 px-3 font-bold text-foreground whitespace-nowrap">
                           {getNamaHari(item.tanggal)}
                         </td>
-
-                        {/* KETERANGAN */}
                         <td className="py-2.5 px-3 text-foreground font-semibold">
                           {item.keterangan}
                         </td>
-
-                        {/* TIPE */}
                         <td className="py-2.5 px-3">
                           <span
                             className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
@@ -1580,8 +1554,6 @@ export default function AdminPengaturanPage() {
                             {item.tipe}
                           </span>
                         </td>
-
-                        {/* AKSI */}
                         <td className="py-2.5 px-3 text-right space-x-1">
                           <button
                             type="button"
@@ -1608,7 +1580,7 @@ export default function AdminPengaturanPage() {
                         colSpan={5}
                         className="py-6 text-center text-muted-foreground"
                       >
-                        Belum ada data hari libur yang tersimpan.
+                        Tidak ada data hari libur yang tersimpan.
                       </td>
                     </tr>
                   )}
@@ -1616,10 +1588,6 @@ export default function AdminPengaturanPage() {
               </table>
             </div>
           </div>
-
-          {/* ==================================================
-              SAVE
-          ================================================== */}
 
           <button
             type="submit"
@@ -1636,21 +1604,17 @@ export default function AdminPengaturanPage() {
           </button>
         </form>
 
-        {/* ====================================================
-            MODAL EDIT
-        ==================================================== */}
-
         {editingIndex !== null && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <form
-              onSubmit={handleSaveEditLibur}
-              className="bg-card border border-border rounded-2xl w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto p-6 shadow-elevated space-y-4 animate-in zoom-in-95"
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <form
+                onSubmit={handleSaveEditLibur}
+                className="bg-card border border-border rounded-2xl w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto p-6 shadow-elevated space-y-4 animate-in zoom-in-95"
             >
-              {/* HEADER */}
-
+             
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <h3 className="font-black text-base text-foreground flex items-center gap-2">
-                  <Edit2 className="w-4 h-4 text-primary" />
+                  
 
                   <span>Edit Hari Libur</span>
                 </h3>
@@ -1744,7 +1708,8 @@ export default function AdminPengaturanPage() {
                 </button>
               </div>
             </form>
-          </div>
+            </div>
+          </ModalPortal>
         )}
       </div>
     </DashboardLayout>

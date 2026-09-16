@@ -25,6 +25,7 @@ import {
   NotebookPen,
   Briefcase,
 } from "lucide-react";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -547,17 +548,19 @@ export function Sidebar({
       </aside>
 
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
+        <ModalPortal>
+          <div className="lg:hidden fixed inset-0 z-50 flex">
 
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-in fade-in"
-            onClick={onCloseMobile}
-          />
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-in fade-in"
+              onClick={onCloseMobile}
+            />
 
-          <div className="relative z-10 w-[260px] max-w-[80vw] h-full shadow-elevated animate-in slide-in-from-left duration-200">
-            {sidebarContent}
+            <div className="relative z-10 w-[260px] max-w-[80vw] h-full shadow-elevated animate-in slide-in-from-left duration-200">
+              {sidebarContent}
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </>
   );

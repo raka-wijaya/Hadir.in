@@ -198,7 +198,7 @@ export async function POST(req: Request) {
         `
           SELECT
             id, email, password, 'ANAK_MAGANG' AS role, name, phone, identity_number,
-            institution, study_program, avatar, start_date, end_date,
+            institution, study_program, divisi, avatar, start_date, end_date,
             status, last_login_at, created_at, updated_at,
             'APPROVED' AS verification_status, NULL AS rejection_reason
           FROM peserta_magang
@@ -330,7 +330,7 @@ export async function POST(req: Request) {
       vendor: user.institution || null,
       jurusan: user.study_program || null,
       studyProgram: user.study_program || null,
-      divisi: user.study_program || null,
+      divisi: user.divisi !== undefined ? (user.divisi || null) : (user.study_program || null),
       unit_kerja: user.study_program || null,
       bagian: user.study_program || null,
       startDate: startDateFormatted,

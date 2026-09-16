@@ -779,10 +779,11 @@ export async function PATCH(req: Request) {
           if (!pmId) {
             const defaultPassword = await hashPassword("magang123");
             const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(p.nama)}&background=72e3ad&color=1e2723&bold=true`;
+            const cleanDivisi = p.bagian ? String(p.bagian).trim().slice(0, 150) : null;
             
             const [insertPmRes]: any = await mysqlPool.query(
-              `INSERT INTO peserta_magang (name, email, password, status, phone, identity_number, institution, study_program, avatar, start_date, end_date)
-               VALUES (?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?)`,
+              `INSERT INTO peserta_magang (name, email, password, status, phone, identity_number, institution, study_program, divisi, avatar, start_date, end_date)
+               VALUES (?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?)`,
               [
                 p.nama,
                 p.email ? p.email.toLowerCase().trim() : "",
@@ -791,6 +792,7 @@ export async function PATCH(req: Request) {
                 null,
                 p.sekolah_kampus || null,
                 p.study_program || null,
+                cleanDivisi,
                 avatar,
                 p.periode_mulai ? formatDate(p.periode_mulai) : null,
                 p.periode_selesai ? formatDate(p.periode_selesai) : null,

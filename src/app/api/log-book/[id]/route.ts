@@ -13,6 +13,8 @@ export const VALID_CATEGORIES = [
   "programmer",
 ] as const;
 
+export type LogBookKategori = (typeof VALID_CATEGORIES)[number];
+
 function formatDateYMD(value: any): string {
   if (!value) return "";
   if (typeof value === "string") return value.slice(0, 10);
@@ -47,21 +49,25 @@ function calculateDurationMinutes(waktuMulai: string, waktuSelesai: string): num
   return diff > 0 ? Math.floor(diff / 60) : 0;
 }
 
-function normalizeKategori(kategori: string): string {
-  if (!kategori) return "media";
+function normalizeKategori(kategori: string): LogBookKategori {
+  if (!kategori) return "programmer";
   const cleaned = kategori.trim().toLowerCase();
   const found = VALID_CATEGORIES.find((cat) => cat === cleaned);
   if (found) return found;
 
   if (cleaned.includes("kelahiran") || cleaned.includes("lahir")) return "akta kelahiran";
   if (cleaned.includes("kematian") || cleaned.includes("mati")) return "akta kematian";
-  if (cleaned.includes("bio") || cleaned.includes("biodata") || cleaned.includes("tambah data")) return "tambah bio data";
+  if (cleaned.includes("bio") || cleaned.includes("biodata") || cleaned.includes("tambah data"))
+    return "tambah bio data";
   if (cleaned.includes("pindah keluar") || cleaned.includes("keluar")) return "pindah keluar";
-  if (cleaned.includes("pindah datang") || cleaned.includes("datang") || cleaned.includes("masuk")) return "pindah datang";
-  if (cleaned.includes("program") || cleaned.includes("coding") || cleaned.includes("dev")) return "programmer";
-  if (cleaned.includes("media") || cleaned.includes("desain") || cleaned.includes("sosmed")) return "media";
+  if (cleaned.includes("pindah datang") || cleaned.includes("datang") || cleaned.includes("masuk"))
+    return "pindah datang";
+  if (cleaned.includes("program") || cleaned.includes("coding") || cleaned.includes("dev"))
+    return "programmer";
+  if (cleaned.includes("media") || cleaned.includes("desain") || cleaned.includes("sosmed"))
+    return "media";
 
-  return cleaned;
+  return "programmer";
 }
 
 interface RouteParams {
@@ -86,16 +92,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const [rows]: any = await mysqlPool.query(
       `
       SELECT
-        id,
-        peserta_magang_id,
-        tanggal,
-        waktu_mulai,
-        waktu_selesai,
-        kategori,
-        aktivitas,
-        created_at
-      FROM log_book
-      WHERE id = ?
+        lb.id,
+        lb.peserta_magang_id,
+        DATE_FORMAT(lb.tanggal, '%Y-%m-%d') AS tanggal_formatted,
+        DATE_FORMAT(lb.waktu_mulai, '%H:%i:%s') AS waktu_mulai_formatted,
+        DATE_FORMAT(lb.waktu_selesai, '%H:%i:%s') AS waktu_selesai_formatted,
+        lb.kategori,
+        lb.aktivitas,
+        DATE_FORMAT(lb.created_at, '%Y-%m-%d %H:%i:%s') AS created_at_formatted,
+        t.id AS tugas_id,
+        t.judul_tugas AS tugas_judul
+      FROM log_book lb
+      LEFT JOIN tugas t ON t.log_book_id = lb.id
+      WHERE lb.id = ?
       LIMIT 1
       `,
       [Number(id)]
@@ -109,16 +118,16 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
 
     const row = rows[0];
-    const tanggal = formatDateYMD(row.tanggal);
-    const waktuMulai = normalizeTime(row.waktu_mulai);
-    const waktuSelesai = normalizeTime(row.waktu_selesai);
+    const tanggal = row.tanggal_formatted || formatDateYMD(row.tanggal);
+    const waktuMulai = row.waktu_mulai_formatted || normalizeTime(row.waktu_mulai);
+    const waktuSelesai = row.waktu_selesai_formatted || normalizeTime(row.waktu_selesai);
     const durasiMenit = calculateDurationMinutes(waktuMulai, waktuSelesai);
-    const createdAt = row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString();
+    const createdAt = row.created_at_formatted || new Date().toISOString();
 
     const data = {
       id: Number(row.id),
-      peserta_magang_id: row.peserta_magang_id ? String(row.peserta_magang_id) : null,
-      pesertaMagangId: row.peserta_magang_id ? String(row.peserta_magang_id) : null,
+      peserta_magang_id: row.peserta_magang_id ? Number(row.peserta_magang_id) : null,
+      pesertaMagangId: row.peserta_magang_id ? Number(row.peserta_magang_id) : null,
       tanggal,
       waktu_mulai: waktuMulai,
       waktu_selesai: waktuSelesai,
@@ -129,6 +138,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       aktivitas: row.aktivitas,
       created_at: createdAt,
       createdAt,
+      tugas_id: row.tugas_id ? Number(row.tugas_id) : null,
+      tugasId: row.tugas_id ? Number(row.tugas_id) : null,
+      tugas_judul: row.tugas_judul || null,
     };
 
     return NextResponse.json({
@@ -208,13 +220,21 @@ async function handleParamUpdate(req: NextRequest, { params }: RouteParams) {
       queryParams.push(formatDateYMD(body.tanggal));
     }
 
-    if (body.waktu_mulai !== undefined || body.waktuMulai !== undefined || body.start_time !== undefined) {
+    if (
+      body.waktu_mulai !== undefined ||
+      body.waktuMulai !== undefined ||
+      body.start_time !== undefined
+    ) {
       const wMulai = body.waktu_mulai || body.waktuMulai || body.start_time;
       updates.push("waktu_mulai = ?");
       queryParams.push(normalizeTime(wMulai));
     }
 
-    if (body.waktu_selesai !== undefined || body.waktuSelesai !== undefined || body.end_time !== undefined) {
+    if (
+      body.waktu_selesai !== undefined ||
+      body.waktuSelesai !== undefined ||
+      body.end_time !== undefined
+    ) {
       const wSelesai = body.waktu_selesai || body.waktuSelesai || body.end_time;
       updates.push("waktu_selesai = ?");
       queryParams.push(normalizeTime(wSelesai));
@@ -226,7 +246,12 @@ async function handleParamUpdate(req: NextRequest, { params }: RouteParams) {
       queryParams.push(normalizeKategori(String(kat)));
     }
 
-    if (body.aktivitas !== undefined || body.activity !== undefined || body.kegiatan !== undefined || body.deskripsi !== undefined) {
+    if (
+      body.aktivitas !== undefined ||
+      body.activity !== undefined ||
+      body.kegiatan !== undefined ||
+      body.deskripsi !== undefined
+    ) {
       const akt = body.aktivitas || body.activity || body.kegiatan || body.deskripsi;
       updates.push("aktivitas = ?");
       queryParams.push(String(akt).trim());
@@ -246,21 +271,34 @@ async function handleParamUpdate(req: NextRequest, { params }: RouteParams) {
     );
 
     const [updatedRows]: any = await mysqlPool.query(
-      "SELECT * FROM log_book WHERE id = ? LIMIT 1",
+      `
+      SELECT
+        lb.id,
+        lb.peserta_magang_id,
+        DATE_FORMAT(lb.tanggal, '%Y-%m-%d') AS tanggal_formatted,
+        DATE_FORMAT(lb.waktu_mulai, '%H:%i:%s') AS waktu_mulai_formatted,
+        DATE_FORMAT(lb.waktu_selesai, '%H:%i:%s') AS waktu_selesai_formatted,
+        lb.kategori,
+        lb.aktivitas,
+        DATE_FORMAT(lb.created_at, '%Y-%m-%d %H:%i:%s') AS created_at_formatted,
+        t.id AS tugas_id
+      FROM log_book lb
+      LEFT JOIN tugas t ON t.log_book_id = lb.id
+      WHERE lb.id = ? LIMIT 1
+      `,
       [Number(id)]
     );
 
     const updated = updatedRows[0];
-    const tanggal = formatDateYMD(updated.tanggal);
-    const waktuMulai = normalizeTime(updated.waktu_mulai);
-    const waktuSelesai = normalizeTime(updated.waktu_selesai);
+    const tanggal = updated.tanggal_formatted || formatDateYMD(updated.tanggal);
+    const waktuMulai = updated.waktu_mulai_formatted || normalizeTime(updated.waktu_mulai);
+    const waktuSelesai = updated.waktu_selesai_formatted || normalizeTime(updated.waktu_selesai);
     const durasiMenit = calculateDurationMinutes(waktuMulai, waktuSelesai);
-    const createdAt = updated.created_at ? new Date(updated.created_at).toISOString() : new Date().toISOString();
 
     const formattedUpdated = {
       id: Number(updated.id),
-      peserta_magang_id: updated.peserta_magang_id ? String(updated.peserta_magang_id) : null,
-      pesertaMagangId: updated.peserta_magang_id ? String(updated.peserta_magang_id) : null,
+      peserta_magang_id: updated.peserta_magang_id ? Number(updated.peserta_magang_id) : null,
+      pesertaMagangId: updated.peserta_magang_id ? Number(updated.peserta_magang_id) : null,
       tanggal,
       waktu_mulai: waktuMulai,
       waktu_selesai: waktuSelesai,
@@ -269,8 +307,10 @@ async function handleParamUpdate(req: NextRequest, { params }: RouteParams) {
       durasi_menit: durasiMenit,
       kategori: updated.kategori,
       aktivitas: updated.aktivitas,
-      created_at: createdAt,
-      createdAt,
+      created_at: updated.created_at_formatted,
+      createdAt: updated.created_at_formatted,
+      tugas_id: updated.tugas_id ? Number(updated.tugas_id) : null,
+      tugasId: updated.tugas_id ? Number(updated.tugas_id) : null,
     };
 
     return NextResponse.json({
@@ -290,6 +330,7 @@ async function handleParamUpdate(req: NextRequest, { params }: RouteParams) {
 
 /**
  * DELETE: Menghapus data log-book berdasarkan ID parameter di URL
+ * Menggunakan transaksi untuk melepaskan tautan tugas.log_book_id secara aman
  */
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
@@ -303,16 +344,34 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const [result]: any = await mysqlPool.query(
-      "DELETE FROM log_book WHERE id = ?",
-      [Number(id)]
-    );
+    const conn = await mysqlPool.getConnection();
+    try {
+      await conn.beginTransaction();
 
-    if (result.affectedRows === 0) {
-      return NextResponse.json(
-        { success: false, message: "Data log-book tidak ditemukan atau sudah dihapus." },
-        { status: 404 }
+      // Lepaskan tautan tugas.log_book_id
+      await conn.query("UPDATE `tugas` SET `log_book_id` = NULL WHERE `log_book_id` = ?", [
+        Number(id),
+      ]);
+
+      const [result]: any = await conn.query(
+        "DELETE FROM log_book WHERE id = ?",
+        [Number(id)]
       );
+
+      if (result.affectedRows === 0) {
+        await conn.rollback();
+        return NextResponse.json(
+          { success: false, message: "Data log-book tidak ditemukan atau sudah dihapus." },
+          { status: 404 }
+        );
+      }
+
+      await conn.commit();
+    } catch (txErr) {
+      await conn.rollback();
+      throw txErr;
+    } finally {
+      conn.release();
     }
 
     return NextResponse.json({

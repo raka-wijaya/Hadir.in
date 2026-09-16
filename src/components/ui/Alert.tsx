@@ -91,16 +91,6 @@ export function AlertModal({
   color?: "red" | "blue" | "green" | "yellow" | "orange";
   onClose: () => void;
 }) {
-  React.useEffect(() => {
-    if (isOpen) {
-      const original = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = original;
-      };
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   const getIconBadge = () => {
@@ -215,16 +205,6 @@ export function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  React.useEffect(() => {
-    if (isOpen) {
-      const original = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = original;
-      };
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   const isDeleteAction =

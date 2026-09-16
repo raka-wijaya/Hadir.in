@@ -16,8 +16,11 @@ import {
   BookOpen,
   CheckCircle2,
   Clock,
+  RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
+import Link from "next/link";
 
 function getKategoriIcon(kategori: string) {
   const k = (kategori || "").toLowerCase();
@@ -67,7 +70,6 @@ export default function JobdeskPage() {
   const { user } = useAuth();
   const [tugasList, setTugasList] = useState<TugasItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [kategoriFilter, setKategoriFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   const fetchTugas = useCallback(async () => {
@@ -96,59 +98,44 @@ export default function JobdeskPage() {
     fetchTugas();
   }, [fetchTugas]);
 
-  const handleToggleStatus = async (item: TugasItem) => {
-    try {
-      const current = (item.status_pengerjaan || item.statusPengerjaan || "").toUpperCase();
-      const newStatus = current === "SELESAI" ? "BELUM_DIKERJAKAN" : "SELESAI";
-
-      const res = await fetch("/api/tugas", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: item.id,
-          status_pengerjaan: newStatus,
-        }),
-      });
-
-      const json = await res.json();
-      if (res.ok && json.success) {
-        fetchTugas();
-      }
-    } catch (e) {
-      console.error("Gagal memperbarui status tugas:", e);
-    }
-  };
-
   const filteredList = tugasList.filter((item) => {
-    const matchKat =
-      kategoriFilter === "ALL" ||
-      item.kategori?.toLowerCase() === kategoriFilter.toLowerCase();
     const currentStatus = (item.status_pengerjaan || item.statusPengerjaan || "").toUpperCase();
-    const matchStatus =
-      statusFilter === "ALL" || currentStatus === statusFilter;
-    return matchKat && matchStatus;
+    return statusFilter === "ALL" || currentStatus === statusFilter;
   });
 
-  const uniqueCategories = Array.from(
-    new Set(tugasList.map((t) => t.kategori).filter(Boolean))
-  );
+  const belumCount = tugasList.filter(
+    (t) => (t.status_pengerjaan || t.statusPengerjaan || "").toUpperCase() === "BELUM_DIKERJAKAN"
+  ).length;
+
+  const selesaiCount = tugasList.filter(
+    (t) => (t.status_pengerjaan || t.statusPengerjaan || "").toUpperCase() === "SELESAI"
+  ).length;
 
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-5xl mx-auto">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
-                Tugas & Jobdesk Magang
+                Tugas &amp; Jobdesk Magang
               </h1>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-              Daftar penugasan dan aktivitas kerja yang didelegasikan oleh pembimbing lapangan
+              Daftar penugasan yang diberikan oleh pembimbing lapangan. Selesaikan tugas dengan mengisi log-book.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={fetchTugas}
+              title="Segarkan Data"
+              className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-primary" : ""}`} />
+            </button>
+
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -158,21 +145,45 @@ export default function JobdeskPage() {
               <option value="BELUM_DIKERJAKAN">Belum Dikerjakan</option>
               <option value="SELESAI">Selesai</option>
             </select>
-
-            <select
-              value={kategoriFilter}
-              onChange={(e) => setKategoriFilter(e.target.value)}
-              className="rounded-xl border border-border bg-input px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-bold cursor-pointer"
-            >
-              <option value="ALL">Semua Kategori ({tugasList.length})</option>
-              {uniqueCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
+
+        {/* Stats Mini */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-card border border-border rounded-2xl p-3.5 space-y-1 shadow-card">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">Total Tugas</p>
+            <p className="text-2xl font-black text-foreground">{tugasList.length}</p>
+          </div>
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 space-y-1 shadow-card">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">Belum Selesai</p>
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{belumCount}</p>
+          </div>
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-3.5 space-y-1 shadow-card">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Selesai</p>
+            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{selesaiCount}</p>
+          </div>
+        </div>
+
+        {/* Info Banner */}
+        {belumCount > 0 && (
+          <div className="flex items-start gap-3 bg-primary/5 border border-primary/20 rounded-2xl p-4">
+            <NotebookPen className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-primary">Cara Menyelesaikan Tugas</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Untuk menandai tugas sebagai <strong>Selesai</strong>, Anda perlu mengisi log-book harian.
+                Pilih tugas terkait saat mengisi log-book, dan tugas akan otomatis ditandai selesai.
+              </p>
+              <Link
+                href="/magang/log-book"
+                className="inline-flex items-center gap-1.5 mt-2 text-xs font-bold text-primary hover:underline"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Isi Log-Book Sekarang
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Task Cards Grid */}
         {isLoading ? (
@@ -186,54 +197,44 @@ export default function JobdeskPage() {
               <Briefcase className="w-6 h-6" />
             </div>
             <h3 className="font-extrabold text-foreground text-sm md:text-base">
-              Belum ada tugas tercatat
+              {statusFilter === "ALL" ? "Belum ada tugas tercatat" : `Tidak ada tugas dengan status "${statusFilter}"`}
             </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              Saat pembimbing memberikan penugasan baru, daftar tugas akan otomatis tampil di halaman ini.
+              {statusFilter === "ALL"
+                ? "Saat pembimbing memberikan penugasan baru, daftar tugas akan otomatis tampil di halaman ini."
+                : "Coba ubah filter status untuk melihat tugas lainnya."}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredList.map((item) => {
-              const katLabel = item.kategori || "Umum";
               const isSelesai = (item.status_pengerjaan || item.statusPengerjaan || "").toUpperCase() === "SELESAI";
 
               return (
                 <div
                   key={item.id}
-                  className="bg-card border border-border rounded-2xl p-4.5 space-y-3 shadow-card hover:border-primary/50 transition-all flex flex-col justify-between"
+                  className={`bg-card border rounded-2xl p-4 space-y-3 shadow-card flex flex-col justify-between transition-all ${
+                    isSelesai
+                      ? "border-emerald-500/30 bg-emerald-500/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
                 >
                   <div className="space-y-2.5">
-                    {/* Header: Kategori, Status & ID */}
+                    {/* Header: Status & ID */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                            katLabel
-                          )}`}
-                        >
-                          {getKategoriIcon(katLabel)}
-                          <span className="capitalize">{katLabel}</span>
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => handleToggleStatus(item)}
-                          title="Klik untuk tandai selesai / belum"
-                          className="cursor-pointer"
-                        >
-                          {isSelesai ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                              <span>Selesai</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-all">
-                              <Clock className="w-3 h-3 text-amber-500" />
-                              <span>Belum</span>
-                            </span>
-                          )}
-                        </button>
+                        {/* Status badge — read only, no toggle */}
+                        {isSelesai ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            <span>Selesai</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                            <Clock className="w-3 h-3 text-amber-500" />
+                            <span>Belum Dikerjakan</span>
+                          </span>
+                        )}
                       </div>
 
                       <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border/60 shrink-0">
@@ -246,25 +247,28 @@ export default function JobdeskPage() {
                       {item.judul_tugas || item.judulTugas || "—"}
                     </h3>
 
-                    {/* Deskripsi */}
-                    {item.deskripsi && (
-                      <p className="text-xs text-muted-foreground leading-relaxed bg-input/50 p-2.5 rounded-xl border border-border/60 line-clamp-4">
-                        {item.deskripsi}
-                      </p>
-                    )}
-
-                    {/* Logbook Terkait */}
-                    {item.log_book_aktivitas && (
-                      <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground bg-primary/5 border border-primary/20 rounded-xl p-2.5">
-                        <BookOpen className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                    {/* Logbook Terkait — shown when SELESAI */}
+                    {isSelesai && item.log_book_aktivitas && (
+                      <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-2.5">
+                        <BookOpen className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
                         <div className="min-w-0">
-                          <p className="font-bold text-primary text-[10px] uppercase tracking-wider">
-                            Logbook Terkait
+                          <p className="font-bold text-emerald-600 dark:text-emerald-400 text-[10px] uppercase tracking-wider">
+                            Log-Book Terkait
                           </p>
                           <p className="text-foreground/80 line-clamp-2 mt-0.5">
                             {item.log_book_aktivitas}
                           </p>
                         </div>
+                      </div>
+                    )}
+
+                    {/* CTA isi logbook — shown when BELUM_DIKERJAKAN */}
+                    {!isSelesai && (
+                      <div className="flex items-start gap-1.5 text-[11px] bg-primary/5 border border-primary/15 rounded-xl p-2.5">
+                        <NotebookPen className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground">
+                          Isi log-book harian dan pilih tugas ini untuk menandainya selesai.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -278,17 +282,16 @@ export default function JobdeskPage() {
                         : formatTanggalIndo(item.created_at)}
                     </span>
 
-                    <button
-                      type="button"
-                      onClick={() => handleToggleStatus(item)}
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                        isSelesai
-                          ? "bg-muted text-muted-foreground border-border hover:bg-accent"
-                          : "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 shadow-xs"
-                      }`}
-                    >
-                      {isSelesai ? "Tandai Belum" : "Tandai Selesai"}
-                    </button>
+                    {/* Link ke halaman log-book jika belum selesai */}
+                    {!isSelesai && (
+                      <Link
+                        href="/magang/log-book"
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-lg border bg-primary text-primary-foreground border-primary hover:bg-primary/90 shadow-xs transition-all inline-flex items-center gap-1"
+                      >
+                        <NotebookPen className="w-3 h-3" />
+                        Isi Log-Book
+                      </Link>
+                    )}
                   </div>
                 </div>
               );
@@ -299,4 +302,3 @@ export default function JobdeskPage() {
     </DashboardLayout>
   );
 }
-

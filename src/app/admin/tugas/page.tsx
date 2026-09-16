@@ -37,6 +37,7 @@ import {
   ChevronUp,
   Clock,
   Check,
+  Calendar,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
 
@@ -142,8 +143,7 @@ export default function AdminTugasPage() {
   const [isInternDropdownOpen, setIsInternDropdownOpen] =
     useState<boolean>(false);
   const internComboboxRef = useRef<HTMLDivElement>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [selectedDate, setSelectedDate] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"DESC" | "ASC">("DESC");
   const [itemsPerPage, setItemsPerPage] = useState<number>(5);
 
@@ -260,12 +260,8 @@ export default function AdminTugasPage() {
         params.append("peserta_magang_id", selectedInternId);
       }
 
-      if (selectedCategory !== "ALL") {
-        params.append("kategori", selectedCategory);
-      }
-
-      if (selectedStatus !== "ALL") {
-        params.append("status_pengerjaan", selectedStatus);
+      if (selectedDate) {
+        params.append("tanggal", selectedDate);
       }
 
       if (debounceSearch) {
@@ -290,7 +286,7 @@ export default function AdminTugasPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedInternId, selectedCategory, selectedStatus, debounceSearch]);
+  }, [selectedInternId, selectedDate, debounceSearch]);
 
   useEffect(() => {
     fetchTugasList();
@@ -353,26 +349,27 @@ export default function AdminTugasPage() {
   const stats = useMemo(() => {
     const total = tugasList.length;
 
-    const selesai = tugasList.filter((t) => {
-      const s = (t.status_pengerjaan || t.statusPengerjaan || "").toUpperCase();
-      return s === "SELESAI";
-    }).length;
-
-    const belum = total - selesai;
-
     const todayStr = new Date().toISOString().split("T")[0];
     const today = tugasList.filter((t) => {
       if (!t.created_at) return false;
       return t.created_at.startsWith(todayStr);
     }).length;
 
+    const assignedIds = new Set(
+      tugasList
+        .map((t) => t.peserta_magang_id || t.pesertaMagangId)
+        .filter(Boolean),
+    );
+    const ditugaskan = assignedIds.size;
+    const totalInterns = interns.length;
+
     return {
       total,
-      selesai,
-      belum,
       today,
+      ditugaskan,
+      totalInterns,
     };
-  }, [tugasList]);
+  }, [tugasList, interns]);
 
   const selectedInternObj = useMemo(() => {
     if (selectedInternId === "ALL") return null;
@@ -678,7 +675,7 @@ export default function AdminTugasPage() {
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-card border border-border hover:border-primary/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
                 Total Tugas
@@ -696,47 +693,7 @@ export default function AdminTugasPage() {
             </span>
           </div>
 
-          <div className="bg-card border border-border hover:border-status-terlambat/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
-                Belum Dikerjakan
-              </span>
-            </div>
-
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-terlambat">
-                {stats.belum}
-              </p>
-            )}
-
-            <span className="text-[10px] font-semibold text-muted-foreground">
-              Tugas dalam proses
-            </span>
-          </div>
-
-          <div className="bg-card border border-border hover:border-status-hadir/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
-                Selesai
-              </span>
-            </div>
-
-            {isLoading ? (
-              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
-            ) : (
-              <p className="text-2xl font-black text-status-hadir">
-                {stats.selesai}
-              </p>
-            )}
-
-            <span className="text-[10px] font-semibold text-muted-foreground">
-              Tugas rampung
-            </span>
-          </div>
-
-          <div className="bg-card border border-border hover:border-status-izin/40 rounded-2xl p-4 shadow-card space-y-1 transition-all">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
                 Tugas Hari Ini
@@ -755,16 +712,56 @@ export default function AdminTugasPage() {
               Dibuat hari ini
             </span>
           </div>
+
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
+                Peserta Ditugaskan
+              </span>
+            </div>
+
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-hadir">
+                {stats.ditugaskan}
+              </p>
+            )}
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Menerima penugasan
+            </span>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-foreground uppercase tracking-wider">
+                Total Peserta Magang
+              </span>
+            </div>
+
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-foreground">
+                {stats.totalInterns}
+              </p>
+            )}
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Peserta terdaftar
+            </span>
+          </div>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="relative md:col-span-1">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
 
               <input
                 type="text"
-                placeholder="Cari tugas"
+                placeholder="Cari judul tugas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-8 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -877,7 +874,7 @@ export default function AdminTugasPage() {
                           }`}
                         >
                           <div className="min-w-0 pr-2">
-                            <p className="truncate">{displayName}</p>
+                            <p className="truncate">{displayName}{intern.divisi ? <span className="font-normal text-muted-foreground"> - {intern.divisi}</span> : null}</p>
                             <p className="text-[10px] text-muted-foreground font-normal truncate">
                               {displayInst}
                             </p>
@@ -912,35 +909,23 @@ export default function AdminTugasPage() {
             </div>
 
             <div className="relative">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer appearance-none capitalize"
-              >
-                <option value="ALL">Semua Kategori</option>
-
-                {KATEGORI_OPTIONS.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-
-              <Filter className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            </div>
-
-            <div className="relative">
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer appearance-none"
-              >
-                <option value="ALL">Semua Status</option>
-                <option value="BELUM_DIKERJAKAN">Belum Dikerjakan</option>
-                <option value="SELESAI">Selesai</option>
-              </select>
-
-              <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <input
+                type="date"
+                title="Filter Tanggal Dibuat"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+              />
+              {selectedDate && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate("")}
+                  title="Hapus filter tanggal"
+                  className="absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -959,10 +944,7 @@ export default function AdminTugasPage() {
               </span>
             </button>
 
-            {(searchQuery ||
-              selectedInternId !== "ALL" ||
-              selectedCategory !== "ALL" ||
-              selectedStatus !== "ALL") && (
+            {(searchQuery || selectedInternId !== "ALL" || selectedDate) && (
               <button
                 type="button"
                 onClick={() => {
@@ -970,8 +952,7 @@ export default function AdminTugasPage() {
                   setSelectedInternId("ALL");
                   setInternSearchQuery("");
                   setIsInternDropdownOpen(false);
-                  setSelectedCategory("ALL");
-                  setSelectedStatus("ALL");
+                  setSelectedDate("");
                 }}
                 className="text-primary hover:underline font-bold text-xs cursor-pointer"
               >
@@ -986,17 +967,9 @@ export default function AdminTugasPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-border bg-muted/40 text-muted-foreground uppercase tracking-wider font-extrabold">
-                  <th className="py-3.5 px-4 w-12 text-center">ID</th>
-
                   <th className="py-3.5 px-4">Peserta Magang</th>
 
-                  <th className="py-3.5 px-4">Judul & Deskripsi Tugas</th>
-
-                  <th className="py-3.5 px-4">Kategori</th>
-
-                  <th className="py-3.5 px-4">Status Pengerjaan</th>
-
-                  <th className="py-3.5 px-4">Logbook Terkait</th>
+                  <th className="py-3.5 px-4">Judul Tugas</th>
 
                   <th className="py-3.5 px-4">Tanggal Dibuat</th>
 
@@ -1008,7 +981,7 @@ export default function AdminTugasPage() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={4}
                       className="py-12 text-center text-muted-foreground"
                     >
                       <div className="flex flex-col items-center justify-center gap-2">
@@ -1018,7 +991,7 @@ export default function AdminTugasPage() {
                   </tr>
                 ) : displayedTugas.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center space-y-2">
+                    <td colSpan={4} className="py-12 text-center space-y-2">
                       <p className="text-foreground text-xs">
                         Tidak ada tugas ditemukan
                       </p>
@@ -1026,17 +999,11 @@ export default function AdminTugasPage() {
                   </tr>
                 ) : (
                   displayedTugas.slice(0, itemsPerPage).map((task) => {
-                    const katLabel = task.kategori || "Umum";
-
                     return (
                       <tr
                         key={task.id}
                         className="hover:bg-accent/40 transition-colors"
                       >
-                        <td className="py-3.5 px-4 font-mono font-bold text-muted-foreground text-center">
-                          #{task.id}
-                        </td>
-
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2.5 min-w-[160px]">
                             {task.user_avatar ? (
@@ -1052,8 +1019,11 @@ export default function AdminTugasPage() {
                             )}
 
                             <div className="min-w-0">
-                              <p className="font-extrabold text-foreground truncate">
+                              <p className="text-foreground truncate">
                                 {task.user_nama || "Belum Ditentukan"}
+                                {(task.user_divisi || task.userDivisi || task.divisi) ? (
+                                  <span className="font-normal text-muted-foreground"> - {task.user_divisi || task.userDivisi || task.divisi}</span>
+                                ) : null}
                               </p>
 
                               <p className="text-[10px] text-muted-foreground truncate">
@@ -1063,80 +1033,15 @@ export default function AdminTugasPage() {
                           </div>
                         </td>
 
-                        <td className="py-3.5 px-4 max-w-xs">
-                          <div className="space-y-1">
-                            <p className="font-black text-foreground text-xs leading-snug">
-                              {task.judul_tugas || task.judulTugas || "—"}
-                            </p>
-
-                            {task.deskripsi && (
-                              <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                {task.deskripsi}
-                              </p>
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="py-3.5 px-4">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                              katLabel,
-                            )}`}
-                          >
-                            {getKategoriIcon(katLabel)}
-
-                            <span className="capitalize">{katLabel}</span>
-                          </span>
-                        </td>
-
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleStatus(task)}
-                            title="Klik untuk ubah status pengerjaan"
-                            className="cursor-pointer"
-                          >
-                            {(
-                              task.status_pengerjaan ||
-                              task.statusPengerjaan ||
-                              ""
-                            ).toUpperCase() === "SELESAI" ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold status-hadir border hover:opacity-85 transition-all">
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Selesai</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold status-terlambat border hover:opacity-85 transition-all">
-                                <Clock className="w-3 h-3" />
-                                <span>Belum Dikerjakan</span>
-                              </span>
-                            )}
-                          </button>
-                        </td>
-
-                        <td className="py-3.5 px-4 max-w-[180px]">
-                          {task.log_book_aktivitas ? (
-                            <div className="space-y-0.5 text-[10px]">
-                              <span className="inline-flex items-center gap-1 font-bold text-primary">
-                                <BookOpen className="w-3 h-3" />
-
-                                <span>Logbook #{task.log_book_id}</span>
-                              </span>
-
-                              <p className="text-muted-foreground truncate">
-                                {task.log_book_aktivitas}
-                              </p>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-[11px]">
-                              —
-                            </span>
-                          )}
+                        <td className="py-3.5 px-4 max-w-md">
+                          <p className="text-foreground text-xs leading-snug">
+                            {task.judul_tugas || task.judulTugas || "—"}
+                          </p>
                         </td>
 
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="space-y-0.5 text-[11px]">
-                            <p className="font-bold text-foreground">
+                            <p className="text-foreground">
                               {formatTanggalIndo(task.created_at)}
                             </p>
 
@@ -1625,7 +1530,7 @@ export default function AdminTugasPage() {
 
                                     <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
                                       <span className="text-[10px] text-foreground truncate">
-                                        {i.name || i.nama || "Peserta"}
+                                        {i.name || i.nama || "Peserta"}{i.divisi ? <span className="font-normal text-muted-foreground"> - {i.divisi}</span> : null}
                                       </span>
 
                                       <span className="text-[8px] text-muted-foreground truncate max-w-[140px]">
@@ -1641,82 +1546,6 @@ export default function AdminTugasPage() {
                           </div>
                         </div>
                       )}
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-extrabold text-foreground">
-                        Kategori Tugas{" "}
-                        <span className="text-status-tolak">*</span>
-                      </label>
-
-                      <select
-                        value={formData.kategori}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            kategori: e.target.value,
-                          })
-                        }
-                        className="
-                w-full
-                px-2.5 py-2
-                bg-input
-                border border-border
-                rounded-xl
-                text-[11px]
-                font-semibold
-                text-foreground
-                focus:outline-none
-                focus:ring-2
-                focus:ring-primary/50
-                capitalize
-                cursor-pointer
-              "
-                      >
-                        {KATEGORI_OPTIONS.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-extrabold text-foreground">
-                        Tautkan Logbook (Opsional)
-                      </label>
-
-                      <select
-                        value={formData.log_book_id}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            log_book_id: e.target.value,
-                          })
-                        }
-                        className="
-                w-full
-                px-2.5 py-2
-                bg-input
-                border border-border
-                rounded-xl
-                text-[11px]
-                font-semibold
-                text-foreground
-                focus:outline-none
-                focus:ring-2
-                focus:ring-primary/50
-                cursor-pointer
-              "
-                      >
-                        <option value="">Tidak Ditautkan</option>
-
-                        {logbooks.map((lb) => (
-                          <option key={lb.id} value={lb.id}>
-                            #{lb.id} • {lb.user_nama || "Peserta"}
-                          </option>
-                        ))}
-                      </select>
                     </div>
 
                     <div className="space-y-1 md:col-span-2">
@@ -1749,39 +1578,6 @@ export default function AdminTugasPage() {
                 focus:ring-primary/50
               "
                         required
-                      />
-                    </div>
-
-                    <div className="space-y-1 md:col-span-2">
-                      <label className="text-[10px] font-extrabold text-foreground">
-                        Deskripsi &amp; Rincian Instruksi
-                      </label>
-
-                      <textarea
-                        rows={3}
-                        placeholder="Masukkan deskripsi tugas"
-                        value={formData.deskripsi}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            deskripsi: e.target.value,
-                          })
-                        }
-                        className="
-                w-full
-                px-2.5 py-2
-                bg-input
-                border border-border
-                rounded-xl
-                text-[11px]
-                font-semibold
-                text-foreground
-                placeholder:text-muted-foreground
-                focus:outline-none
-                focus:ring-2
-                focus:ring-primary/50
-                resize-none
-              "
                       />
                     </div>
                   </div>
@@ -1851,10 +1647,6 @@ export default function AdminTugasPage() {
               <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-4 shadow-2xl space-y-3">
                 <div className="flex items-center justify-between border-b border-border pb-2.5">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </div>
-
                     <div>
                       <h3 className="font-extrabold text-foreground text-sm">
                         Ubah Data Tugas
@@ -1903,59 +1695,11 @@ export default function AdminTugasPage() {
 
                       {interns.map((i) => (
                         <option key={i.id} value={i.id}>
-                          {i.name || i.nama} (
+                          {i.name || i.nama}{i.divisi ? ` - ${i.divisi}` : ""} (
                           {i.institution || i.sekolah_kampus || "Anak Magang"})
                         </option>
                       ))}
                     </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-extrabold text-foreground">
-                        Kategori Tugas
-                        <span className="text-status-tolak">*</span>
-                      </label>
-
-                      <select
-                        value={formData.kategori}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            kategori: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 capitalize cursor-pointer"
-                      >
-                        {KATEGORI_OPTIONS.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-extrabold text-foreground">
-                        Status Pengerjaan
-                      </label>
-
-                      <select
-                        value={formData.status_pengerjaan}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            status_pengerjaan: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
-                      >
-                        <option value="BELUM_DIKERJAKAN">
-                          Belum Dikerjakan
-                        </option>
-                        <option value="SELESAI">Selesai</option>
-                      </select>
-                    </div>
                   </div>
 
                   <div className="space-y-1">
@@ -1975,51 +1719,6 @@ export default function AdminTugasPage() {
                       className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                       required
                     />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-extrabold text-foreground">
-                      Deskripsi & Rincian Instruksi
-                    </label>
-
-                    <textarea
-                      rows={2}
-                      value={formData.deskripsi}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          deskripsi: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-extrabold text-foreground">
-                      Tautkan ke Logbook (Opsional)
-                    </label>
-
-                    <select
-                      value={formData.log_book_id}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          log_book_id: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    >
-                      <option value="">Tidak Dihubungkan ke Logbook</option>
-
-                      {logbooks.map((lb) => (
-                        <option key={lb.id} value={lb.id}>
-                          #{lb.id} • {lb.user_nama || "Peserta"} • {lb.kategori}{" "}
-                          • {lb.aktivitas?.slice(0, 45)}
-                          ...
-                        </option>
-                      ))}
-                    </select>
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-border">
@@ -2053,16 +1752,12 @@ export default function AdminTugasPage() {
               <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-4 shadow-2xl space-y-3">
                 <div className="flex items-center justify-between border-b border-border pb-2.5">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                      <Briefcase className="w-3.5 h-3.5" />
-                    </div>
-
                     <div>
-                      <h3 className="font-extrabold text-foreground text-sm">
+                      <h3 className="text-foreground font-sans text-sm">
                         Detail Penugasan
                       </h3>
 
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] font-sans text-muted-foreground">
                         ID Tugas #{selectedTugas.id}
                       </p>
                     </div>
@@ -2090,11 +1785,14 @@ export default function AdminTugasPage() {
                   )}
 
                   <div className="min-w-0">
-                    <p className="font-black text-foreground text-xs">
+                    <p className="font-sans text-foreground text-xs">
                       {selectedTugas.user_nama || "Belum Ditentukan"}
+                      {(selectedTugas.user_divisi || selectedTugas.userDivisi || selectedTugas.divisi) ? (
+                        <span className="font-normal"> - {selectedTugas.user_divisi || selectedTugas.userDivisi || selectedTugas.divisi}</span>
+                      ) : null}
                     </p>
 
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[11px] font-sans text-muted-foreground">
                       {selectedTugas.user_institution || "Peserta Magang"}
                     </p>
                   </div>
@@ -2102,97 +1800,21 @@ export default function AdminTugasPage() {
 
                 <div className="space-y-2.5">
                   <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
                       Judul Tugas
                     </span>
 
-                    <p className="text-xs font-black text-foreground mt-0.5">
+                    <p className="text-xs font-sans text-foreground mt-0.5">
                       {selectedTugas.judul_tugas ||
                         selectedTugas.judulTugas ||
                         "—"}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                        Kategori Pekerjaan
-                      </span>
-
-                      <div className="mt-0.5">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                            selectedTugas.kategori,
-                          )}`}
-                        >
-                          {getKategoriIcon(selectedTugas.kategori)}
-
-                          <span className="capitalize">
-                            {selectedTugas.kategori}
-                          </span>
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                        Status Pengerjaan
-                      </span>
-
-                      <div className="mt-0.5">
-                        {(
-                          selectedTugas.status_pengerjaan ||
-                          selectedTugas.statusPengerjaan ||
-                          ""
-                        ).toUpperCase() === "SELESAI" ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold status-hadir border">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Selesai</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold status-terlambat border">
-                            <Clock className="w-3 h-3" />
-                            <span>Belum Dikerjakan</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                      Deskripsi Tugas
-                    </span>
-
-                    <p className="text-xs text-foreground/90 font-medium leading-relaxed bg-input/50 p-2.5 rounded-xl border border-border mt-0.5">
-                      {selectedTugas.deskripsi || "Tidak ada deskripsi rinci."}
-                    </p>
-                  </div>
-
-                  {selectedTugas.log_book_aktivitas && (
-                    <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
-                        Logbook Terkait
-                      </span>
-
-                      <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 mt-0.5 space-y-1">
-                        <div className="flex items-center gap-1 text-primary font-bold text-xs">
-                          <BookOpen className="w-3.5 h-3.5" />
-
-                          <span>Logbook #{selectedTugas.log_book_id}</span>
-                        </div>
-
-                        <p className="text-xs text-foreground/80">
-                          {selectedTugas.log_book_aktivitas}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-1.5 border-t border-border">
+                  <div className="flex items-center justify-between font-sans text-xs text-muted-foreground pt-1.5 border-t border-border">
                     <span>Waktu Dibuat:</span>
 
-                    <span className="font-semibold text-foreground">
+                    <span className="font-sans text-foreground">
                       {formatTanggalIndo(selectedTugas.created_at)}
                     </span>
                   </div>

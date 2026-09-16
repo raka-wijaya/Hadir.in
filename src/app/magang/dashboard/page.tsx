@@ -85,7 +85,6 @@ export default function MagangDashboardPage() {
 
   const [alasanPulangCepat, setAlasanPulangCepat] = useState("");
 
-  const [tugasDikerjakan, setTugasDikerjakan] = useState("");
 
   const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false);
 
@@ -409,11 +408,6 @@ export default function MagangDashboardPage() {
       return;
     }
 
-    if (!tugasDikerjakan.trim()) {
-      setToastMsg("Tugas yang dikerjakan wajib diisi.");
-      return;
-    }
-
     setShowEarlyCheckoutForm(false);
     setActiveTab("CAPTURE_OUT");
   };
@@ -484,8 +478,6 @@ export default function MagangDashboardPage() {
           status: earlyCheckout ? "pulang_cepat" : "hadir",
 
           alasan_pulang_cepat: earlyCheckout ? alasanPulangCepat.trim() : null,
-
-          tugas_dikerjakan: earlyCheckout ? tugasDikerjakan.trim() : null,
         }),
       });
 
@@ -501,7 +493,6 @@ export default function MagangDashboardPage() {
 
         // Reset form
         setAlasanPulangCepat("");
-        setTugasDikerjakan("");
         setShowEarlyCheckoutForm(false);
         fetchAttendance();
       } else {
@@ -588,27 +579,11 @@ export default function MagangDashboardPage() {
                 />
               </div>
 
-              {/* Tugas */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground flex items-center gap-2">
-                  <ClipboardList className="w-3.5 h-3.5 text-primary" />
-                  Tugas yang Dikerjakan
-                </label>
-
-                <textarea
-                  value={tugasDikerjakan}
-                  onChange={(e) => setTugasDikerjakan(e.target.value)}
-                  placeholder="Jelaskan tugas atau pekerjaan yang sudah kamu kerjakan hari ini..."
-                  rows={4}
-                  className="w-full rounded-xl border border-border bg-input px-3.5 py-3 text-xs font-medium outline-none resize-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                />
-              </div>
-
               {/* Info */}
               <div className="rounded-xl bg-muted/50 border border-border p-3">
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Data alasan pulang cepat dan tugas yang dikerjakan akan
-                  dicatat bersama presensi hari ini.
+                  Data alasan pulang cepat akan dicatat bersama presensi hari
+                  ini.
                 </p>
               </div>
 
@@ -619,7 +594,6 @@ export default function MagangDashboardPage() {
                   onClick={() => {
                     setShowEarlyCheckoutForm(false);
                     setAlasanPulangCepat("");
-                    setTugasDikerjakan("");
                   }}
                   className="rounded-xl border border-border bg-card text-foreground px-4 py-3 text-sm font-extrabold hover:bg-muted transition cursor-pointer"
                 >
@@ -854,19 +828,16 @@ export default function MagangDashboardPage() {
                     </span>
 
                     <p className="mt-1 text-foreground">
-                      {(todayRecord as any)?.alasan_pulang_cepat ||
-                        "Tidak ada alasan"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <span className="font-bold text-muted-foreground">
-                      Tugas yang dikerjakan:
-                    </span>
-
-                    <p className="mt-1 text-foreground">
-                      {(todayRecord as any)?.tugas_dikerjakan ||
-                        "Tidak ada data tugas"}
+                      {(() => {
+                        const ket = (todayRecord as any)?.keterangan || "";
+                        const match = ket.match(
+                          /Alasan Pulang Cepat:\s*([^|]+)/,
+                        );
+                        return match
+                          ? match[1].trim()
+                          : (todayRecord as any)?.alasan_pulang_cepat ||
+                              "Tidak ada alasan";
+                      })()}
                     </p>
                   </div>
                 </div>

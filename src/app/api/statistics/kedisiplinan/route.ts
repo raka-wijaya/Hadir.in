@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         COALESCE(pm.name, ko.name) AS user_nama,
         IF(a.peserta_magang_id IS NOT NULL, 'ANAK_MAGANG', 'KARYAWAN_OS') AS user_role,
         COALESCE(pm.institution, '') AS user_sekolah,
+        COALESCE(pm.divisi, '') AS user_divisi,
         COALESCE(pm.avatar, ko.avatar) AS user_avatar,
         
         COUNT(CASE WHEN a.status = 'HADIR' AND (a.status_masuk = 'TEPAT_WAKTU' OR a.status_masuk IS NULL) THEN 1 END) AS total_hadir,
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN peserta_magang pm ON pm.id = a.peserta_magang_id
       LEFT JOIN karyawan_os ko ON ko.id = a.karyawan_os_id
       ${whereClause}
-      GROUP BY a.peserta_magang_id, a.karyawan_os_id, pm.name, ko.name, pm.institution, pm.avatar, ko.avatar
+      GROUP BY a.peserta_magang_id, a.karyawan_os_id, pm.name, ko.name, pm.institution, pm.divisi, pm.avatar, ko.avatar
       `,
       params
     );
@@ -73,6 +74,8 @@ export async function GET(request: NextRequest) {
         nama: row.user_nama || "—",
         role: row.user_role || "—",
         sekolah: row.user_sekolah || "—",
+        divisi: row.user_divisi || null,
+        user_divisi: row.user_divisi || null,
         avatar: row.user_avatar || "",
         totalHadir: hadir,
         totalTerlambat: terlambat,

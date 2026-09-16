@@ -11,6 +11,7 @@ import {
   AlertModal,
   ConfirmModal,
 } from "@/components/ui/Alert";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 import { Spinner } from "@/components/ui/Spinner";
 import {
   ClipboardList,
@@ -303,6 +304,7 @@ export default function AdminPendaftaranPage() {
           phone: pendaftar.no_hp || null,
           institution: pendaftar.sekolah_kampus || null,
           study_program: pendaftar.study_program || pendaftar.bagian || null,
+          divisi: pendaftar.bagian || null,
           start_date: pendaftar.periode_mulai || null,
           end_date: pendaftar.periode_selesai || null,
         }),
@@ -475,56 +477,64 @@ export default function AdminPendaftaranPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 transition-all">
-            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">
-              <span>Total Calon Peserta</span>
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
+                Total Calon Peserta
+              </span>
+            </div>
 
-            <p className="text-2xl font-black text-foreground">{total}</p>
+            <p className="text-2xl font-black text-primary">{total}</p>
 
-            <span className="text-[10px] font-semibold text-muted-foreground block">
-              <span>Semua calon peserta</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Semua calon peserta
             </span>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 transition-all">
-            <span className="text-[10px] font-extrabold text-status-pending uppercase tracking-wider block">
-              <span>Total Menunggu Seleksi</span>
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-pending uppercase tracking-wider">
+                Menunggu Seleksi
+              </span>
+            </div>
 
             <p className="text-2xl font-black text-status-pending">
               {pendingCount}
             </p>
 
-            <span className="text-[10px] font-semibold text-muted-foreground block">
-              <span>Menunggu seleksi</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Menunggu seleksi
             </span>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 transition-all">
-            <span className="text-[10px] font-extrabold text-status-lolos uppercase tracking-wider block">
-              <span>Total Diterima Magang</span>
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-lolos uppercase tracking-wider">
+                Diterima Magang
+              </span>
+            </div>
 
             <p className="text-2xl font-black text-status-lolos">
               {lolosCount}
             </p>
 
-            <span className="text-[10px] font-semibold text-muted-foreground block">
-              <span>Diterima magang</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Diterima magang
             </span>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 transition-all">
-            <span className="text-[10px] font-extrabold text-status-tolak uppercase tracking-wider block">
-              <span>Total Pendaftaran Ditolak</span>
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-tolak uppercase tracking-wider">
+                Pendaftaran Ditolak
+              </span>
+            </div>
 
             <p className="text-2xl font-black text-status-tolak">
               {tidakLolosCount}
             </p>
 
-            <span className="text-[10px] font-semibold text-muted-foreground block">
-              <span>Pendaftaran ditolak</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Pendaftaran ditolak
             </span>
           </div>
         </div>
@@ -823,7 +833,8 @@ export default function AdminPendaftaranPage() {
         </div>
 
         {showInputModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
             <form
               onSubmit={handleCreatePendaftar}
               className="
@@ -1102,11 +1113,13 @@ export default function AdminPendaftaranPage() {
                 </button>
               </div>
             </form>
-          </div>
+            </div>
+          </ModalPortal>
         )}
 
         {selectedDetail && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
             <div
               className="
               bg-card
@@ -1494,7 +1507,8 @@ export default function AdminPendaftaranPage() {
                 </button>
               </div>
             </div>
-          </div>
+            </div>
+          </ModalPortal>
         )}
       </div>
     </DashboardLayout>

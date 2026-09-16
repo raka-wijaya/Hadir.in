@@ -94,6 +94,9 @@ export async function POST(req: Request) {
       : null;
     const endDate = rawEndDate ? String(rawEndDate).trim().slice(0, 10) : null;
 
+    const rawDivisi = body.divisi;
+    const cleanDivisi = rawDivisi ? String(rawDivisi).trim().slice(0, 150) : null;
+
     const cleanAvatar = body.avatar
       ? String(body.avatar).trim().slice(0, 500)
       : getDefaultAvatar(cleanRole, cleanName);
@@ -211,8 +214,8 @@ export async function POST(req: Request) {
       }
     } else if (cleanRole === "ANAK_MAGANG") {
       const [insertRes]: any = await mysqlPool.query(
-        `INSERT INTO peserta_magang (email, password, name, phone, identity_number, institution, study_program, avatar, start_date, end_date, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
+        `INSERT INTO peserta_magang (email, password, name, phone, identity_number, institution, study_program, divisi, avatar, start_date, end_date, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
         [
           cleanEmail,
           hashedPassword,
@@ -221,6 +224,7 @@ export async function POST(req: Request) {
           cleanIdentityNumber,
           cleanInstitution,
           cleanStudyProgram,
+          cleanDivisi,
           cleanAvatar,
           startDate,
           endDate,

@@ -433,7 +433,7 @@ export default function RegisterPage() {
                     type={showPassword ? "text" : "password"}
                     value={form.password}
                     onChange={set("password")}
-                    placeholder="Masukkan password minimal 8 karakter"
+                    placeholder="Masukkan password"
                     autoComplete="new-password"
                     className={`${inputClass} pr-9`}
                     required

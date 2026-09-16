@@ -61,6 +61,9 @@ interface Izin {
   userAvatar: string | null;
   userInstitution: string;
   userStudyProgram?: string;
+  userDivisi?: string;
+  user_divisi?: string;
+  divisi?: string;
 
   jenis: string;
   tanggalMulai: string;
@@ -81,6 +84,7 @@ interface UserOption {
   role: string;
   institution?: string;
   study_program?: string;
+  divisi?: string;
 }
 
 const fmtDate = (dateStr?: string | null): string => {
@@ -709,64 +713,82 @@ export default function AdminIzinPage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
                 Total Izin
               </span>
-              <FileCheck className="w-4 h-4 text-primary" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">
-              {stats.total}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              Semua permohonan
-            </p>
+
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-primary">{stats.total}</p>
+            )}
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Semua Permohonan
+            </span>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-sakit uppercase tracking-wider">
                 Izin Sakit
               </span>
-              <AlertCircle className="w-4 h-4 text-status-sakit" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-status-sakit">
-              {stats.sakit}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              Alasan kesehatan
-            </p>
+
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-sakit">
+                {stats.sakit}
+              </p>
+            )}
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Alasan Kesehatan
+            </span>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
                 Izin
               </span>
-              <Users className="w-4 h-4 text-status-izin" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-status-izin">
-              {stats.izin}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              Izin keperluan / personal
-            </p>
+
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-izin">
+                {stats.izin}
+              </p>
+            )}
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Keperluan / Personal
+            </span>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
                 Izin Hari Ini
               </span>
-              <Clock className="w-4 h-4 text-status-terlambat" />
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">
-              {stats.activeToday}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              Sedang berlangsung
-            </p>
+
+            {isLoading ? (
+              <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
+            ) : (
+              <p className="text-2xl font-black text-status-terlambat">
+                {stats.activeToday}
+              </p>
+            )}
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Sedang Berlangsung
+            </span>
           </div>
         </div>
 
@@ -975,6 +997,9 @@ export default function AdminIzinPage() {
                             "
                             >
                               {item.userName}
+                              {(item.userDivisi || item.user_divisi || item.divisi) ? (
+                                <span className="font-normal text-muted-foreground"> - {item.userDivisi || item.user_divisi || item.divisi}</span>
+                              ) : null}
                             </div>
                           </div>
                         </div>
@@ -1360,6 +1385,7 @@ export default function AdminIzinPage() {
                                       <div className="flex items-center gap-1.5 flex-wrap">
                                         <p className="text-xs font-bold text-foreground truncate">
                                           {u.name}
+                                          {u.divisi ? <span className="font-normal text-muted-foreground"> - {u.divisi}</span> : null}
                                         </p>
                                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-foreground">
                                           {u.role}

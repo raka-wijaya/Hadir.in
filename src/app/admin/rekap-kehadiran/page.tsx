@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PhotoModal } from "@/components/attendance/PhotoModal";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 import { Absensi } from "@/types";
 import {
   Printer,
@@ -197,60 +198,75 @@ export default function RekapKehadiranPage() {
             </button>
           </div>
         </div>
-
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-primary uppercase tracking-wider">
                 Total Presensi
               </span>
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">
+
+            <p className="text-2xl md:text-3xl font-black text-primary">
               {stats.total}
             </p>
-            <p className="text-[11px] text-muted-foreground">Catatan terekam</p>
+
+            <p className="text-[11px] font-semibold text-muted-foreground">
+              Catatan terekam
+            </p>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-emerald-500/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-status-hadir uppercase tracking-wider">
                 Tepat Waktu
               </span>
             </div>
-            <p className="text-2xl md:text-3xl font-black text-status-hadir dark:text-status-hadir">
+
+            <p className="text-2xl md:text-3xl font-black text-status-hadir">
               {stats.hadirTepat}
             </p>
-            <p className="text-[11px] text-muted-foreground">Hadir disiplin</p>
+
+            <p className="text-[11px] font-semibold text-muted-foreground">
+              Hadir disiplin
+            </p>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-amber-500/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-status-terlambat uppercase tracking-wider">
                 Terlambat
               </span>
             </div>
-            <p className="text-2xl md:text-3xl font-black text-status-terlambat dark:text-status-terlambat">
+
+            <p className="text-2xl md:text-3xl font-black text-status-terlambat">
               {stats.terlambat}
             </p>
-            <p className="text-[11px] text-muted-foreground">Masuk lewat jam</p>
+
+            <p className="text-[11px] font-semibold text-muted-foreground">
+              Masuk lewat jam
+            </p>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-rose-500/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
+          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-status-izin uppercase tracking-wider">
                 Izin / Sakit / Alpa
               </span>
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">
+
+            <p className="text-2xl md:text-3xl font-black text-status-izin">
               {stats.izin + stats.sakit + stats.alpa}{" "}
               <span className="text-xs font-semibold text-muted-foreground">
                 ({stats.izin}I / {stats.sakit}S / {stats.alpa}A)
               </span>
             </p>
-            <p className="text-[11px] text-muted-foreground">Ketidak hadiran</p>
+
+            <p className="text-[11px] font-semibold text-muted-foreground">
+              Ketidak hadiran
+            </p>
           </div>
         </div>
-
+        ```
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
             <div className="relative md:col-span-2">
@@ -357,7 +373,6 @@ export default function RekapKehadiranPage() {
             )}
           </div>
         </div>
-
         <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
           <div className="p-4 md:p-5 border-b border-border flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
@@ -436,6 +451,9 @@ export default function RekapKehadiranPage() {
                             <div className="min-w-0">
                               <p className="font-extrabold text-foreground truncate">
                                 {rec.user_nama || rec.userName || "Peserta"}
+                                {(rec.user_divisi || rec.userDivisi || rec.divisi) ? (
+                                  <span className="font-normal text-muted-foreground"> - {rec.user_divisi || rec.userDivisi || rec.divisi}</span>
+                                ) : null}
                               </p>
                               <p className="text-[10px] text-muted-foreground truncate font-mono">
                                 {rec.user_identity_number ||
@@ -631,7 +649,8 @@ export default function RekapKehadiranPage() {
       )}
 
       {isPrintModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in print:hidden">
           <div className="bg-card border border-border rounded-2xl max-w-4xl w-full max-h-[calc(100vh-2rem)] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
             <div className="p-4 md:p-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
               <div className="flex items-center gap-2">
@@ -916,7 +935,8 @@ export default function RekapKehadiranPage() {
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </ModalPortal>
       )}
 
       <div className="hidden print:block text-black bg-white p-6 space-y-6 text-xs font-sans">

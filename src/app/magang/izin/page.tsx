@@ -966,11 +966,6 @@ export default function MagangIzinPage() {
 
               <Spinner size="lg" />
 
-              <p className="text-xs font-bold text-muted-foreground">
-                Memuat riwayat
-                permohonan izin...
-              </p>
-
             </div>
 
           ) : izin.length > 0 ? (

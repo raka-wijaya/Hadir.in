@@ -225,6 +225,8 @@ export interface User {
 
   bagian?: string;
 
+  divisi?: string | null;
+
 
   // ----------------------------------------------------------
   // Periode
@@ -374,6 +376,12 @@ export interface Absensi {
   user_identity_number?: string;
 
   user_study_program?: string;
+
+  user_divisi?: string | null;
+
+  userDivisi?: string | null;
+
+  divisi?: string | null;
 
   menit_terlambat?: number;
 
@@ -747,6 +755,9 @@ export interface Izin {
   user_institution?: string;
   userStudyProgram?: string;
   user_study_program?: string;
+  user_divisi?: string | null;
+  userDivisi?: string | null;
+  divisi?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -860,9 +871,9 @@ export interface TugasItem {
   judul_tugas: string;
   judulTugas?: string;
 
-  deskripsi: string;
+  deskripsi?: string;
 
-  kategori: string;
+  kategori?: string;
 
   status_pengerjaan?: "BELUM_DIKERJAKAN" | "SELESAI" | string;
   statusPengerjaan?: "BELUM_DIKERJAKAN" | "SELESAI" | string;
@@ -879,6 +890,9 @@ export interface TugasItem {
   user_sekolah?: string | null;
   user_role?: string | null;
   userRole?: string | null;
+  user_divisi?: string | null;
+  userDivisi?: string | null;
+  divisi?: string | null;
 
   // Join dari log_book (opsional)
   log_book_aktivitas?: string | null;
@@ -972,6 +986,9 @@ export interface LogBook {
   user_jurusan?: string;
   user_study_program?: string;
   userStudyProgram?: string;
+  user_divisi?: string | null;
+  userDivisi?: string | null;
+  divisi?: string | null;
   user_avatar?: string | null;
   userAvatar?: string | null;
   tanggal: string; // YYYY-MM-DD

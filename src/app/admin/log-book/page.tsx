@@ -10,7 +10,7 @@ import React, {
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ModalPortal } from "@/components/ui/ModalPortal";
 import { useAuth } from "@/lib/auth/context";
-import { LogBook, LOGBOOK_CATEGORIES, LOGBOOK_CATEGORY_LABELS, LogBookCategory, User } from "@/types";
+import { LogBook, User } from "@/types";
 import {
   NotebookPen,
   Search,
@@ -26,12 +26,6 @@ import {
   Layers,
   ArrowUpDown,
   BookOpen,
-  Code,
-  FileText,
-  UserPlus,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Image as ImageIcon,
   Info,
   RefreshCw,
   Printer,
@@ -56,45 +50,6 @@ function formatTanggalIndo(dateStr?: string | null): string {
   }).format(d);
 }
 
-function formatWaktu(timeStr?: string | null): string {
-  if (!timeStr) return "—";
-  return timeStr.slice(0, 5);
-}
-
-function getKategoriIcon(kategori: string) {
-  const k = (kategori || "").toLowerCase();
-  if (k === "programmer") return <Code className="w-3.5 h-3.5" />;
-  if (k === "media") return <ImageIcon className="w-3.5 h-3.5" />;
-  if (k === "tambah bio data") return <UserPlus className="w-3.5 h-3.5" />;
-  if (k === "pindah keluar") return <ArrowUpRight className="w-3.5 h-3.5" />;
-  if (k === "pindah datang") return <ArrowDownLeft className="w-3.5 h-3.5" />;
-  if (k === "tambah bio data") return <ArrowDownLeft className="w-3.5 h-3.5" />;
-  if (k === "akta kematian") return <ArrowDownLeft className="w-3.5 h-3.5" />;
-  if (k === "akta kelahiran") return <ArrowDownLeft className="w-3.5 h-3.5" />;
-  return <FileText className="w-3.5 h-3.5" />;
-}
-
-function getKategoriBadgeClass(kategori: string): string {
-  const k = (kategori || "").toLowerCase();
-  switch (k) {
-    case "akta kelahiran":
-      return "status-hadir border";
-    case "akta kematian":
-      return "bg-muted text-foreground border-border";
-    case "tambah bio data":
-      return "status-izin border";
-    case "pindah keluar":
-      return "status-terlambat border";
-    case "pindah datang":
-      return "status-pending border";
-    case "media":
-      return "status-sakit border";
-    case "programmer":
-      return "bg-primary/10 text-primary border-primary/20";
-    default:
-      return "bg-primary/10 text-primary border-primary/20";
-  }
-}
 
 export default function AdminLogBookPage() {
   const { user } = useAuth();
@@ -107,7 +62,6 @@ export default function AdminLogBookPage() {
   const [isInternDropdownOpen, setIsInternDropdownOpen] =
     useState<boolean>(false);
   const internComboboxRef = useRef<HTMLDivElement>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"DESC" | "ASC">("DESC");
@@ -126,9 +80,6 @@ export default function AdminLogBookPage() {
 
   const [formData, setFormData] = useState({
     tanggal: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Jakarta" }).format(new Date()),
-    waktu_mulai: "08:00",
-    waktu_selesai: "16:00",
-    kategori: "programmer",
     aktivitas: "",
   });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -157,10 +108,10 @@ export default function AdminLogBookPage() {
     try {
       setIsLoading(true);
       const params = new URLSearchParams();
-      if (selectedInternId !== "ALL") params.append("peserta_magang_id", selectedInternId);
+      if (selectedInternId !== "ALL")
+        params.append("peserta_magang_id", selectedInternId);
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
-      if (selectedCategory !== "ALL") params.append("kategori", selectedCategory);
       if (debounceSearch) params.append("q", debounceSearch);
       params.append("sort", sortOrder);
 
@@ -179,7 +130,7 @@ export default function AdminLogBookPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedInternId, startDate, endDate, selectedCategory, debounceSearch, sortOrder]);
+  }, [selectedInternId, startDate, endDate, debounceSearch, sortOrder]);
 
   useEffect(() => {
     fetchLogbooks();
@@ -219,9 +170,6 @@ export default function AdminLogBookPage() {
     setSelectedLogbook(item);
     setFormData({
       tanggal: item.tanggal,
-      waktu_mulai: item.waktu_mulai.slice(0, 5),
-      waktu_selesai: item.waktu_selesai.slice(0, 5),
-      kategori: item.kategori,
       aktivitas: item.aktivitas,
     });
     setIsEditModalOpen(true);
@@ -231,7 +179,7 @@ export default function AdminLogBookPage() {
     e.preventDefault();
     if (!selectedLogbook) return;
     if (!formData.aktivitas.trim()) {
-      setErrorMessage("Deskripsi aktivitas wajib diisi.");
+      setErrorMessage("Judul logbook wajib diisi.");
       return;
     }
 
@@ -243,7 +191,8 @@ export default function AdminLogBookPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: selectedLogbook.id,
-          ...formData,
+          tanggal: formData.tanggal,
+          aktivitas: formData.aktivitas.trim(),
         }),
       });
       const result = await res.json();
@@ -294,28 +243,36 @@ export default function AdminLogBookPage() {
 
   const stats = useMemo(() => {
     const totalCount = logbooks.length;
-    const totalMinutes = logbooks.reduce((acc, item) => acc + (item.durasi_menit || 0), 0);
-    const totalHours = (totalMinutes / 60).toFixed(1);
 
-    const todayStr = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Jakarta" }).format(new Date());
-    const todayCount = logbooks.filter((item) => item.tanggal === todayStr).length;
+    const todayStr = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Asia/Jakarta",
+    }).format(new Date());
+    const todayCount = logbooks.filter(
+      (item) => item.tanggal === todayStr,
+    ).length;
 
-    const catMap: Record<string, number> = {};
-    logbooks.forEach((item) => {
-      catMap[item.kategori] = (catMap[item.kategori] || 0) + 1;
-    });
+    const assignedIds = new Set(
+      logbooks
+        .map((l) => l.peserta_magang_id || l.pesertaMagangId)
+        .filter(Boolean),
+    );
+    const activeInternsCount = assignedIds.size;
+    const totalInterns = interns.length;
 
-    let topCat = "—";
-    let maxCount = 0;
-    Object.entries(catMap).forEach(([k, v]) => {
-      if (v > maxCount) {
-        maxCount = v;
-        topCat = LOGBOOK_CATEGORY_LABELS[k as LogBookCategory] || k;
-      }
-    });
+    const totalMinutes = logbooks.reduce(
+      (acc, item) => acc + (item.durasi_menit || 0),
+      0,
+    );
+    const totalHours = Math.round(totalMinutes / 60);
 
-    return { totalCount, totalHours, todayCount, topCat, catMap };
-  }, [logbooks]);
+    return {
+      totalCount,
+      todayCount,
+      activeInternsCount,
+      totalInterns,
+      totalHours,
+    };
+  }, [logbooks, interns]);
 
   const selectedInternObj = useMemo(() => {
     if (selectedInternId === "ALL") return null;
@@ -414,77 +371,85 @@ export default function AdminLogBookPage() {
         )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
-                Total Entri Logbook
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 hover:border-primary/40 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
+                Total Logbook
               </span>
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">
+
+            <p className="text-2xl font-black text-primary">
               {stats.totalCount}
             </p>
-            <p className="text-[11px] text-muted-foreground">
-              Aktivitas terdata
-            </p>
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Entri tercatat
+            </span>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
-                Akumulasi Waktu
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 hover:border-status-hadir/40 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
+                Logbook Hari Ini
               </span>
             </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">
-              {stats.totalHours}{" "}
-              <span className="text-sm font-bold text-muted-foreground">
-                Jam
-              </span>
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              Total jam kerja tercatat
-            </p>
-          </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
-                Aktivitas Hari Ini
-              </span>
-            </div>
-            <p className="text-2xl md:text-3xl font-black text-foreground">
+            <p className="text-2xl font-black text-status-hadir">
               {stats.todayCount}
             </p>
-            <p className="text-[11px] text-muted-foreground">Entri hari ini</p>
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Dibuat hari ini
+            </span>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-1.5 shadow-card hover:border-primary/40 transition-all">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider">
-                Kategori Terbanyak
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 hover:border-status-izin/40 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
+                Peserta Mengisi
               </span>
             </div>
-            <p className="text-base md:text-lg font-black text-foreground truncate">
-              {stats.topCat}
+
+            <p className="text-2xl font-black text-status-izin">
+              {stats.activeInternsCount}
             </p>
-            <p className="text-[11px] text-muted-foreground">
-              Frekuensi tertinggi
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Peserta aktif mengisi
+            </span>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1 hover:border-foreground/20 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-foreground uppercase tracking-wider">
+                Total Peserta Magang
+              </span>
+            </div>
+
+            <p className="text-2xl font-black text-foreground">
+              {stats.totalInterns}
             </p>
+
+            <span className="text-[10px] font-semibold text-muted-foreground">
+              Peserta terdaftar
+            </span>
           </div>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="relative md:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Cari nama peserta, aktivitas, atau kategori"
+                placeholder="Cari judul logbook atau nama peserta..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full pl-9 pr-8 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery("")}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
@@ -588,7 +553,7 @@ export default function AdminLogBookPage() {
                           }`}
                         >
                           <div className="min-w-0 pr-2">
-                            <p className="truncate">{displayName}</p>
+                            <p className="truncate">{displayName}{intern.divisi ? <span className="font-normal text-muted-foreground"> - {intern.divisi}</span> : null}</p>
                             <p className="text-[10px] text-muted-foreground font-normal truncate">
                               {displayInst}
                             </p>
@@ -623,22 +588,6 @@ export default function AdminLogBookPage() {
             </div>
 
             <div className="relative">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer appearance-none"
-              >
-                <option value="ALL">Semua Kategori</option>
-                {LOGBOOK_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {LOGBOOK_CATEGORY_LABELS[cat]}
-                  </option>
-                ))}
-              </select>
-              <Filter className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            </div>
-
-            <div className="relative">
               <input
                 type="date"
                 title="Tanggal Mulai"
@@ -648,9 +597,30 @@ export default function AdminLogBookPage() {
               />
               {startDate && (
                 <button
+                  type="button"
                   onClick={() => setStartDate("")}
                   title="Hapus tanggal mulai"
-                  className="absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="relative">
+              <input
+                type="date"
+                title="Tanggal Selesai"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+              />
+              {endDate && (
+                <button
+                  type="button"
+                  onClick={() => setEndDate("")}
+                  title="Hapus tanggal selesai"
+                  className="absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -660,6 +630,7 @@ export default function AdminLogBookPage() {
 
           <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs">
             <button
+              type="button"
               onClick={() =>
                 setSortOrder(sortOrder === "DESC" ? "ASC" : "DESC")
               }
@@ -674,15 +645,16 @@ export default function AdminLogBookPage() {
 
             {(startDate ||
               endDate ||
-              selectedCategory !== "ALL" ||
               selectedInternId !== "ALL" ||
               searchQuery) && (
               <button
+                type="button"
                 onClick={() => {
                   setStartDate("");
                   setEndDate("");
                   setSelectedInternId("ALL");
-                  setSelectedCategory("ALL");
+                  setInternSearchQuery("");
+                  setIsInternDropdownOpen(false);
                   setSearchQuery("");
                 }}
                 className="text-primary hover:underline font-bold text-xs cursor-pointer"
@@ -720,18 +692,12 @@ export default function AdminLogBookPage() {
                     <th className="py-3 px-4 w-12 text-center">No</th>
                     <th className="py-3 px-4 min-w-[180px]">Nama Peserta</th>
                     <th className="py-3 px-4 min-w-[130px]">Tanggal</th>
-                    <th className="py-3 px-4 min-w-[140px]">Waktu & Durasi</th>
-                    <th className="py-3 px-4 min-w-[140px]">Kategori</th>
-                    <th className="py-3 px-4">Deskripsi Aktivitas</th>
+                    <th className="py-3 px-4">Judul</th>
                     <th className="py-3 px-4 text-center w-28">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {logbooks.slice(0, itemsPerPage).map((item, index) => {
-                    const kategoriLabel =
-                      LOGBOOK_CATEGORY_LABELS[
-                        item.kategori as LogBookCategory
-                      ] || item.kategori;
                     return (
                       <tr
                         key={item.id}
@@ -757,6 +723,9 @@ export default function AdminLogBookPage() {
                                 {item.user_nama ||
                                   item.userName ||
                                   "Mahasiswa Magang"}
+                                {(item.user_divisi || item.userDivisi || item.divisi) ? (
+                                  <span className="font-normal text-muted-foreground"> - {item.user_divisi || item.userDivisi || item.divisi}</span>
+                                ) : null}
                               </p>
                               <p className="text-[10px] text-muted-foreground truncate">
                                 {item.user_institution ||
@@ -771,34 +740,6 @@ export default function AdminLogBookPage() {
                             <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
                             <span>{formatTanggalIndo(item.tanggal)}</span>
                           </div>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-1.5 font-extrabold text-foreground">
-                              <Clock className="w-3 h-3 text-primary shrink-0" />
-                              <span>
-                                {formatWaktu(item.waktu_mulai)} -{" "}
-                                {formatWaktu(item.waktu_selesai)}
-                              </span>
-                            </div>
-                            {item.durasi_menit !== undefined &&
-                              item.durasi_menit > 0 && (
-                                <span className="text-[10px] font-semibold text-muted-foreground">
-                                  ({Math.floor(item.durasi_menit / 60)}j{" "}
-                                  {item.durasi_menit % 60}m)
-                                </span>
-                              )}
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${getKategoriBadgeClass(
-                              item.kategori,
-                            )}`}
-                          >
-                            {getKategoriIcon(item.kategori)}
-                            <span className="capitalize">{kategoriLabel}</span>
-                          </span>
                         </td>
                         <td className="py-3.5 px-4 text-foreground/90 font-medium max-w-md">
                           <p className="line-clamp-2">{item.aktivitas}</p>
@@ -890,10 +831,7 @@ export default function AdminLogBookPage() {
             <div className="bg-card border border-border rounded-2xl max-w-lg w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                    <Edit3 className="w-5 h-5" />
-                  </span>
-                  <h3 className="text-base md:text-lg font-black text-foreground">
+                  <h3 className="text-[16px] md:text-lg font-black text-foreground">
                     Edit Catatan Logbook
                   </h3>
                 </div>
@@ -921,61 +859,7 @@ export default function AdminLogBookPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-foreground mb-1">
-                      Waktu Mulai
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.waktu_mulai}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          waktu_mulai: e.target.value,
-                        })
-                      }
-                      required
-                      className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-foreground mb-1">
-                      Waktu Selesai
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.waktu_selesai}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          waktu_selesai: e.target.value,
-                        })
-                      }
-                      required
-                      className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-foreground mb-1">
-                    Kategori Pekerjaan
-                  </label>
-                  <select
-                    value={formData.kategori}
-                    onChange={(e) =>
-                      setFormData({ ...formData, kategori: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
-                  >
-                    {LOGBOOK_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {LOGBOOK_CATEGORY_LABELS[cat]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
 
                 <div>
                   <label className="block text-xs font-bold text-foreground mb-1">
@@ -1027,10 +911,7 @@ export default function AdminLogBookPage() {
             <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto p-5 md:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-xl bg-primary/10 text-primary">
-                    <Info className="w-5 h-5" />
-                  </span>
-                  <h3 className="text-base font-black text-foreground">
+                  <h3 className="text-[16px] font-black text-foreground">
                     Rincian Aktivitas Logbook
                   </h3>
                 </div>
@@ -1051,6 +932,9 @@ export default function AdminLogBookPage() {
                     {selectedLogbook.user_nama ||
                       selectedLogbook.userName ||
                       "Mahasiswa Magang"}
+                    {(selectedLogbook.user_divisi || selectedLogbook.userDivisi || selectedLogbook.divisi) ? (
+                      <span className="font-normal text-sm"> - {selectedLogbook.user_divisi || selectedLogbook.userDivisi || selectedLogbook.divisi}</span>
+                    ) : null}
                   </p>
                   <p className="text-muted-foreground">
                     {selectedLogbook.user_institution ||
@@ -1059,42 +943,13 @@ export default function AdminLogBookPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                      Tanggal
-                    </span>
-                    <p className="font-extrabold text-foreground">
-                      {formatTanggalIndo(selectedLogbook.tanggal)}
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                      Waktu & Durasi
-                    </span>
-                    <p className="font-extrabold text-foreground">
-                      {formatWaktu(selectedLogbook.waktu_mulai)} -{" "}
-                      {formatWaktu(selectedLogbook.waktu_selesai)}
-                    </p>
-                  </div>
-                </div>
-
                 <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Kategori
+                    Tanggal
                   </span>
-                  <div>
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${getKategoriBadgeClass(selectedLogbook.kategori)}`}
-                    >
-                      {getKategoriIcon(selectedLogbook.kategori)}
-                      <span className="capitalize">
-                        {LOGBOOK_CATEGORY_LABELS[
-                          selectedLogbook.kategori as LogBookCategory
-                        ] || selectedLogbook.kategori}
-                      </span>
-                    </span>
-                  </div>
+                  <p className="font-extrabold text-foreground">
+                    {formatTanggalIndo(selectedLogbook.tanggal)}
+                  </p>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-muted/40 border border-border space-y-1">
@@ -1128,7 +983,7 @@ export default function AdminLogBookPage() {
                 <Trash2 className="w-6 h-6" />
               </div>
               <div className="text-center space-y-1">
-                <h3 className="text-base font-black text-foreground">
+                <h3 className="text-[16px] font-black text-foreground">
                   Hapus Entri Logbook?
                 </h3>
                 <p className="text-xs text-muted-foreground">
@@ -1166,7 +1021,7 @@ export default function AdminLogBookPage() {
               <div className="p-4 md:p-5 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
                 <div className="flex items-center gap-2">
                   <div>
-                    <h3 className="text-base md:text-lg font-black text-foreground">
+                    <h3 className="text-[16px] md:text-lg font-black text-foreground">
                       Pratinjau & Cetak Laporan PDF Logbook
                     </h3>
                     <p className="text-xs text-muted-foreground">
@@ -1225,7 +1080,7 @@ export default function AdminLogBookPage() {
               <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-neutral-900/10 dark:bg-black/40">
                 <div className="bg-white text-black p-8 rounded-lg shadow-md max-w-3xl mx-auto space-y-6 text-xs font-sans">
                   <div className="border-b-2 border-black pb-3 text-center space-y-1">
-                    <h2 className="text-base font-black uppercase tracking-wider text-black">
+                    <h2 className="text-[16px] font-black uppercase tracking-wider text-black">
                       DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL
                     </h2>
                     <h3 className="text-xs font-bold text-neutral-800 uppercase">
@@ -1302,66 +1157,38 @@ export default function AdminLogBookPage() {
                             Peserta
                           </th>
                         )}
-                        <th className="border border-black p-1.5 w-24">
+                        <th className="border border-black p-1.5 w-28">
                           Tanggal
-                        </th>
-                        <th className="border border-black p-1.5 w-24">
-                          Waktu (Jam)
-                        </th>
-                        <th className="border border-black p-1.5 w-24">
-                          Kategori
                         </th>
                         <th className="border border-black p-1.5 text-left">
                           Uraian Aktivitas & Capaian Pekerjaan
                         </th>
-                        <th className="border border-black p-1.5 w-16">
-                          Durasi
-                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {logbooks.map((item, idx) => {
-                        const durasiJam = item.durasi_menit
-                          ? `${Math.floor(item.durasi_menit / 60)}j ${item.durasi_menit % 60}m`
-                          : "0";
-                        const kat =
-                          LOGBOOK_CATEGORY_LABELS[
-                            item.kategori as LogBookCategory
-                          ] || item.kategori;
-                        return (
-                          <tr
-                            key={item.id}
-                            className="border-b border-neutral-400"
-                          >
-                            <td className="border border-black p-1.5 text-center font-semibold">
-                              {idx + 1}
+                      {logbooks.map((item, idx) => (
+                        <tr
+                          key={item.id}
+                          className="border-b border-neutral-400"
+                        >
+                          <td className="border border-black p-1.5 text-center font-semibold">
+                            {idx + 1}
+                          </td>
+                          {!selectedInternObj && (
+                            <td className="border border-black p-1.5 font-bold">
+                              {item.user_nama ||
+                                item.userName ||
+                                "Mahasiswa Magang"}
                             </td>
-                            {!selectedInternObj && (
-                              <td className="border border-black p-1.5 font-bold">
-                                {item.user_nama ||
-                                  item.userName ||
-                                  "Mahasiswa Magang"}
-                              </td>
-                            )}
-                            <td className="border border-black p-1.5 text-center font-medium">
-                              {formatTanggalIndo(item.tanggal)}
-                            </td>
-                            <td className="border border-black p-1.5 text-center font-mono">
-                              {formatWaktu(item.waktu_mulai)} -{" "}
-                              {formatWaktu(item.waktu_selesai)}
-                            </td>
-                            <td className="border border-black p-1.5 text-center capitalize font-semibold">
-                              {kat}
-                            </td>
-                            <td className="border border-black p-1.5 text-left whitespace-pre-wrap">
-                              {item.aktivitas}
-                            </td>
-                            <td className="border border-black p-1.5 text-center font-bold">
-                              {durasiJam}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                          )}
+                          <td className="border border-black p-1.5 text-center font-medium">
+                            {formatTanggalIndo(item.tanggal)}
+                          </td>
+                          <td className="border border-black p-1.5 text-left whitespace-pre-wrap">
+                            {item.aktivitas}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
 
@@ -1369,7 +1196,6 @@ export default function AdminLogBookPage() {
                     <span>
                       Total Aktivitas Tercatat: {stats.totalCount} kegiatan
                     </span>
-                    <span>Total Akumulasi Waktu: {stats.totalHours} Jam</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-8 pt-6 text-[11px] text-center">
@@ -1442,7 +1268,7 @@ export default function AdminLogBookPage() {
 
       <div className="hidden print:block text-black bg-white p-6 space-y-6 text-xs font-sans">
         <div className="border-b-2 border-black pb-3 text-center space-y-1">
-          <h2 className="text-base font-black uppercase tracking-wider text-black">
+          <h2 className="text-[16px] font-black uppercase tracking-wider text-black">
             DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL
           </h2>
           <h3 className="text-xs font-bold text-neutral-800 uppercase">
@@ -1517,58 +1343,36 @@ export default function AdminLogBookPage() {
                   Peserta
                 </th>
               )}
-              <th className="border border-black p-1.5 w-24">Tanggal</th>
-              <th className="border border-black p-1.5 w-24">Waktu (Jam)</th>
-              <th className="border border-black p-1.5 w-24">Kategori</th>
+              <th className="border border-black p-1.5 w-28">Tanggal</th>
               <th className="border border-black p-1.5 text-left">
                 Uraian Aktivitas & Capaian Pekerjaan
               </th>
-              <th className="border border-black p-1.5 w-16">Durasi</th>
             </tr>
           </thead>
           <tbody>
-            {logbooks.map((item, idx) => {
-              const durasiJam = item.durasi_menit
-                ? `${Math.floor(item.durasi_menit / 60)}j ${item.durasi_menit % 60}m`
-                : "—";
-              const kat =
-                LOGBOOK_CATEGORY_LABELS[item.kategori as LogBookCategory] ||
-                item.kategori;
-              return (
-                <tr key={item.id} className="border-b border-neutral-400">
-                  <td className="border border-black p-1.5 text-center font-semibold">
-                    {idx + 1}
+            {logbooks.map((item, idx) => (
+              <tr key={item.id} className="border-b border-neutral-400">
+                <td className="border border-black p-1.5 text-center font-semibold">
+                  {idx + 1}
+                </td>
+                {!selectedInternObj && (
+                  <td className="border border-black p-1.5 font-bold">
+                    {item.user_nama || item.userName || "Mahasiswa Magang"}
                   </td>
-                  {!selectedInternObj && (
-                    <td className="border border-black p-1.5 font-bold">
-                      {item.user_nama || item.userName || "Mahasiswa Magang"}
-                    </td>
-                  )}
-                  <td className="border border-black p-1.5 text-center font-medium">
-                    {formatTanggalIndo(item.tanggal)}
-                  </td>
-                  <td className="border border-black p-1.5 text-center font-mono">
-                    {formatWaktu(item.waktu_mulai)} -{" "}
-                    {formatWaktu(item.waktu_selesai)}
-                  </td>
-                  <td className="border border-black p-1.5 text-center capitalize font-semibold">
-                    {kat}
-                  </td>
-                  <td className="border border-black p-1.5 text-left whitespace-pre-wrap">
-                    {item.aktivitas}
-                  </td>
-                  <td className="border border-black p-1.5 text-center font-bold">
-                    {durasiJam}
-                  </td>
-                </tr>
-              );
-            })}
+                )}
+                <td className="border border-black p-1.5 text-center font-medium">
+                  {formatTanggalIndo(item.tanggal)}
+                </td>
+                <td className="border border-black p-1.5 text-left whitespace-pre-wrap">
+                  {item.aktivitas}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
         <div className="flex justify-between items-center p-2.5 rounded-lg border border-black bg-neutral-100 text-[11px] font-bold">
           <span>Total Aktivitas Tercatat: {stats.totalCount} kegiatan</span>
-          <span>Total Akumulasi Waktu: {stats.totalHours} Jam</span>
         </div>
 
         <div className="grid grid-cols-2 gap-8 pt-6 text-[11px] text-center">

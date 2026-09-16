@@ -508,7 +508,7 @@ export default function PegawaiOsDashboardPage() {
 
               <span
                 className={`rounded-full px-2.5 py-1 text-[10px] font-black border ${getStatusClass(
-                  todayRecord
+                  todayRecord,
                 )}`}
               >
                 {statusLabel}
@@ -532,7 +532,7 @@ export default function PegawaiOsDashboardPage() {
                   </p>
 
                   {String(
-                    todayRecord?.status_masuk || todayRecord?.statusMasuk || ""
+                    todayRecord?.status_masuk || todayRecord?.statusMasuk || "",
                   ).toUpperCase() === "TEPAT_WAKTU" && (
                     <p className="text-[10px] font-bold text-status-hadir mt-1">
                       Tepat waktu
@@ -540,7 +540,7 @@ export default function PegawaiOsDashboardPage() {
                   )}
 
                   {String(
-                    todayRecord?.status_masuk || todayRecord?.statusMasuk || ""
+                    todayRecord?.status_masuk || todayRecord?.statusMasuk || "",
                   ).toUpperCase() === "TERLAMBAT" && (
                     <p className="text-[10px] font-bold text-status-terlambat mt-1">
                       Terlambat{" "}
@@ -595,7 +595,7 @@ export default function PegawaiOsDashboardPage() {
                     (String(
                       todayRecord?.status_pulang ||
                         todayRecord?.statusPulang ||
-                        ""
+                        "",
                     ).toUpperCase() === "PULANG_CEPAT" ? (
                       <p className="text-[10px] font-bold text-status-terlambat mt-1">
                         Pulang cepat
@@ -631,8 +631,8 @@ export default function PegawaiOsDashboardPage() {
                     {isSubmittingCheckout
                       ? "Memproses..."
                       : isEarlyCheckout()
-                      ? "Absen Pulang Cepat"
-                      : "Absen Pulang"}
+                        ? "Absen Pulang Cepat"
+                        : "Absen Pulang"}
                   </button>
                 ) : todayRecord?.jam_keluar ||
                   todayRecord?.jam_pulang ||
@@ -642,7 +642,7 @@ export default function PegawaiOsDashboardPage() {
                     {String(
                       todayRecord?.status_pulang ||
                         todayRecord?.statusPulang ||
-                        ""
+                        "",
                     ).toUpperCase() === "PULANG_CEPAT"
                       ? "Pulang cepat sudah dicatat"
                       : "Absen pulang sudah dilakukan"}
@@ -812,7 +812,7 @@ export default function PegawaiOsDashboardPage() {
                 ? String(
                     previewRecord.status_pulang ||
                       previewRecord.statusPulang ||
-                      ""
+                      "",
                   ).toUpperCase() === "PULANG_CEPAT"
                   ? "Bukti Presensi Swafoto Pulang Cepat"
                   : "Bukti Presensi Swafoto Pulang OS"
@@ -898,7 +898,7 @@ export default function PegawaiOsDashboardPage() {
                 ? String(
                     previewRecord.status_pulang ||
                       previewRecord.statusPulang ||
-                      ""
+                      "",
                   ).toUpperCase() === "PULANG_CEPAT"
                   ? "PULANG_CEPAT"
                   : "TEPAT_WAKTU"

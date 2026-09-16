@@ -9,13 +9,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PhotoModal } from "@/components/attendance/PhotoModal";
 import { useAuth } from "@/lib/auth/context";
 
-import {
-  Absensi,
-  LogBook,
-  TugasItem,
-  LOGBOOK_CATEGORY_LABELS,
-  LogBookCategory,
-} from "@/types";
+import { Absensi, LogBook, TugasItem } from "@/types";
 
 import {
   Users,
@@ -31,11 +25,6 @@ import {
   Calendar,
   ArrowUpRight,
   ChevronRight,
-  Code,
-  Image as ImageIcon,
-  UserPlus,
-  ArrowDownLeft,
-  NotebookPen,
 } from "lucide-react";
 
 import { Statiska } from "@/components/ui/Statiska";
@@ -62,61 +51,6 @@ function formatWaktu(timeStr?: string | null): string {
   return timeStr.slice(0, 5);
 }
 
-function getKategoriIcon(kategori: string) {
-  const k = (kategori || "").toLowerCase();
-
-  if (k === "programmer") {
-    return <Code className="w-3.5 h-3.5" />;
-  }
-
-  if (k === "media") {
-    return <ImageIcon className="w-3.5 h-3.5" />;
-  }
-
-  if (k === "tambah bio data") {
-    return <UserPlus className="w-3.5 h-3.5" />;
-  }
-
-  if (k === "pindah keluar") {
-    return <ArrowUpRight className="w-3.5 h-3.5" />;
-  }
-
-  if (k === "pindah datang") {
-    return <ArrowDownLeft className="w-3.5 h-3.5" />;
-  }
-
-  return <NotebookPen className="w-3.5 h-3.5" />;
-}
-
-function getKategoriBadgeClass(kategori: string): string {
-  const k = (kategori || "").toLowerCase();
-
-  switch (k) {
-    case "akta kelahiran":
-      return "bg-primary/15 text-primary border-primary/30";
-
-    case "akta kematian":
-      return "bg-destructive/15 text-destructive border-destructive/30";
-
-    case "tambah bio data":
-      return "status-izin";
-
-    case "pindah keluar":
-      return "status-terlambat";
-
-    case "pindah datang":
-      return "status-hadir";
-
-    case "media":
-      return "status-sakit";
-
-    case "programmer":
-      return "bg-primary/20 text-primary border-primary/40";
-
-    default:
-      return "bg-primary/15 text-primary border-primary/30";
-  }
-}
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
@@ -509,7 +443,7 @@ export default function AdminDashboardPage() {
           {(isSuperAdmin || isAdminMagang) && (
             <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
+                <span className="text-[10px] font-bold font-sans text-primary uppercase tracking-wider">
                   Siswa Magang
                 </span>
               </div>
@@ -517,12 +451,10 @@ export default function AdminDashboardPage() {
               {isLoading ? (
                 <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
               ) : (
-                <p className="text-2xl font-black text-primary">
-                  {totalMagang}
-                </p>
+                <p className="text-xl font-sans text-primary">{totalMagang}</p>
               )}
 
-              <span className="text-[10px] font-semibold text-muted-foreground">
+              <span className="text-[10px] font-sans text-muted-foreground">
                 Total Siswa Magang
               </span>
             </div>
@@ -531,7 +463,7 @@ export default function AdminDashboardPage() {
           {(isSuperAdmin || isAdminOS) && (
             <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
+                <span className="text-[10px] font-bold font-sans text-status-izin uppercase tracking-wider">
                   Karyawan OS
                 </span>
               </div>
@@ -539,12 +471,10 @@ export default function AdminDashboardPage() {
               {isLoading ? (
                 <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
               ) : (
-                <p className="text-2xl font-black text-status-izin">
-                  {totalOS}
-                </p>
+                <p className="text-xl font-sans text-status-izin">{totalOS}</p>
               )}
 
-              <span className="text-[10px] font-semibold text-muted-foreground">
+              <span className="text-[10px] font-sans text-muted-foreground">
                 Total Karyawan OS
               </span>
             </div>
@@ -552,7 +482,7 @@ export default function AdminDashboardPage() {
 
           <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-hadir uppercase tracking-wider">
+              <span className="text-[10px] font-bold font-sans text-status-hadir uppercase tracking-wider">
                 Hadir
               </span>
             </div>
@@ -560,19 +490,19 @@ export default function AdminDashboardPage() {
             {isLoading ? (
               <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
             ) : (
-              <p className="text-2xl font-black text-status-hadir">
+              <p className="text-xl font-sans text-status-hadir">
                 {hadirHariIni}
               </p>
             )}
 
-            <span className="text-[10px] font-semibold text-muted-foreground">
+            <span className="text-[10px] font-sans text-muted-foreground">
               Total Hadir
             </span>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-terlambat uppercase tracking-wider">
+              <span className="text-[10px] font-bold font-sans text-status-terlambat uppercase tracking-wider">
                 Terlambat
               </span>
             </div>
@@ -580,19 +510,19 @@ export default function AdminDashboardPage() {
             {isLoading ? (
               <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
             ) : (
-              <p className="text-2xl font-black text-status-terlambat">
+              <p className="text-xl font-sans text-status-terlambat">
                 {terlambatHariIni}
               </p>
             )}
 
-            <span className="text-[10px] font-semibold text-muted-foreground">
+            <span className="text-[10px] font-sans text-muted-foreground">
               Total Terlambatan
             </span>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-izin uppercase tracking-wider">
+              <span className="text-[10px] font-bold font-sans text-status-izin uppercase tracking-wider">
                 Izin
               </span>
             </div>
@@ -600,19 +530,19 @@ export default function AdminDashboardPage() {
             {isLoading ? (
               <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
             ) : (
-              <p className="text-2xl font-black text-status-izin">
+              <p className="text-xl font-sans text-status-izin">
                 {izinSakitHariIni}
               </p>
             )}
 
-            <span className="text-[10px] font-semibold text-muted-foreground">
+            <span className="text-[10px] font-sans text-muted-foreground">
               Total Izin
             </span>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-status-alpa uppercase tracking-wider">
+              <span className="text-[10px] font-bold font-sans text-status-alpa uppercase tracking-wider">
                 Tanpa Ket.
               </span>
             </div>
@@ -620,12 +550,12 @@ export default function AdminDashboardPage() {
             {isLoading ? (
               <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
             ) : (
-              <p className="text-2xl font-black text-status-alpa">
+              <p className="text-xl font-sans text-status-alpa">
                 {alpaHariIni}
               </p>
             )}
 
-            <span className="text-[10px] font-semibold text-muted-foreground">
+            <span className="text-[10px] font-sans text-muted-foreground">
               Total Tanpa Keterangan
             </span>
           </div>
@@ -638,11 +568,11 @@ export default function AdminDashboardPage() {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
             <div>
-              <h2 className="text-lg md:text-xl font-black text-neutral-900 dark:text-neutral-100 tracking-tight">
-                Riwayat Logbook &amp; Tugas Terbaru
+              <h2 className="text-lg md:text-xl font-bold text-foreground tracking-tight">
+                Riwayat logbook &amp; tugas terbaru
               </h2>
 
-              <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Pantau seluruh catatan aktivitas harian dan progres pengerjaan
                 tugas peserta secara real time.
               </p>
@@ -653,9 +583,9 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setInfoFilterTab("ALL")}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-lg transition-all font-sans cursor-pointer ${
                     infoFilterTab === "ALL"
-                      ? "bg-card text-foreground shadow-xs font-black"
+                      ? "bg-card text-foreground shadow-xs font-bold"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -665,9 +595,9 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setInfoFilterTab("LOGBOOK")}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1 rounded-lg transition-all font-sans cursor-pointer flex items-center gap-1.5 ${
                     infoFilterTab === "LOGBOOK"
-                      ? "bg-card text-foreground shadow-xs font-black"
+                      ? "bg-card text-foreground shadow-xs font-bold"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -677,7 +607,7 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setInfoFilterTab("TUGAS")}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1 rounded-lg transition-all font-sans cursor-pointer flex items-center gap-1.5 ${
                     infoFilterTab === "TUGAS"
                       ? "bg-card text-foreground shadow-xs font-black"
                       : "text-muted-foreground hover:text-foreground"
@@ -690,9 +620,9 @@ export default function AdminDashboardPage() {
               {(isSuperAdmin || isAdminMagang) && (
                 <Link
                   href="/admin/log-book"
-                  className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs"
+                  className="hidden md:inline-flex items-center gap-1 font-sans px-3 py-1.5 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs"
                 >
-                  <span>Kelola Logbook</span>
+                  <span>Kelola logbook</span>
                 </Link>
               )}
             </div>
@@ -708,8 +638,8 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center justify-between border-b border-border pb-3">
                   <div className="flex items-center gap-2">
                     <div>
-                      <h3 className="font-extrabold text-base text-foreground">
-                        Riwayat Logbook Aktivitas Terbaru
+                      <h3 className="font-bold font-sans text-base text-foreground">
+                        Riwayat logbook aktivitas terbaru
                       </h3>
 
                       <p className="text-[11px] text-muted-foreground">
@@ -721,7 +651,7 @@ export default function AdminDashboardPage() {
                   {(isSuperAdmin || isAdminMagang) && (
                     <Link
                       href="/admin/log-book"
-                      className="text-primary hover:underline text-xs font-bold inline-flex items-center gap-1"
+                      className="text-primary hover:underline text-xs font-sans font-bold inline-flex items-center gap-1"
                     >
                       <span>Lihat Semua</span>
 
@@ -736,24 +666,13 @@ export default function AdminDashboardPage() {
                   </div>
                 ) : logbookList.length === 0 ? (
                   <div className="py-10 text-center space-y-2">
-                    <p className="text-xs text-foreground">
+                    <p className="text-xs font-sans text-foreground">
                       Tidak ada catatan logbook
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
                     {logbookList.map((item) => {
-                      const durasiJam = item.durasi_menit
-                        ? `${Math.floor(item.durasi_menit / 60)}j ${
-                            item.durasi_menit % 60
-                          }m`
-                        : "—";
-
-                      const katLabel =
-                        LOGBOOK_CATEGORY_LABELS[
-                          item.kategori as LogBookCategory
-                        ] || item.kategori;
-
                       return (
                         <div
                           key={item.id}
@@ -773,13 +692,16 @@ export default function AdminDashboardPage() {
                               />
 
                               <div className="min-w-0">
-                                <h4 className="font-extrabold text-xs text-foreground truncate">
+                                <h4 className="font-sans text-xs text-foreground truncate">
                                   {item.user_nama ||
                                     item.userName ||
                                     "Peserta Magang"}
+                                  {(item.user_divisi || item.userDivisi || item.divisi) ? (
+                                    <span className="font-normal text-muted-foreground"> - {item.user_divisi || item.userDivisi || item.divisi}</span>
+                                  ) : null}
                                 </h4>
 
-                                <p className="text-[10px] text-muted-foreground truncate">
+                                <p className="text-[10px] font-sans text-muted-foreground truncate">
                                   {item.user_institution ||
                                     item.user_sekolah ||
                                     "Peserta"}
@@ -787,42 +709,15 @@ export default function AdminDashboardPage() {
                               </div>
                             </div>
 
-                            <span
-                              className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                                item.kategori,
-                              )}`}
-                            >
-                              {getKategoriIcon(item.kategori)}
-
-                              <span className="capitalize">{katLabel}</span>
+                            <span className="shrink-0 inline-flex font-sans items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] text-muted-foreground bg-card border border-border">
+                              <Calendar className="w-3 h-3 text-primary" />
+                              {formatTanggalIndo(item.tanggal)}
                             </span>
                           </div>
 
-                          <p className="text-xs text-foreground font-medium line-clamp-2 leading-relaxed bg-card p-2 rounded-lg border border-border">
+                          <p className="text-xs font-sans text-foreground line-clamp-3 leading-relaxed bg-card p-2.5 rounded-lg border border-border">
                             {item.aktivitas}
                           </p>
-
-                          <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground pt-1 border-t border-border">
-                            <div className="flex items-center gap-2">
-                              <span className="flex items-center gap-1 font-medium">
-                                <Calendar className="w-3 h-3 text-primary" />
-
-                                {formatTanggalIndo(item.tanggal)}
-                              </span>
-
-                              <span>•</span>
-
-                              <span className="flex items-center gap-1 font-mono">
-                                <Clock className="w-3 h-3 text-primary" />
-                                {formatWaktu(item.waktu_mulai)} -{" "}
-                                {formatWaktu(item.waktu_selesai)}
-                              </span>
-                            </div>
-
-                            <span className="font-bold text-foreground bg-muted px-2 py-0.5 rounded-md border border-border">
-                              {durasiJam}
-                            </span>
-                          </div>
                         </div>
                       );
                     })}
@@ -840,19 +735,19 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center justify-between border-b border-border pb-3">
                   <div className="flex items-center gap-2">
                     <div>
-                      <h3 className="font-extrabold text-base text-foreground">
-                        Riwayat Tugas Terbaru
+                      <h3 className="font-bold font-sans text-base text-foreground">
+                        Riwayat tugas terbaru
                       </h3>
 
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] font-sans text-muted-foreground">
                         Daftar seluruh penugasan yang diberikan kepada peserta
                         magang
                       </p>
                     </div>
                   </div>
 
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-primary/15 text-primary border border-primary/30">
-                    {tugasList.length} Tugas Total
+                  <span className="px-2.5 py-0.5 font-sans rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/30">
+                    {tugasList.length} Tugas
                   </span>
                 </div>
 
@@ -869,7 +764,10 @@ export default function AdminDashboardPage() {
                 ) : (
                   <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
                     {tugasList.map((task) => {
-                      const katLabel = task.kategori || "Umum";
+                      const isSelesai =
+                        String(
+                          task.status_pengerjaan || task.statusPengerjaan || "",
+                        ).toUpperCase() === "SELESAI";
 
                       return (
                         <div
@@ -890,11 +788,14 @@ export default function AdminDashboardPage() {
                               />
 
                               <div className="min-w-0">
-                                <h4 className="font-extrabold text-xs text-foreground truncate">
+                                <h4 className="font-sans text-xs text-foreground truncate">
                                   {task.user_nama || "Peserta Magang"}
+                                  {(task.user_divisi || task.userDivisi || task.divisi) ? (
+                                    <span className="font-normal text-muted-foreground"> - {task.user_divisi || task.userDivisi || task.divisi}</span>
+                                  ) : null}
                                 </h4>
 
-                                <p className="text-[10px] text-muted-foreground truncate">
+                                <p className="text-[10px] font-sans text-muted-foreground truncate">
                                   {task.user_institution ||
                                     task.user_sekolah ||
                                     "—"}
@@ -903,36 +804,40 @@ export default function AdminDashboardPage() {
                             </div>
 
                             <span
-                              className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                                katLabel,
-                              )}`}
+                              className={`shrink-0 inline-flex font-sans items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-sans font-bold border ${
+                                isSelesai
+                                  ? "status-hadir border"
+                                  : "status-izin border"
+                              }`}
                             >
-                              {getKategoriIcon(katLabel)}
-
-                              <span className="capitalize">{katLabel}</span>
+                              {isSelesai ? (
+                                <>
+                                  <CheckCircle2 className="w-3 h-3 shrink-0" />
+                                  <span>Selesai</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Clock className="w-3 h-3 shrink-0" />
+                                  <span>Pending</span>
+                                </>
+                              )}
                             </span>
                           </div>
 
                           <div className="flex items-start gap-2">
                             <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
 
-                            <p className="font-extrabold text-xs text-foreground leading-snug">
+                            <p className="font-sans text-xs text-foreground leading-snug">
                               {task.judul_tugas || task.judulTugas || "—"}
                             </p>
                           </div>
-
-                          {task.deskripsi && (
-                            <p className="text-[11px] text-foreground/80 font-medium leading-relaxed line-clamp-2 bg-card/60 px-2.5 py-2 rounded-lg border border-border/40">
-                              {task.deskripsi}
-                            </p>
-                          )}
 
                           {task.log_book_aktivitas && (
                             <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg px-2.5 py-1.5">
                               <BookOpen className="w-3 h-3 text-primary mt-0.5 shrink-0" />
 
                               <span className="line-clamp-1">
-                                <span className="font-bold text-primary">
+                                <span className="font-sans text-primary">
                                   Logbook:
                                 </span>{" "}
                                 {task.log_book_aktivitas}
@@ -940,7 +845,7 @@ export default function AdminDashboardPage() {
                             </div>
                           )}
 
-                          <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground pt-1 border-t border-border/40">
+                          <div className="flex items-center justify-between font-sans text-[10px] text-muted-foreground pt-1 border-t border-border/40">
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3 text-primary" />
 
@@ -949,7 +854,7 @@ export default function AdminDashboardPage() {
                                 : formatTanggalIndo(task.created_at)}
                             </span>
 
-                            <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border/60">
+                            <span className="font-sans text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md border border-border/60">
                               ID #{task.id}
                             </span>
                           </div>
@@ -966,11 +871,11 @@ export default function AdminDashboardPage() {
         <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
             <div>
-              <h3 className="font-extrabold text-neutral-900 dark:text-neutral-100 text-[16px] md:text-lg">
-                Daftar Presensi Hari Ini
+              <h3 className="font-bold font-sans text-foreground text-[16px] md:text-lg">
+                Daftar presensi hari ini
               </h3>
 
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-sans text-muted-foreground">
                 Catatan presensi{" "}
                 {isAdminMagang
                   ? "siswa magang"
@@ -1013,7 +918,7 @@ export default function AdminDashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-border text-muted-foreground uppercase tracking-wider font-extrabold">
+                <tr className="border-b border-border text-muted-foreground uppercase tracking-wider font-sans font-bold whitespace-nowrap">
                   <th className="py-3 px-3">Nama Peserta</th>
 
                   <th className="py-3 px-3">Role</th>
@@ -1026,7 +931,7 @@ export default function AdminDashboardPage() {
 
                   <th className="py-3 px-3">Status Total</th>
 
-                  <th className="py-3 px-3 text-right font-extrabold">Aksi</th>
+                  <th className="py-3 px-3 text-right">Aksi</th>
                 </tr>
               </thead>
 
@@ -1043,19 +948,22 @@ export default function AdminDashboardPage() {
                   filteredTodayList.map((rec) => (
                     <tr
                       key={rec.id}
-                      className="hover:bg-accent/50 transition-colors"
+                      className="hover:bg-accent/50 transition-colors whitespace-nowrap"
                     >
                       <td className="py-3 px-3">
-                        <div className="font-extrabold text-foreground">
+                        <div className="font-sans text-foreground">
                           {rec.user_nama || rec.userName}
+                          {(rec.user_divisi || rec.userDivisi || rec.divisi) ? (
+                            <span className="font-normal text-muted-foreground"> - {rec.user_divisi || rec.userDivisi || rec.divisi}</span>
+                          ) : null}
                         </div>
 
-                        <div className="text-[10px] text-muted-foreground">
+                        <div className="text-[10px] font-sans text-muted-foreground">
                           {rec.user_sekolah || rec.userInstitution}
                         </div>
                       </td>
 
-                      <td className="py-3 px-3 font-bold text-foreground">
+                      <td className="py-3 px-3 font-sans font-bold text-foreground">
                         {(() => {
                           const recRole = String(
                             rec.user_role || rec.userRole || "",
@@ -1067,11 +975,11 @@ export default function AdminDashboardPage() {
                         })()}
                       </td>
 
-                      <td className="py-3 px-3 font-mono font-bold text-foreground">
+                      <td className="py-3 px-3 font-sans font-bold text-foreground">
                         {rec.jam_masuk || rec.checkIn || "--:--"}
                       </td>
 
-                      <td className="py-3 px-3 font-bold">
+                      <td className="py-3 px-3 font-sans font-bold">
                         {String(
                           rec.status_masuk || rec.statusMasuk || "",
                         ).toUpperCase() === "TEPAT_WAKTU" ? (
@@ -1092,7 +1000,7 @@ export default function AdminDashboardPage() {
                         )}
                       </td>
 
-                      <td className="py-3 px-3 font-mono font-bold text-foreground">
+                      <td className="py-3 px-3 font-sans font-bold text-foreground">
                         {rec.jam_keluar ||
                           rec.jam_pulang ||
                           rec.checkOut ||
@@ -1103,7 +1011,7 @@ export default function AdminDashboardPage() {
                         <StatusBadge status={rec.status} />
                       </td>
 
-                      <td className="py-3 px-3 text-right">
+                      <td className="py-3 px-3 text-right whitespace-nowrap">
                         {(rec.foto_masuk ||
                           rec.foto_keluar ||
                           rec.foto_pulang_cepat ||
@@ -1111,10 +1019,10 @@ export default function AdminDashboardPage() {
                           rec.checkOutPhoto) && (
                           <button
                             onClick={() => setSelectedPhotoRecord(rec)}
-                            className="p-1.5 rounded-lg border border-border bg-input hover:bg-accent text-foreground transition-all inline-flex items-center gap-1 font-bold text-[11px]"
+                            className="px-2.5 py-1.5 rounded-lg border border-border bg-input hover:bg-accent text-foreground transition-all inline-flex items-center gap-1.5 font-sans font-bold text-[11px] whitespace-nowrap cursor-pointer"
                             title="Lihat Bukti Foto Swafoto"
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="w-3.5 h-3.5 shrink-0" />
 
                             <span>Bukti Foto</span>
                           </button>

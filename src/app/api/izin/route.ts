@@ -189,13 +189,13 @@ export async function GET(req: NextRequest) {
     if (search) {
       conditions.push(
         `(
-          pm.name LIKE ? OR pm.email LIKE ? OR pm.institution LIKE ? OR
+          pm.name LIKE ? OR pm.email LIKE ? OR pm.institution LIKE ? OR pm.divisi LIKE ? OR
           ko.name LIKE ? OR ko.email LIKE ? OR
           i.alasan LIKE ?
         )`
       );
       const pat = `%${search}%`;
-      params.push(pat, pat, pat, pat, pat, pat);
+      params.push(pat, pat, pat, pat, pat, pat, pat);
     }
 
     const whereClause =
@@ -220,6 +220,7 @@ export async function GET(req: NextRequest) {
         pm.avatar AS pm_avatar,
         pm.institution AS pm_institution,
         pm.study_program AS pm_study_program,
+        pm.divisi AS pm_divisi,
         ko.name  AS ko_name,
         ko.email AS ko_email,
         ko.avatar AS ko_avatar,
@@ -274,6 +275,7 @@ export async function GET(req: NextRequest) {
       const userRole = isPeserta ? "ANAK_MAGANG" : "KARYAWAN_OS";
       const userInstitution = isPeserta ? row.pm_institution || "" : "";
       const userStudyProgram = isPeserta ? row.pm_study_program || "" : "";
+      const userDivisi = isPeserta ? row.pm_divisi || "" : "";
 
       return {
         // Kolom tabel izin
@@ -317,6 +319,9 @@ export async function GET(req: NextRequest) {
         user_institution: userInstitution,
         userStudyProgram,
         user_study_program: userStudyProgram,
+        userDivisi,
+        user_divisi: userDivisi,
+        divisi: userDivisi,
         createdAt: createdTime,
         updatedAt: updatedTime,
       };
@@ -558,7 +563,7 @@ export async function POST(req: NextRequest) {
 
     if (pesertaMagangId) {
       const [pmRows]: any = await mysqlPool.query(
-        "SELECT id, name, avatar, institution, study_program FROM peserta_magang WHERE id = ? LIMIT 1",
+        "SELECT id, name, avatar, institution, study_program, divisi FROM peserta_magang WHERE id = ? LIMIT 1",
         [pesertaMagangId]
       );
       userInfo = pmRows?.[0] || {};
@@ -604,6 +609,9 @@ export async function POST(req: NextRequest) {
       user_institution: userInfo.institution || "",
       userStudyProgram: userInfo.study_program || "",
       user_study_program: userInfo.study_program || "",
+      userDivisi: userInfo.divisi || "",
+      user_divisi: userInfo.divisi || "",
+      divisi: userInfo.divisi || "",
     };
 
     return NextResponse.json(

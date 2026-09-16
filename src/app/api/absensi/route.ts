@@ -150,7 +150,7 @@ async function resolveUserTarget(userId: string | number, explicitRole?: string 
   }
 
   const [magangRows]: any = await mysqlPool.query(
-    "SELECT id, name, email, phone, identity_number, institution, study_program, avatar, 'ANAK_MAGANG' as role FROM peserta_magang WHERE id = ? LIMIT 1",
+    "SELECT id, name, email, phone, identity_number, institution, study_program, divisi, avatar, 'ANAK_MAGANG' as role FROM peserta_magang WHERE id = ? LIMIT 1",
     [cleanId]
   );
   if (magangRows && magangRows.length > 0) {
@@ -265,12 +265,13 @@ export async function GET(req: NextRequest) {
         pm.identity_number LIKE ? OR 
         pm.institution LIKE ? OR 
         pm.study_program LIKE ? OR 
+        pm.divisi LIKE ? OR 
         ko.name LIKE ? OR 
         ko.email LIKE ? OR 
         ko.identity_number LIKE ? OR 
         a.keterangan LIKE ?
       )`);
-      params.push(q, q, q, q, q, q, q, q, q);
+      params.push(q, q, q, q, q, q, q, q, q, q);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -300,6 +301,7 @@ export async function GET(req: NextRequest) {
         COALESCE(pm.avatar, ko.avatar) AS user_avatar,
         pm.institution AS user_institution,
         pm.study_program AS user_study_program,
+        pm.divisi AS user_divisi,
         COALESCE(pm.identity_number, ko.identity_number) AS user_identity_number
       FROM absensi a
       LEFT JOIN peserta_magang pm ON pm.id = a.peserta_magang_id
@@ -356,6 +358,7 @@ export async function GET(req: NextRequest) {
       const userInstitution = row.user_institution || "";
       const userIdentityNumber = row.user_identity_number || "";
       const userStudyProgram = row.user_study_program || "";
+      const userDivisi = row.user_divisi || "";
       const effectiveUserId = String(row.peserta_magang_id || row.karyawan_os_id || "");
       const createdTime = row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString();
       const updatedTime = row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString();
@@ -414,6 +417,9 @@ export async function GET(req: NextRequest) {
         userIdentityNumber,
         user_study_program: userStudyProgram,
         userStudyProgram,
+        user_divisi: userDivisi,
+        userDivisi,
+        divisi: userDivisi,
         createdAt: createdTime,
         updatedAt: updatedTime,
       };
@@ -430,6 +436,9 @@ export async function GET(req: NextRequest) {
         userRole: item.userRole,
         userAvatar: item.userAvatar,
         userInstitution: item.userInstitution,
+        user_divisi: item.user_divisi,
+        userDivisi: item.userDivisi,
+        divisi: item.divisi,
         jenis: item.jenis,
         tanggalMulai: item.tanggal,
         tanggalSelesai: item.tanggal,
@@ -601,6 +610,9 @@ export async function POST(req: NextRequest) {
         userRole: isMagang ? "ANAK_MAGANG" : "KARYAWAN_OS",
         userAvatar: u.avatar || null,
         userInstitution: u.institution || u.sekolah_kampus || "",
+        user_divisi: u.divisi || "",
+        userDivisi: u.divisi || "",
+        divisi: u.divisi || "",
         jenis: body.jenis || (statusAbsensi === "SAKIT" ? "Sakit" : "Izin"),
         tanggalMulai,
         tanggalSelesai,

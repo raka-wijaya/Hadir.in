@@ -8,16 +8,14 @@ import {
   HelpCircle,
   RefreshCw,
   AlertCircle,
-  Pencil,
+  PenLine,
   X,
   Sparkles,
+  Lightbulb,
 } from "lucide-react";
 import { Spinner } from "./Spinner";
+import { ModalPortal } from "./ModalPortal";
 import { useAuth } from "@/lib/auth/context";
-
-// ============================================================
-// TYPE DEFINITIONS
-// ============================================================
 
 interface DisciplineItem {
   id: string;
@@ -47,18 +45,12 @@ interface MasterUser {
   avatar?: string | null;
 }
 
-// ============================================================
-// HELPER: Tanggal Hari Ini (WIB / Asia/Jakarta) -> YYYY-MM-DD
-// ============================================================
 function getTodayJakarta(): string {
   return new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Jakarta",
   }).format(new Date());
 }
 
-// ============================================================
-// KOMPONEN UTAMA KEDISIPLINAN
-// ============================================================
 export function Kedisiplinan({
   role = "SUPER_ADMIN",
   limit,
@@ -101,7 +93,6 @@ export function Kedisiplinan({
     ? ALLOWED_ADMIN_IDS.includes(Number(user.id))
     : false;
 
-  // State untuk Modal Koreksi (Sering Terlambat -> Paling Rajin)
   const [overrideItem, setOverrideItem] = useState<DisciplineItem | null>(null);
   const [targetJam, setTargetJam] = useState<string>("07:15");
   const [overrideLoading, setOverrideLoading] = useState<boolean>(false);
@@ -137,7 +128,6 @@ export function Kedisiplinan({
         roleUpper === "ADMIN_OS" ||
         roleUpper === "KARYAWAN_OS";
 
-      // Panggil seluruh API terkait secara paralel
       const [resStats, resMagang, resOS, resAbsensi, resIzin] =
         await Promise.allSettled([
           fetch(
@@ -170,9 +160,6 @@ export function Kedisiplinan({
           }),
         ]);
 
-      // --------------------------------------------------------
-      // 1. Data Kedisiplinan (Paling Rajin, Terlambat, Izin/Sakit)
-      // --------------------------------------------------------
       let rajinItems: DisciplineItem[] = [];
       let terlambatItems: DisciplineItem[] = [];
       let izinSakitItems: DisciplineItem[] = [];
@@ -248,12 +235,8 @@ export function Kedisiplinan({
         }
       }
 
-      // --------------------------------------------------------
-      // 2. Master Data Karyawan OS & Peserta Magang
-      // --------------------------------------------------------
       const masterUsers: MasterUser[] = [];
 
-      // Peserta Magang dari /api/users/peserta_magang
       if (
         resMagang.status === "fulfilled" &&
         resMagang.value &&
@@ -279,7 +262,6 @@ export function Kedisiplinan({
         }
       }
 
-      // Karyawan OS dari /api/users/karyawan_os
       if (resOS.status === "fulfilled" && resOS.value && resOS.value.ok) {
         const osJson = await resOS.value.json().catch(() => ({}));
         const osList = osJson?.data || [];
@@ -301,9 +283,6 @@ export function Kedisiplinan({
         }
       }
 
-      // --------------------------------------------------------
-      // 3. Catatan Absensi Hari Ini dari /api/absensi
-      // --------------------------------------------------------
       const sudahAbsenOsIds = new Set<string>();
       const sudahAbsenMagangIds = new Set<string>();
 
@@ -325,9 +304,6 @@ export function Kedisiplinan({
         });
       }
 
-      // --------------------------------------------------------
-      // 4. Catatan Izin / Sakit Hari Ini dari /api/izin
-      // --------------------------------------------------------
       const sedangIzinOsIds = new Set<string>();
       const sedangIzinMagangIds = new Set<string>();
 
@@ -354,10 +330,6 @@ export function Kedisiplinan({
         });
       }
 
-      // --------------------------------------------------------
-      // 5. Olah Kategori "TANPA KETERANGAN"
-      //    (User aktif yang belum absen hari ini & tidak sedang izin)
-      // --------------------------------------------------------
       const belumAbsenHariIni: DisciplineItem[] = masterUsers
         .filter((user) => {
           if (user.role === "OS") {
@@ -382,7 +354,6 @@ export function Kedisiplinan({
           };
         });
 
-      // Gabungkan dengan rekam alpa historis bulan ini jika ada
       const tanpaKeteranganMap = new Map<string, DisciplineItem>();
       belumAbsenHariIni.forEach((item) => {
         tanpaKeteranganMap.set(`${item.role}_${item.id}`, item);
@@ -403,9 +374,6 @@ export function Kedisiplinan({
         ? sortedTanpaKet.slice(0, limit)
         : sortedTanpaKet;
 
-      // --------------------------------------------------------
-      // 6. Update State Kategori
-      // --------------------------------------------------------
       setCategories({
         palingRajin: {
           title: "PALING RAJIN",
@@ -444,9 +412,6 @@ export function Kedisiplinan({
     fetchData();
   }, [fetchData]);
 
-  // ----------------------------------------------------------
-  // HANDLER KOREKSI TERLAMBAT -> PALING RAJIN
-  // ----------------------------------------------------------
   const handleOpenOverride = (item: DisciplineItem) => {
     setOverrideItem(item);
     setTargetJam("07:15");
@@ -489,7 +454,6 @@ export function Kedisiplinan({
         text: `Berhasil memindahkan ${overrideItem.nama} ke Paling Rajin dengan jam masuk ${targetJam}!`,
       });
 
-      // Refresh data kartu
       await fetchData();
 
       setTimeout(() => {
@@ -506,10 +470,6 @@ export function Kedisiplinan({
     }
   };
 
-  // ----------------------------------------------------------
-  // ----------------------------------------------------------
-  // CONFIG KARTU KEDISIPLINAN (Selaras dengan global.css)
-  // ----------------------------------------------------------
   const cardsConfig = [
     {
       key: "palingRajin",
@@ -545,31 +505,27 @@ export function Kedisiplinan({
     },
   ];
 
-  // ----------------------------------------------------------
-  // RENDER (4 Grid Kartu Kedisiplinan Bersih & Konsisten)
-  // ----------------------------------------------------------
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {cardsConfig.map(
         ({ key, category, titleColor, borderColor, rankColor, countBadge }) => (
           <div
             key={key}
-            className={`bg-card border ${borderColor} rounded-2xl p-4 sm:p-5 flex flex-col justify-between min-h-[380px] shadow-card transition-all duration-300`}
+            className={`bg-card border ${borderColor} rounded-2xl p-4 sm:p-5 font-sans flex flex-col justify-between min-h-[380px] shadow-card transition-all duration-300`}
           >
             <div>
-              {/* Header Card */}
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <h3
-                    className={`font-black text-[11px] md:text-[11px] tracking-wider uppercase ${titleColor}`}
+                    className={`font-bold text-[11px] md:text-[11px] font-sans tracking-wider uppercase ${titleColor}`}
                   >
                     {category.title}
                   </h3>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="text-[11px] font-semibold text-muted-foreground">
-                    <span className="font-extrabold text-foreground text-[11px] md:text-[11px]">
+                  <div className="text-[11px] font-semibold font-sans text-muted-foreground">
+                    <span className="font-bold text-foreground text-[11px] md:text-[11px]">
                       {category.totalOrang}
                     </span>{" "}
                     Orang
@@ -590,14 +546,12 @@ export function Kedisiplinan({
                 </div>
               </div>
 
-              {/* Loading State */}
               {loading && (
                 <div className="flex flex-col items-center justify-center py-16 gap-2">
                   <Spinner size="lg" />
                 </div>
               )}
 
-              {/* Error State */}
               {!loading && error && (
                 <div className="py-12 px-3 text-center">
                   <AlertCircle className="w-5 h-5 text-destructive mx-auto mb-1.5" />
@@ -606,23 +560,21 @@ export function Kedisiplinan({
                   </p>
                   <button
                     onClick={fetchData}
-                    className="mt-2 text-[11px] font-bold text-destructive hover:underline cursor-pointer"
+                    className="mt-2 text-[11px] font-sans font-bold text-destructive hover:underline cursor-pointer"
                   >
                     Coba lagi
                   </button>
                 </div>
               )}
 
-              {/* Empty State */}
               {!loading && !error && category.items.length === 0 && (
                 <div className="py-20 px-3 text-center">
-                  <p className="text-xs font-semibold italic text-muted-foreground leading-relaxed">
+                  <p className="text-xs font-semibold font-sans italic text-muted-foreground leading-relaxed">
                     {category.emptyText}
                   </p>
                 </div>
               )}
 
-              {/* Populated List State */}
               {!loading && !error && category.items.length > 0 && (
                 <div className="divide-y divide-border/60 mt-1 max-h-[320px] overflow-y-auto pr-1">
                   {category.items.map((item, index) => {
@@ -637,31 +589,31 @@ export function Kedisiplinan({
                       >
                         <div className="flex items-start gap-2.5 min-w-0 flex-1">
                           <span
-                            className={`text-xs font-black ${rankColor} mt-0.5 shrink-0 w-3.5`}
+                            className={`text-xs font-sans font-black ${rankColor} mt-0.5 shrink-0 w-3.5`}
                           >
                             {index + 1}.
                           </span>
 
                           <div className="min-w-0 flex-1">
                             <p
-                              className="text-xs font-extrabold text-foreground truncate leading-snug"
+                              className="text-xs font-sans font-bold text-foreground truncate leading-snug"
                               title={item.nama}
                             >
                               {item.nama}
                             </p>
                             <div className="flex items-center gap-1.5 mt-1">
                               {isOs ? (
-                                <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider bg-muted text-foreground border border-border uppercase">
+                                <span className="inline-block font-sans px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider bg-muted text-foreground border border-border uppercase">
                                   OS
                                 </span>
                               ) : (
-                                <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider bg-primary/10 text-primary border border-primary/20 uppercase">
+                                <span className="inline-block font-sans px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-primary/10 text-primary border border-primary/20 uppercase">
                                   MAGANG
                                 </span>
                               )}
 
                               {key === "tanpaKeterangan" && (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-status-alpa">
+                                <span className="inline-flex items-center gap-1 font-sans text-[9px] font-bold text-status-alpa">
                                   <span className="w-1.5 h-1.5 rounded-full bg-status-alpa shrink-0" />
                                   Belum Absen
                                 </span>
@@ -670,24 +622,21 @@ export function Kedisiplinan({
                           </div>
                         </div>
 
-                        {/* Right Area: Count Pill & Tombol Koreksi */}
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {/* Tombol Edit Koreksi (Khusus Admin ID: 1, 4, 6, 7, 8 pada kartu Sering Terlambat) */}
                           {key === "seringTerlambat" && canOverride && (
                             <button
                               type="button"
                               onClick={() => handleOpenOverride(item)}
                               title="Pindahkan ke Paling Rajin & Koreksi Jam"
-                              className="p-1 rounded-md text-muted-foreground hover:text-status-terlambat hover:bg-muted border border-transparent hover:border-border transition-all shrink-0 cursor-pointer"
+                              className="p-1.5 rounded-lg bg-card border border-border text-primary hover:bg-primary/10 transition-all cursor-pointer"
                             >
-                              <Pencil className="w-3 h-3" />
+                              <PenLine className="w-3 h-3" />
                             </button>
                           )}
 
-                          {/* Right Count Pill (hanya untuk kartu statistik kedisiplinan) */}
                           {key !== "tanpaKeterangan" && (
                             <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-black font-mono shrink-0 ${countBadge}`}
+                              className={`px-2 py-0.5 rounded-full text-xs font-sans font-black font-mono shrink-0 ${countBadge}`}
                             >
                               {item.count}x
                             </span>
@@ -703,153 +652,152 @@ export function Kedisiplinan({
         ),
       )}
 
-      {/* ======================================================
-          MODAL: KOREKSI KEDISIPLINAN (SERING TERLAMBAT -> PALING RAJIN)
-          ====================================================== */}
       {overrideItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div
-            className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header Modal */}
-            <div className="flex items-start justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2.5">
-                <div>
-                  <h3 className="text-sm font-black tracking-tight text-foreground">
-                    Pindahkan ke Paling Rajin
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Koreksi keterlambatan peserta oleh Admin #{user?.id}
-                  </p>
+        <ModalPortal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div
+              className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b border-border pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div>
+                    <h3 className="text-sm font-bold font-sans tracking-tight text-foreground">
+                      Pindahkan ke Paling Rajin
+                    </h3>
+                    <p className="text-[11px] font-sans text-muted-foreground mt-0.5">
+                      Koreksi keterlambatan peserta oleh Admin #{user?.id}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleCloseOverride}
-                disabled={overrideLoading}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Content Form */}
-            <form onSubmit={handleSubmitOverride} className="space-y-4">
-              {/* Info Peserta */}
-              <div className="p-3 rounded-xl bg-muted/50 border border-border flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-foreground">
-                    {overrideItem.nama}
-                  </p>
-                  <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
-                    {overrideItem.role}
-                  </span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold status-terlambat border font-mono">
-                  {overrideItem.count}x Terlambat
-                </span>
-              </div>
-
-              {/* Input Jam Masuk Baru */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground flex items-center justify-between">
-                  <span>Jam Masuk Baru</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">
-                    Format: HH:mm (WIB)
-                  </span>
-                </label>
-                <input
-                  type="time"
-                  value={targetJam}
-                  onChange={(e) => setTargetJam(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 text-sm font-mono rounded-xl bg-input border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
-                />
-
-                {/* Preset Jam Cepat */}
-                <div className="flex items-center gap-1.5 pt-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">
-                    Preset cepat:
-                  </span>
-                  {["07:00", "07:15", "07:25"].map((timePreset) => (
-                    <button
-                      key={timePreset}
-                      type="button"
-                      onClick={() => setTargetJam(timePreset)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border cursor-pointer ${
-                        targetJam === timePreset
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted text-muted-foreground border-border hover:text-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      {timePreset}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="text-[11px] text-muted-foreground leading-relaxed bg-muted/40 p-2.5 rounded-lg border border-border/50">
-                💡{" "}
-                <span className="font-semibold text-foreground">Catatan:</span>{" "}
-                Seluruh riwayat presensi berstatus terlambat bulan ini untuk
-                peserta ini akan diubah menjadi{" "}
-                <strong className="text-status-hadir">Tepat Waktu</strong>{" "}
-                dengan jam masuk{" "}
-                <strong className="font-mono text-foreground">
-                  {targetJam}
-                </strong>
-                .
-              </div>
-
-              {/* Status Message */}
-              {overrideMessage && (
-                <div
-                  className={`p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 ${
-                    overrideMessage.type === "success"
-                      ? "status-hadir border"
-                      : "bg-destructive/10 text-destructive border border-destructive/20"
-                  }`}
-                >
-                  {overrideMessage.type === "success" ? (
-                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                  )}
-                  <span>{overrideMessage.text}</span>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
                 <button
                   type="button"
                   onClick={handleCloseOverride}
                   disabled={overrideLoading}
-                  className="px-3.5 py-2 text-xs font-bold rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={overrideLoading || !targetJam}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  {overrideLoading ? (
-                    <>
-                      <Spinner size="sm" />
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Simpan &amp; Pindahkan</span>
-                    </>
-                  )}
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleSubmitOverride} className="space-y-4">
+                <div className="p-3 rounded-xl bg-muted/50 border border-border flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-sans font-bold text-foreground">
+                      {overrideItem.nama}
+                    </p>
+                    <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold font-sans tracking-wider bg-primary/10 text-primary border border-primary/20">
+                      {overrideItem.role}
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold status-terlambat border font-sans">
+                    {overrideItem.count}x Terlambat
+                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground font-sans flex items-center justify-between">
+                    <span>Jam Masuk Baru</span>
+                    <span className="text-[10px] text-muted-foreground font-sans font-normal">
+                      Format: HH:mm (WIB)
+                    </span>
+                  </label>
+                  <input
+                    type="time"
+                    value={targetJam}
+                    onChange={(e) => setTargetJam(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 text-sm font-mono rounded-xl bg-input border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                  />
+
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <span className="text-[10px] font-sans text-muted-foreground font-medium">
+                      Preset cepat:
+                    </span>
+                    {["07:00", "07:15", "07:25"].map((timePreset) => (
+                      <button
+                        key={timePreset}
+                        type="button"
+                        onClick={() => setTargetJam(timePreset)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-sans font-bold transition-all border cursor-pointer ${
+                          targetJam === timePreset
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted text-muted-foreground border-border hover:text-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {timePreset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-muted-foreground leading-relaxed bg-muted/40 p-2.5 rounded-lg border border-border/50">
+                  <Lightbulb />{" "}
+                  <span className="font-semibold font-sans text-foreground">
+                    Catatan:
+                  </span>{" "}
+                  Seluruh riwayat presensi berstatus terlambat bulan ini untuk
+                  peserta ini akan diubah menjadi{" "}
+                  <strong className="text-status-hadir font-sans">
+                    Tepat Waktu
+                  </strong>{" "}
+                  dengan jam masuk{" "}
+                  <strong className="font-mono font-sans text-foreground">
+                    {targetJam}
+                  </strong>
+                  .
+                </div>
+
+                {overrideMessage && (
+                  <div
+                    className={`p-2.5 rounded-lg text-xs font-sans font-semibold flex items-center gap-2 ${
+                      overrideMessage.type === "success"
+                        ? "status-hadir border"
+                        : "bg-destructive/10 text-destructive border border-destructive/20"
+                    }`}
+                  >
+                    {overrideMessage.type === "success" ? (
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                    )}
+                    <span>{overrideMessage.text}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={handleCloseOverride}
+                    disabled={overrideLoading}
+                    className="px-3.5 py-2 text-xs font-bold font-sans rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={overrideLoading || !targetJam}
+                    className="flex items-center justify-center gap-1.5 min-w-[150px] px-4 py-2 text-xs font-bold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {overrideLoading ? (
+                      <>
+                        <Spinner
+                          size="sm"
+                          className="text-primary-foreground"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Simpan &amp; Pindahkan</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

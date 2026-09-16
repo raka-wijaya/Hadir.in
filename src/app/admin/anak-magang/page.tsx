@@ -45,6 +45,7 @@ export default function AdminAnakMagangPage() {
   const [newIdentity, setNewIdentity] = useState("");
   const [newInstitution, setNewInstitution] = useState("");
   const [newProgram, setNewProgram] = useState("");
+  const [newDivisi, setNewDivisi] = useState("");
   const [newStart, setNewStart] = useState("2026-07-01");
   const [newEnd, setNewEnd] = useState("2026-10-31");
   const [newBatch, setNewBatch] = useState<string>("");
@@ -56,6 +57,7 @@ export default function AdminAnakMagangPage() {
   const [editIdentity, setEditIdentity] = useState("");
   const [editInstitution, setEditInstitution] = useState("");
   const [editProgram, setEditProgram] = useState("");
+  const [editDivisi, setEditDivisi] = useState("");
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
   const [editBatch, setEditBatch] = useState<string>("");
@@ -197,11 +199,14 @@ export default function AdminAnakMagangPage() {
 
     const batchStr = String(i.batch || "");
 
+    const divisiStr = (i.divisi || "").toLowerCase();
+
     return (
       nameStr.includes(q) ||
       instStr.includes(q) ||
       nimStr.includes(q) ||
-      batchStr.includes(q)
+      batchStr.includes(q) ||
+      divisiStr.includes(q)
     );
   });
 
@@ -271,6 +276,7 @@ export default function AdminAnakMagangPage() {
       setNewIdentity("");
       setNewInstitution("");
       setNewProgram("");
+      setNewDivisi("");
       setNewStart("2026-07-01");
       setNewEnd("2026-10-31");
       setNewBatch("");
@@ -293,6 +299,7 @@ export default function AdminAnakMagangPage() {
           status: "ACTIVE",
           institution: newInstitution,
           study_program: newProgram,
+          divisi: newDivisi.trim() || null,
           start_date: newStart,
           end_date: newEnd,
           batch: newBatch ? Number(newBatch) : null,
@@ -355,6 +362,8 @@ export default function AdminAnakMagangPage() {
     setEditStatus((item.status as "ACTIVE" | "INACTIVE") || "ACTIVE");
 
     setEditBatch(item.batch && item.batch !== "-" ? String(item.batch) : "");
+
+    setEditDivisi(item.divisi || "");
   };
 
   const handleUpdateIntern = async (e: React.FormEvent) => {
@@ -377,6 +386,7 @@ export default function AdminAnakMagangPage() {
           identity_number: editIdentity,
           institution: editInstitution,
           study_program: editProgram,
+          divisi: editDivisi.trim() || null,
           start_date: editStart || null,
           end_date: editEnd || null,
           status: editStatus,
@@ -403,6 +413,7 @@ export default function AdminAnakMagangPage() {
                 sekolah_kampus: editInstitution,
                 studyProgram: editProgram,
                 unit_kerja: editProgram,
+                divisi: editDivisi.trim() || null,
                 startDate: editStart,
                 periode_mulai: editStart,
                 endDate: editEnd,
@@ -595,7 +606,7 @@ export default function AdminAnakMagangPage() {
 
             <input
               type="text"
-              placeholder="Cari NIM, nama, kampus, atau batch"
+              placeholder="Cari NIM, nama, kampus, divisi, atau batch"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="
@@ -685,6 +696,10 @@ export default function AdminAnakMagangPage() {
                     Kampus
                   </th>
 
+                  <th className="py-3.5 px-4 whitespace-nowrap min-w-[150px]">
+                    Divisi
+                  </th>
+
                   <th className="py-3.5 px-4 whitespace-nowrap min-w-[240px]">
                     Periode
                   </th>
@@ -705,7 +720,7 @@ export default function AdminAnakMagangPage() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       className="
                         py-14
                         text-center
@@ -721,7 +736,7 @@ export default function AdminAnakMagangPage() {
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       className="
                         py-14
                         text-center
@@ -804,6 +819,9 @@ export default function AdminAnakMagangPage() {
                             "
                             >
                               {item.nama || item.name || "-"}
+                              {item.divisi ? (
+                                <span className="font-normal text-muted-foreground"> - {item.divisi}</span>
+                              ) : null}
                             </div>
 
                             <div
@@ -858,6 +876,26 @@ export default function AdminAnakMagangPage() {
                             item.studyProgram ||
                             "Informatika"}
                         </div>
+                      </td>
+
+                      <td
+                        className="
+                        py-3.5 px-4
+                        text-xs
+                        font-semibold
+                        text-foreground
+                        whitespace-nowrap
+                      "
+                      >
+                        {item.divisi ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground font-medium text-xs">
+                            {item.divisi}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground font-normal">
+                            -
+                          </span>
+                        )}
                       </td>
 
                       <td
@@ -1263,6 +1301,36 @@ export default function AdminAnakMagangPage() {
                   </div>
 
                   <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground">
+                      Divisi <span className="text-status-tolak">*</span>
+                    </label>
+
+                    <input
+                      type="text"
+                      value={newDivisi}
+                      onChange={(e) => setNewDivisi(e.target.value)}
+                      placeholder="Masukkan divisi"
+                      maxLength={150}
+                      className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3
+              py-2
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              transition-all
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary/40
+              focus:border-primary
+            "
+                    />
+                  </div>
+
+                  <div className="space-y-1">
                     <label className="text-[11px] font-extrabold text-foreground flex gap-1">
                       Batch
                       <span className="text-status-tolak">*</span>
@@ -1391,7 +1459,6 @@ export default function AdminAnakMagangPage() {
                     {isSaving ? (
                       <span className="inline-flex items-center gap-2">
                         <Spinner size="sm" />
-                        <span>Menyimpan...</span>
                       </span>
                     ) : (
                       "Simpan Data"
@@ -1619,8 +1686,7 @@ export default function AdminAnakMagangPage() {
                     text-foreground
                   "
                     >
-                      Program Studi / Divisi{" "}
-                      <span className="text-status-tolak">*</span>
+                      Program Studi <span className="text-status-tolak">*</span>
                     </label>
 
                     <input
@@ -1644,6 +1710,41 @@ export default function AdminAnakMagangPage() {
                       focus:border-primary
                     "
                       required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      className="
+                    text-xs
+                    font-extrabold
+                    text-foreground
+                  "
+                    >
+                      Divisi <span className="text-status-tolak">*</span>
+                    </label>
+
+                    <input
+                      type="text"
+                      value={editDivisi}
+                      onChange={(e) => setEditDivisi(e.target.value)}
+                      placeholder="Masukkan divisi"
+                      maxLength={150}
+                      className="
+                      w-full
+                      rounded-xl
+                      border border-border
+                      bg-input
+                      px-3.5 py-2.5
+                      text-xs
+                      text-foreground
+                      placeholder:text-muted-foreground
+                      transition-all
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-primary/40
+                      focus:border-primary
+                    "
                     />
                   </div>
 

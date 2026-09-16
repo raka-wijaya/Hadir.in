@@ -29,6 +29,7 @@ export default function ProfilPage() {
   const [identityNumber, setIdentityNumber] = useState("");
   const [institution, setInstitution] = useState("");
   const [studyProgram, setStudyProgram] = useState("");
+  const [divisi, setDivisi] = useState("");
   const [avatar, setAvatar] = useState("");
 
   const [isSaving, setIsSaving] = useState(false);
@@ -37,7 +38,6 @@ export default function ProfilPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Inisialisasi data form dari state user
   useEffect(() => {
     if (user) {
       setName(user.name || user.nama || "");
@@ -48,18 +48,13 @@ export default function ProfilPage() {
       setStudyProgram(
         user.studyProgram || (user as any).study_program || user.unit_kerja || user.bagian || ""
       );
+      setDivisi(user.divisi || "");
       setAvatar(user.avatar || "");
     }
   }, [user]);
 
-  // ─────────────────────────────────────────────────────────────
-  // ROLE
-  // ─────────────────────────────────────────────────────────────
   const isAnakMagang = user?.role === "ANAK_MAGANG";
 
-  // ─────────────────────────────────────────────────────────────
-  // PERJALANAN MAGANG (Hanya untuk ANAK_MAGANG)
-  // ─────────────────────────────────────────────────────────────
   const {
     startDate,
     endDate,
@@ -100,9 +95,6 @@ export default function ProfilPage() {
     };
   }, [user?.periode_mulai, user?.periode_selesai, user?.startDate, user?.endDate]);
 
-  // ─────────────────────────────────────────────────────────────
-  // FORMAT TANGGAL
-  // ─────────────────────────────────────────────────────────────
   const formatDate = (date: Date) => {
     if (isNaN(date.getTime())) return "-";
     return new Intl.DateTimeFormat("id-ID", {
@@ -112,9 +104,6 @@ export default function ProfilPage() {
     }).format(date);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // HANDLE UPLOAD AVATAR
-  // ─────────────────────────────────────────────────────────────
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -134,9 +123,6 @@ export default function ProfilPage() {
     reader.readAsDataURL(file);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // RESET / CANCEL EDIT
-  // ─────────────────────────────────────────────────────────────
   const handleCancel = () => {
     if (user) {
       setName(user.name || user.nama || "");
@@ -147,15 +133,13 @@ export default function ProfilPage() {
       setStudyProgram(
         user.studyProgram || (user as any).study_program || user.unit_kerja || user.bagian || ""
       );
+      setDivisi(user.divisi || "");
       setAvatar(user.avatar || "");
     }
     setErrorMsg(null);
     setIsEditing(false);
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // SIMPAN PROFIL
-  // ─────────────────────────────────────────────────────────────
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -174,10 +158,11 @@ export default function ProfilPage() {
       studyProgram,
       study_program: studyProgram,
       unit_kerja: studyProgram,
+      divisi: divisi.trim() || null,
       avatar:
         avatar ||
         `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          name || "User"
+          name || "User",
         )}&background=f59e0b&color=000000&bold=true`,
     };
 
@@ -202,7 +187,6 @@ export default function ProfilPage() {
         }
       }
 
-      // Update state auth context dan localStorage dengan URL avatar yang tersimpan di server
       updateUser({ ...updatedData, avatar: serverAvatar });
 
       setIsEditing(false);
@@ -255,7 +239,6 @@ export default function ProfilPage() {
         )}
 
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
-          {/* Avatar & Identitas Singkat */}
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="relative group">
               <img
@@ -314,7 +297,6 @@ export default function ProfilPage() {
 
             {isEditing ? (
               <form onSubmit={handleSave} className="space-y-4">
-                {/* Nama Lengkap */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <UserIcon className="w-3.5 h-3.5 text-primary" />
@@ -330,7 +312,6 @@ export default function ProfilPage() {
                   />
                 </div>
 
-                {/* Email */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-primary" />
@@ -346,7 +327,6 @@ export default function ProfilPage() {
                   />
                 </div>
 
-                {/* Nomor Telepon */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-primary" />
@@ -361,7 +341,6 @@ export default function ProfilPage() {
                   />
                 </div>
 
-                {/* Nomor Identitas (NIM / NIP / NIS) */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <CreditCard className="w-3.5 h-3.5 text-primary" />
@@ -376,7 +355,6 @@ export default function ProfilPage() {
                   />
                 </div>
 
-                {/* Instansi / Sekolah / Kampus */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <Building2 className="w-3.5 h-3.5 text-primary" />
@@ -391,7 +369,6 @@ export default function ProfilPage() {
                   />
                 </div>
 
-                {/* Program Studi / Unit Kerja / Jabatan */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <GraduationCap className="w-3.5 h-3.5 text-primary" />
@@ -402,6 +379,21 @@ export default function ProfilPage() {
                     value={studyProgram}
                     onChange={(e) => setStudyProgram(e.target.value)}
                     placeholder="Contoh: Teknik Informatika / Programmer"
+                    className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-primary" />
+                    Divisi
+                  </label>
+                  <input
+                    type="text"
+                    value={divisi}
+                    onChange={(e) => setDivisi(e.target.value)}
+                    placeholder="Contoh: IT Support / Marketing / HR"
+                    maxLength={150}
                     className="w-full rounded-xl border border-border bg-input px-3.5 py-2.5 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
@@ -497,7 +489,7 @@ export default function ProfilPage() {
                 </div>
 
                 {/* Program Studi / Bagian */}
-                <div className="flex justify-between items-center gap-4">
+                <div className="flex justify-between items-center gap-4 pb-2 border-b border-border">
                   <span className="text-muted-foreground font-medium flex items-center gap-1.5">
                     <GraduationCap className="w-3.5 h-3.5 text-muted-foreground" />
                     Program Studi / Jabatan
@@ -508,6 +500,17 @@ export default function ProfilPage() {
                       user?.unit_kerja ||
                       user?.bagian ||
                       "-"}
+                  </span>
+                </div>
+
+                {/* Divisi */}
+                <div className="flex justify-between items-center gap-4">
+                  <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                    Divisi
+                  </span>
+                  <span className="font-semibold text-foreground text-right">
+                    {user?.divisi || "-"}
                   </span>
                 </div>
               </div>

@@ -745,7 +745,8 @@ export default function AdminPegawaiOsPage() {
         </div>
 
         {showAddModal && (
-          <div
+          <ModalPortal>
+            <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
             onMouseDown={(e) => {
               if (e.target === e.currentTarget) {
@@ -1006,10 +1007,12 @@ export default function AdminPegawaiOsPage() {
                 </button>
               </div>
             </form>
-          </div>
+            </div>
+          </ModalPortal>
         )}
         {showEditModal && editingEmployee && (
-          <div
+          <ModalPortal>
+            <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
             onMouseDown={(e) => {
               if (e.target === e.currentTarget) {
@@ -1153,7 +1156,8 @@ export default function AdminPegawaiOsPage() {
                 </button>
               </div>
             </form>
-          </div>
+            </div>
+          </ModalPortal>
         )}
       </div>
     </DashboardLayout>
