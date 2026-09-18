@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Sistem Informasi Presensi dan Administrasi Magang terpusat untuk pengelolaan data pendaftaran, presensi kamera real time, izin, rekap kehadiran, dan jobdesk.",
 };
 
+import { NotificationProvider } from "@/components/ui/NotificationProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -18,7 +20,9 @@ export default function RootLayout({
     <html lang="id" className="h-full">
       <body className="h-full bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
         <MantineProvider defaultColorScheme="auto">
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <NotificationProvider>{children}</NotificationProvider>
+          </AuthProvider>
         </MantineProvider>
       </body>
     </html>

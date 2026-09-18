@@ -45,16 +45,22 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // if (!captchaVerified) {
-    //   setErrorMsg("Silakan masukkan CAPTCHA dengan benar terlebih dahulu.");
-    //   return;
-    // }
-
     setErrorMsg(null);
+
+    const cleanTarget = identifier.trim();
+    if (!cleanTarget) {
+      setErrorMsg("Email / No. Identitas wajib diisi.");
+      return;
+    }
+
+    if (!password) {
+      setErrorMsg("Password wajib diisi.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const cleanTarget = identifier.trim();
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
@@ -98,13 +104,13 @@ function LoginForm() {
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-card text-card-foreground border border-border rounded-2xl p-5 md:p-6 space-y-5 shadow-card">
         <div className="text-center space-y-1.5">
-          <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground font-black text-lg flex items-center justify-center mx-auto shadow-card">
+          <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center mx-auto shadow-card">
             H
           </div>
-          <h1 className="text-xl font-black tracking-tight font-sans text-card-foreground">
+          <h1 className="text-xl font-bold tracking-tight font-sans text-card-foreground">
             Hadir.in
           </h1>
-          <p className="text-[11px] font-semibold font-sans text-muted-foreground">
+          <p className="text-xs font-semibold font-sans text-muted-foreground">
             Presensi Karyawan & Magang Disdukcapil Sidoarjo
           </p>
         </div>
@@ -113,7 +119,7 @@ function LoginForm() {
           {isTimeoutLogout && (
             <div className="bg-accent border border-primary/30 rounded-xl p-2.5 flex items-start gap-2 animate-in fade-in">
               <Clock className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-              <p className="text-[11px] font-bold font-sans text-accent-foreground leading-relaxed">
+              <p className="text-xs font-medium font-sans text-accent-foreground leading-relaxed">
                 Sesi Anda telah berakhir karena tidak ada aktivitas selama 10
                 menit. Silakan masuk kembali.
               </p>
@@ -128,7 +134,7 @@ function LoginForm() {
           )}
 
           <div className="space-y-1">
-            <label className="text-[11px] font-extrabold font-sans text-card-foreground flex items-center gap-1">
+            <label className="text-xs font-bold font-sans text-card-foreground flex items-center gap-1">
               <User className="w-3.5 h-3.5 text-primary" />
               Email <span className="text-destructive">*</span>
             </label>
@@ -164,7 +170,7 @@ function LoginForm() {
 
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-extrabold font-sans text-card-foreground flex items-center gap-1.5">
+              <label className="text-xs font-bold font-sans text-card-foreground flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-primary" />
                 Password <span className="text-destructive">*</span>
               </label>
@@ -172,7 +178,7 @@ function LoginForm() {
               <Link
                 href="/lupa-password"
                 className="
-                  text-[11px]
+                  text-xs
                   font-bold
                   font-sans
                   text-primary
@@ -242,14 +248,8 @@ function LoginForm() {
             </div>
           </div>
 
-          {/* CAPTCHA */}
-          {/* <div className="pt-0.5">
-            <Captcha onVerify={setCaptchaVerified} />
-          </div> */}
-
           <button
             type="submit"
-            // disabled={isLoading || !captchaVerified}
             className="
               w-full
               min-h-[44px]
@@ -276,25 +276,24 @@ function LoginForm() {
           >
             {isLoading ? (
               <>
-                <Spinner />
-                <span>Verifikasi Akun</span>
+                <Spinner className="text-current" />
               </>
             ) : (
               <>
                 <LogIn className="w-4 h-4" />
-                <span className="font-sans">Masuk ke Hadir.in</span>
+                <span className="font-sans">Masuk</span>
               </>
             )}
           </button>
         </form>
 
         <div className="text-center pt-4 border-t border-border space-y-1.5">
-          <p className="text-[11px] text-muted-foreground font-semibold font-sans">
+          <p className="text-xs text-muted-foreground font-semibold font-sans">
             Belum punya akun?{" "}
             <Link
               href="/register"
               className="
-                font-extrabold
+                font-bold
                 text-primary
                 hover:opacity-80
                 hover:underline
@@ -310,18 +309,6 @@ function LoginForm() {
             </Link>
           </p>
         </div>
-
-        {/* <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5 font-semibold">
-          <span className="flex items-center gap-1 font-sans">
-            <ShieldCheck className="w-3 h-3 text-primary" />
-            CAPTCHA Protected
-          </span>
-
-          <span className="flex items-center gap-1 font-sans">
-            <Lock className="w-3 h-3 text-primary" />
-            Session Security
-          </span>
-        </div> */}
       </div>
     </div>
   );

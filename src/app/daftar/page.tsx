@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Captcha } from "@/components/forms/Captcha";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { showNotification } from "@/components/ui/NotificationProvider";
 import { BAGIAN_OPTIONS } from "@/types";
 import {
   CheckCircle2,
@@ -53,7 +54,9 @@ export default function RegistrationPortalPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setFormError("Ukuran file CV tidak boleh melebihi 5MB.");
+        const msg = "Ukuran file CV tidak boleh melebihi 5MB.";
+        setFormError(msg);
+        showNotification({ type: "warning", message: msg });
         return;
       }
       setCvFile(file);
@@ -65,7 +68,9 @@ export default function RegistrationPortalPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        setFormError("Ukuran file Portofolio tidak boleh melebihi 10MB.");
+        const msg = "Ukuran file Portofolio tidak boleh melebihi 10MB.";
+        setFormError(msg);
+        showNotification({ type: "warning", message: msg });
         return;
       }
       setPortfolioFile(file);
@@ -87,7 +92,9 @@ export default function RegistrationPortalPage() {
     setFormError(null);
 
     if (!isCaptchaValid) {
-      setFormError("Silakan selesaikan kode verifikasi CAPTCHA dengan benar.");
+      const msg = "Silakan selesaikan kode verifikasi CAPTCHA dengan benar.";
+      setFormError(msg);
+      showNotification({ type: "warning", message: msg });
       return;
     }
 
@@ -127,9 +134,16 @@ export default function RegistrationPortalPage() {
 
       setGeneratedCode(result.data?.kode_pendaftaran || "");
       setIsSubmittedSuccess(true);
+      showNotification({
+        type: "success",
+        title: "Pendaftaran Berhasil",
+        message: "Pendaftaran Anda telah berhasil tersimpan di sistem.",
+      });
     } catch (error: any) {
       console.error("Submit pendaftaran error:", error);
-      setFormError(error?.message || "Terjadi kesalahan saat mengirim pendaftaran.");
+      const errMsg = error?.message || "Terjadi kesalahan saat mengirim pendaftaran.";
+      setFormError(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSubmitting(false);
     }
@@ -137,7 +151,13 @@ export default function RegistrationPortalPage() {
 
   const handleSearchStatus = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      showNotification({
+        type: "warning",
+        message: "Silakan masukkan nomor atau kode pendaftaran terlebih dahulu.",
+      });
+      return;
+    }
 
     setIsSearching(true);
     setHasSearched(false);
@@ -154,10 +174,19 @@ export default function RegistrationPortalPage() {
         setSearchResult(result.data);
       } else {
         setSearchResult(null);
+        showNotification({
+          type: "warning",
+          title: "Data Tidak Ditemukan",
+          message: "Data pendaftaran dengan kode tersebut tidak ditemukan. Silakan periksa kembali.",
+        });
       }
     } catch (error) {
       console.error("Search status error:", error);
       setSearchResult(null);
+      showNotification({
+        type: "error",
+        message: "Terjadi kesalahan saat mencari status pendaftaran.",
+      });
     } finally {
       setIsSearching(false);
       setHasSearched(true);

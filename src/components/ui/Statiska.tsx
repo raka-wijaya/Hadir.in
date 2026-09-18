@@ -545,7 +545,7 @@ export function Statiska({ role = "SUPER_ADMIN" }: StatiskaProps) {
                           className="w-2.5 h-2.5 rounded-sm"
                           style={{ backgroundColor: it.color }}
                         />
-                        <span className="text-[11px] font-bold font-sans text-foreground">
+                        <span className="text-xs font-bold font-sans text-foreground">
                           {it.label}
                         </span>
                       </div>

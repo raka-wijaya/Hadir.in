@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/lib/auth/context";
+import { showNotification } from "@/components/ui/NotificationProvider";
 import { LogBook, LOGBOOK_CATEGORIES, LOGBOOK_CATEGORY_LABELS, LogBookCategory } from "@/types";
 import {
   NotebookPen,
@@ -289,17 +290,19 @@ export default function MagangLogBookPage() {
       }
 
       const linked = result.data?.tugas_id || result.record?.tugas_id;
-      setSuccessMessage(
-        linked
-          ? "Logbook berhasil disimpan & tugas terkait ditandai Selesai!"
-          : "Logbook berhasil ditambahkan!",
-      );
+      const successMsg = linked
+        ? "Logbook berhasil disimpan & tugas terkait ditandai Selesai!"
+        : "Logbook berhasil ditambahkan!";
+      setSuccessMessage(successMsg);
+      showNotification({ type: "success", message: successMsg });
       setIsCreateModalOpen(false);
       resetForm();
       fetchLogbooks();
       fetchPendingTugas(); // refresh daftar tugas pending
     } catch (err: any) {
-      setErrorMessage(err.message || "Terjadi kesalahan saat menyimpan.");
+      const errMsg = err.message || "Terjadi kesalahan saat menyimpan.";
+      setErrorMessage(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSubmitting(false);
     }
@@ -310,7 +313,9 @@ export default function MagangLogBookPage() {
     e.preventDefault();
     if (!selectedLogbook) return;
     if (!formData.aktivitas.trim()) {
-      setErrorMessage("Deskripsi aktivitas wajib diisi.");
+      const msg = "Deskripsi aktivitas wajib diisi.";
+      setErrorMessage(msg);
+      showNotification({ type: "warning", message: msg });
       return;
     }
 
@@ -333,11 +338,14 @@ export default function MagangLogBookPage() {
       }
 
       setSuccessMessage("Logbook berhasil diperbarui!");
+      showNotification({ type: "success", message: "Logbook berhasil diperbarui!" });
       setIsEditModalOpen(false);
       setSelectedLogbook(null);
       fetchLogbooks();
     } catch (err: any) {
-      setErrorMessage(err.message || "Terjadi kesalahan saat memperbarui.");
+      const errMsg = err.message || "Terjadi kesalahan saat memperbarui.";
+      setErrorMessage(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSubmitting(false);
     }
@@ -359,11 +367,14 @@ export default function MagangLogBookPage() {
       }
 
       setSuccessMessage("Logbook berhasil dihapus.");
+      showNotification({ type: "success", message: "Logbook berhasil dihapus." });
       setIsDeleteModalOpen(false);
       setSelectedLogbook(null);
       fetchLogbooks();
     } catch (err: any) {
-      setErrorMessage(err.message || "Terjadi kesalahan saat menghapus.");
+      const errMsg = err.message || "Terjadi kesalahan saat menghapus.";
+      setErrorMessage(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSubmitting(false);
     }

@@ -10,6 +10,7 @@ import React, {
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/lib/auth/context";
 import { ConfirmModal } from "@/components/ui/Alert";
+import { showNotification } from "@/components/ui/NotificationProvider";
 
 import {
   FileCheck,
@@ -350,10 +351,9 @@ export default function MagangIzinPage() {
      */
 
     if (!user?.id) {
-      setErrorMsg(
-        "Sesi pengguna tidak valid. Silakan login ulang."
-      );
-
+      const msg = "Sesi pengguna tidak valid. Silakan login ulang.";
+      setErrorMsg(msg);
+      showNotification({ type: "warning", message: msg });
       return;
     }
 
@@ -362,10 +362,9 @@ export default function MagangIzinPage() {
      */
 
     if (!alasan.trim()) {
-      setErrorMsg(
-        "Silakan isi alasan pengajuan izin."
-      );
-
+      const msg = "Silakan isi alasan pengajuan izin.";
+      setErrorMsg(msg);
+      showNotification({ type: "warning", message: msg });
       return;
     }
 
@@ -377,10 +376,9 @@ export default function MagangIzinPage() {
       tanggalSelesai <
       tanggalMulai
     ) {
-      setErrorMsg(
-        "Tanggal selesai tidak boleh lebih awal dari tanggal mulai."
-      );
-
+      const msg = "Tanggal selesai tidak boleh lebih awal dari tanggal mulai.";
+      setErrorMsg(msg);
+      showNotification({ type: "warning", message: msg });
       return;
     }
 
@@ -454,9 +452,9 @@ export default function MagangIzinPage() {
         res.ok &&
         data?.success
       ) {
-        setSuccessMsg(
-          "Pengajuan izin berhasil dikirim."
-        );
+        const msg = "Pengajuan izin berhasil dikirim.";
+        setSuccessMsg(msg);
+        showNotification({ type: "success", message: msg });
 
         /**
          * Tambahkan data baru
@@ -487,10 +485,9 @@ export default function MagangIzinPage() {
 
         removeAttachment();
       } else {
-        setErrorMsg(
-          data.message ||
-            "Gagal mengirim pengajuan izin."
-        );
+        const errMsg = data.message || "Gagal mengirim pengajuan izin.";
+        setErrorMsg(errMsg);
+        showNotification({ type: "error", message: errMsg });
       }
     } catch (err) {
       console.error(
@@ -498,9 +495,9 @@ export default function MagangIzinPage() {
         err
       );
 
-      setErrorMsg(
-        "Gagal mengirim pengajuan izin. Pastikan koneksi server aktif."
-      );
+      const errMsg = "Gagal mengirim pengajuan izin. Pastikan koneksi server aktif.";
+      setErrorMsg(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSubmitting(false);
     }
@@ -520,10 +517,9 @@ export default function MagangIzinPage() {
      */
 
     if (!user?.id) {
-      setErrorMsg(
-        "Sesi pengguna tidak valid. Silakan login ulang."
-      );
-
+      const errMsg = "Sesi pengguna tidak valid. Silakan login ulang.";
+      setErrorMsg(errMsg);
+      showNotification({ type: "error", message: errMsg });
       return;
     }
 
@@ -549,11 +545,6 @@ export default function MagangIzinPage() {
         res.ok &&
         data?.success
       ) {
-        /**
-         * Hapus dari state
-         * tanpa reload halaman.
-         */
-
         setIzin((prev) =>
           prev.filter(
             (izinItem) =>
@@ -561,14 +552,13 @@ export default function MagangIzinPage() {
           )
         );
 
-        setSuccessMsg(
-          "Pengajuan izin berhasil dihapus."
-        );
+        const msg = "Pengajuan izin berhasil dihapus.";
+        setSuccessMsg(msg);
+        showNotification({ type: "success", message: msg });
       } else {
-        setErrorMsg(
-          data.message ||
-            "Gagal menghapus pengajuan izin."
-        );
+        const errMsg = data.message || "Gagal menghapus pengajuan izin.";
+        setErrorMsg(errMsg);
+        showNotification({ type: "error", message: errMsg });
       }
     } catch (err) {
       console.error(
@@ -576,9 +566,9 @@ export default function MagangIzinPage() {
         err
       );
 
-      setErrorMsg(
-        "Gagal menghapus pengajuan izin. Pastikan koneksi server aktif."
-      );
+      const errMsg = "Gagal menghapus izin. Pastikan koneksi server aktif.";
+      setErrorMsg(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setDeletingId(null);
     }

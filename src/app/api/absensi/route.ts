@@ -877,11 +877,12 @@ export async function PATCH(req: NextRequest) {
       // Update seluruh record absensi yang TERLAMBAT di bulan berjalan
       const [updateResult]: any = await mysqlPool.query(
         `UPDATE absensi
-         SET status_masuk = 'TEPAT_WAKTU',
+         SET status = 'HADIR',
+             status_masuk = 'TEPAT_WAKTU',
              jam_masuk = ?,
              keterangan = CONCAT(COALESCE(keterangan, ''), ' [Koreksi Jam oleh Admin ID: ', ?, ']')
          WHERE ${idColumn} = ?
-           AND status_masuk = 'TERLAMBAT'
+           AND (status_masuk = 'TERLAMBAT' OR status = 'TERLAMBAT')
            AND MONTH(tanggal) = MONTH(CURRENT_DATE())
            AND YEAR(tanggal) = YEAR(CURRENT_DATE())`,
         [jamMasukBaru, String(adminId), String(userId)]

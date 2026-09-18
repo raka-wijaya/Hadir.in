@@ -12,6 +12,7 @@ import {
   ConfirmModal,
 } from "@/components/ui/Alert";
 import { ModalPortal } from "@/components/ui/ModalPortal";
+import { showNotification } from "@/components/ui/NotificationProvider";
 import { Spinner } from "@/components/ui/Spinner";
 import {
   ClipboardList,
@@ -77,11 +78,16 @@ export default function AdminPendaftaranPage() {
     title = "Peringatan",
     color: "red" | "green" | "blue" | "yellow" = "red"
   ) => {
-    setModalAlert({
-      isOpen: true,
+    const typeMap: Record<string, "success" | "error" | "warning" | "info"> = {
+      green: "success",
+      red: "error",
+      yellow: "warning",
+      blue: "info",
+    };
+    showNotification({
+      type: typeMap[color] || "info",
       title,
       message,
-      color,
     });
   };
 

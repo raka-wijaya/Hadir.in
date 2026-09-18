@@ -24,6 +24,7 @@ import {
 import { Spinner } from "@/components/ui/Spinner";
 import { AlertModal, ConfirmModal } from "@/components/ui/Alert";
 import { ModalPortal } from "@/components/ui/ModalPortal";
+import { showNotification } from "@/components/ui/NotificationProvider";
 
 interface AccountUser {
   id: string;
@@ -76,11 +77,16 @@ export default function AdminVerifikasiAkunPage() {
     title = "Pemberitahuan",
     color: "red" | "green" | "blue" | "yellow" = "green",
   ) => {
-    setModalAlert({
-      isOpen: true,
+    const typeMap: Record<string, "success" | "error" | "warning" | "info"> = {
+      green: "success",
+      red: "error",
+      yellow: "warning",
+      blue: "info",
+    };
+    showNotification({
+      type: typeMap[color] || "info",
       title,
       message,
-      color,
     });
   };
 

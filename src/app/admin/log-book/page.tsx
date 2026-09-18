@@ -10,6 +10,7 @@ import React, {
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ModalPortal } from "@/components/ui/ModalPortal";
 import { useAuth } from "@/lib/auth/context";
+import { showNotification } from "@/components/ui/NotificationProvider";
 import { LogBook, User } from "@/types";
 import {
   NotebookPen,
@@ -179,7 +180,9 @@ export default function AdminLogBookPage() {
     e.preventDefault();
     if (!selectedLogbook) return;
     if (!formData.aktivitas.trim()) {
-      setErrorMessage("Judul logbook wajib diisi.");
+      const msg = "Judul logbook wajib diisi.";
+      setErrorMessage(msg);
+      showNotification({ type: "warning", message: msg });
       return;
     }
 
@@ -202,11 +205,14 @@ export default function AdminLogBookPage() {
       }
 
       setSuccessMessage("Logbook berhasil diperbarui!");
+      showNotification({ type: "success", message: "Logbook berhasil diperbarui!" });
       setIsEditModalOpen(false);
       setSelectedLogbook(null);
       fetchLogbooks();
     } catch (err: any) {
-      setErrorMessage(err.message || "Terjadi kesalahan saat memperbarui.");
+      const errMsg = err.message || "Terjadi kesalahan saat memperbarui.";
+      setErrorMessage(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSubmitting(false);
     }
@@ -227,11 +233,14 @@ export default function AdminLogBookPage() {
       }
 
       setSuccessMessage("Data logbook berhasil dihapus dari sistem.");
+      showNotification({ type: "success", message: "Data logbook berhasil dihapus dari sistem." });
       setIsDeleteModalOpen(false);
       setSelectedLogbook(null);
       fetchLogbooks();
     } catch (err: any) {
-      setErrorMessage(err.message || "Terjadi kesalahan saat menghapus.");
+      const errMsg = err.message || "Terjadi kesalahan saat menghapus.";
+      setErrorMessage(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSubmitting(false);
     }

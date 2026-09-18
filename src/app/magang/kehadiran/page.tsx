@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useAuth } from "@/lib/auth/context";
 import { Absensi } from "@/types";
 import { Spinner } from "@/components/ui/Spinner";
+import { formatLateDuration } from "@/lib/attendance-utils";
 
 function formatDisplayDate(dateStr?: string | null): string {
   if (!dateStr) return "-";
@@ -332,7 +333,7 @@ export default function KehadiranPage() {
                           <span className="font-bold text-status-terlambat">
                             Terlambat
                             {record.menit_terlambat
-                              ? ` (+${record.menit_terlambat} mnt)`
+                              ? ` (${formatLateDuration(record.menit_terlambat, { withPrefixPlus: true, short: true })})`
                               : ""}
                           </span>
                         ) : (

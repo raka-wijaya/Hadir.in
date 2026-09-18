@@ -9,6 +9,7 @@ export interface ModalPortalProps {
 
 let activeModalCount = 0;
 let previousOverflow = "";
+let previousDocOverflow = "";
 let previousPaddingRight = "";
 
 export function lockScroll() {
@@ -16,6 +17,7 @@ export function lockScroll() {
   if (activeModalCount === 0) {
     // Save original styles
     previousOverflow = document.body.style.overflow;
+    previousDocOverflow = document.documentElement.style.overflow;
     previousPaddingRight = document.body.style.paddingRight;
 
     // Prevent layout shift/jumping when scrollbar disappears
@@ -25,6 +27,7 @@ export function lockScroll() {
     }
 
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
   }
   activeModalCount += 1;
 }
@@ -34,6 +37,7 @@ export function unlockScroll() {
   activeModalCount = Math.max(0, activeModalCount - 1);
   if (activeModalCount === 0) {
     document.body.style.overflow = previousOverflow;
+    document.documentElement.style.overflow = previousDocOverflow;
     document.body.style.paddingRight = previousPaddingRight;
   }
 }

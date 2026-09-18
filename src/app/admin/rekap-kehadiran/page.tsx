@@ -23,6 +23,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
+import { formatLateDuration } from "@/lib/attendance-utils";
 
 function formatTanggalIndo(dateStr?: string | null): string {
   if (!dateStr) return "—";
@@ -510,8 +511,10 @@ export default function RekapKehadiranPage() {
                             <StatusBadge status={effectiveStatus} />
                             {isLate && (
                               <span className="block text-[10px] font-extrabold text-amber-600 dark:text-amber-400">
-                                +{rec.menit_terlambat || rec.lateMinutes || 1}{" "}
-                                mnt terlambat
+                                {formatLateDuration(
+                                  rec.menit_terlambat || rec.lateMinutes || 1,
+                                  { withPrefixPlus: true, withSuffix: true, short: true },
+                                )}
                               </span>
                             )}
                             {isEarlyDeparture && (
@@ -813,7 +816,7 @@ export default function RekapKehadiranPage() {
 
                       let ketText = item.keterangan || item.alasan || "—";
                       if (isLate) {
-                        ketText = `Terlambat ${item.menit_terlambat || item.lateMinutes || 1} mnt`;
+                        ketText = `Terlambat ${formatLateDuration(item.menit_terlambat || item.lateMinutes || 1, { short: true })}`;
                       } else if (isEarly) {
                         ketText = `Pulang lebih awal`;
                       }
@@ -1029,7 +1032,7 @@ export default function RekapKehadiranPage() {
 
               let ketText = item.keterangan || item.alasan || "—";
               if (isLate) {
-                ketText = `Terlambat ${item.menit_terlambat || item.lateMinutes || 1} mnt`;
+                ketText = `Terlambat ${formatLateDuration(item.menit_terlambat || item.lateMinutes || 1, { short: true })}`;
               } else if (isEarly) {
                 ketText = `Pulang lebih awal`;
               }

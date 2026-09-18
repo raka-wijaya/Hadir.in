@@ -11,7 +11,6 @@ import {
   PenLine,
   X,
   Sparkles,
-  Lightbulb,
 } from "lucide-react";
 import { Spinner } from "./Spinner";
 import { ModalPortal } from "./ModalPortal";
@@ -517,15 +516,15 @@ export function Kedisiplinan({
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <h3
-                    className={`font-bold text-[11px] md:text-[11px] font-sans tracking-wider uppercase ${titleColor}`}
+                    className={`font-bold text-xs md:text-xs font-sans tracking-wider uppercase ${titleColor}`}
                   >
                     {category.title}
                   </h3>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="text-[11px] font-semibold font-sans text-muted-foreground">
-                    <span className="font-bold text-foreground text-[11px] md:text-[11px]">
+                  <div className="text-xs font-sans text-muted-foreground">
+                    <span className="text-foreground text-xs md:text-xs">
                       {category.totalOrang}
                     </span>{" "}
                     Orang
@@ -560,7 +559,7 @@ export function Kedisiplinan({
                   </p>
                   <button
                     onClick={fetchData}
-                    className="mt-2 text-[11px] font-sans font-bold text-destructive hover:underline cursor-pointer"
+                    className="mt-2 text-xs font-sans font-bold text-destructive hover:underline cursor-pointer"
                   >
                     Coba lagi
                   </button>
@@ -596,24 +595,24 @@ export function Kedisiplinan({
 
                           <div className="min-w-0 flex-1">
                             <p
-                              className="text-xs font-sans font-bold text-foreground truncate leading-snug"
+                              className="text-xs font-sans text-foreground truncate leading-snug"
                               title={item.nama}
                             >
                               {item.nama}
                             </p>
                             <div className="flex items-center gap-1.5 mt-1">
                               {isOs ? (
-                                <span className="inline-block font-sans px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider bg-muted text-foreground border border-border uppercase">
+                                <span className="inline-block font-sans px-1.5 py-0.5 rounded text-[9px] tracking-wider bg-muted text-foreground border border-border uppercase">
                                   OS
                                 </span>
                               ) : (
-                                <span className="inline-block font-sans px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-primary/10 text-primary border border-primary/20 uppercase">
+                                <span className="inline-block font-sans px-1.5 py-0.5 rounded text-[9px] tracking-wider bg-primary/10 text-primary border border-primary/20 uppercase">
                                   MAGANG
                                 </span>
                               )}
 
                               {key === "tanpaKeterangan" && (
-                                <span className="inline-flex items-center gap-1 font-sans text-[9px] font-bold text-status-alpa">
+                                <span className="inline-flex items-center gap-1 font-sans text-[9px] text-status-alpa">
                                   <span className="w-1.5 h-1.5 rounded-full bg-status-alpa shrink-0" />
                                   Belum Absen
                                 </span>
@@ -665,7 +664,7 @@ export function Kedisiplinan({
                     <h3 className="text-sm font-bold font-sans tracking-tight text-foreground">
                       Pindahkan ke Paling Rajin
                     </h3>
-                    <p className="text-[11px] font-sans text-muted-foreground mt-0.5">
+                    <p className="text-xs font-sans text-muted-foreground mt-0.5">
                       Koreksi keterlambatan peserta oleh Admin #{user?.id}
                     </p>
                   </div>
@@ -683,35 +682,42 @@ export function Kedisiplinan({
               <form onSubmit={handleSubmitOverride} className="space-y-4">
                 <div className="p-3 rounded-xl bg-muted/50 border border-border flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-sans font-bold text-foreground">
+                    <p className="text-xs font-sans text-foreground">
                       {overrideItem.nama}
                     </p>
-                    <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold font-sans tracking-wider bg-primary/10 text-primary border border-primary/20">
+                    <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-sans tracking-wider bg-primary/10 text-primary border border-primary/20">
                       {overrideItem.role}
                     </span>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold status-terlambat border font-sans">
+                  <span className="px-2 py-0.5 rounded-full text-xs text-status-terlambat border font-sans">
                     {overrideItem.count}x Terlambat
                   </span>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground font-sans flex items-center justify-between">
+                  <label className="text-xs text-foreground font-sans flex items-center justify-between">
                     <span>Jam Masuk Baru</span>
-                    <span className="text-[10px] text-muted-foreground font-sans font-normal">
+                    <span className="text-xs text-muted-foreground font-sans">
                       Format: HH:mm (WIB)
                     </span>
                   </label>
-                  <input
-                    type="time"
-                    value={targetJam}
-                    onChange={(e) => setTargetJam(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 text-sm font-mono rounded-xl bg-input border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
-                  />
+                  <div className="relative">
+                    <Clock
+                      size={14}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10"
+                    />
+                    <input
+                      type="time"
+                      value={targetJam}
+                      onChange={(e) => setTargetJam(e.target.value)}
+                      required
+                      style={{ colorScheme: "dark" }}
+                      className="w-full pl-8 pr-3 py-2 text-sm font-mono rounded-xl bg-input border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                    />
+                  </div>
 
                   <div className="flex items-center gap-1.5 pt-1">
-                    <span className="text-[10px] font-sans text-muted-foreground font-medium">
+                    <span className="text-xs font-sans text-muted-foreground">
                       Preset cepat:
                     </span>
                     {["07:00", "07:15", "07:25"].map((timePreset) => (
@@ -719,7 +725,7 @@ export function Kedisiplinan({
                         key={timePreset}
                         type="button"
                         onClick={() => setTargetJam(timePreset)}
-                        className={`px-2 py-0.5 rounded text-[10px] font-sans font-bold transition-all border cursor-pointer ${
+                        className={`px-2 py-0.5 rounded text-xs font-sans transition-all border cursor-pointer ${
                           targetJam === timePreset
                             ? "bg-primary text-primary-foreground border-primary"
                             : "bg-muted text-muted-foreground border-border hover:text-foreground hover:bg-muted/80"
@@ -731,18 +737,15 @@ export function Kedisiplinan({
                   </div>
                 </div>
 
-                <div className="text-[11px] text-muted-foreground leading-relaxed bg-muted/40 p-2.5 rounded-lg border border-border/50">
-                  <Lightbulb />{" "}
-                  <span className="font-semibold font-sans text-foreground">
-                    Catatan:
-                  </span>{" "}
+                <div className="text-xs text-muted-foreground leading-relaxed bg-muted/40 p-2.5 rounded-lg border border-border/50">
+                  <span className="font-sans text-foreground">Catatan:</span>{" "}
                   Seluruh riwayat presensi berstatus terlambat bulan ini untuk
                   peserta ini akan diubah menjadi{" "}
                   <strong className="text-status-hadir font-sans">
                     Tepat Waktu
                   </strong>{" "}
                   dengan jam masuk{" "}
-                  <strong className="font-mono font-sans text-foreground">
+                  <strong className="font-sans text-foreground">
                     {targetJam}
                   </strong>
                   .
@@ -770,7 +773,7 @@ export function Kedisiplinan({
                     type="button"
                     onClick={handleCloseOverride}
                     disabled={overrideLoading}
-                    className="px-3.5 py-2 text-xs font-bold font-sans rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+                    className="px-3.5 py-2 text-xs font-sans rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     Batal
                   </button>
@@ -781,10 +784,7 @@ export function Kedisiplinan({
                   >
                     {overrideLoading ? (
                       <>
-                        <Spinner
-                          size="sm"
-                          className="text-primary-foreground"
-                        />
+                        <Spinner size="sm" className="text-current" />
                       </>
                     ) : (
                       <>

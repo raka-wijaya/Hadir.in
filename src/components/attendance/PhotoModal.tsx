@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { X, Clock, Calendar, CheckCircle, Camera, LogIn, LogOut } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ModalPortal } from "@/components/ui/ModalPortal";
+import { formatLateDuration } from "@/lib/attendance-utils";
 
 interface PhotoModalProps {
   isOpen: boolean;
@@ -187,7 +188,7 @@ export function PhotoModal({
             {lateMinutes > 0 && activeType === "MASUK" && (
               <div className="flex justify-between items-center text-status-terlambat font-semibold pt-1">
                 <span>Durasi Keterlambatan</span>
-                <span>{lateMinutes} Menit</span>
+                <span>{formatLateDuration(lateMinutes)}</span>
               </div>
             )}
           </div>

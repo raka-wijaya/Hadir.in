@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/lib/auth/context";
+import { showNotification } from "@/components/ui/NotificationProvider";
 import {
   Edit3,
   CheckCircle2,
@@ -190,13 +191,17 @@ export default function ProfilPage() {
       updateUser({ ...updatedData, avatar: serverAvatar });
 
       setIsEditing(false);
-      setSavedMsg("Profil berhasil diperbarui!");
+      const msg = "Profil berhasil diperbarui!";
+      setSavedMsg(msg);
+      showNotification({ type: "success", message: msg });
       setTimeout(() => {
         setSavedMsg(null);
       }, 3000);
     } catch (err: any) {
       console.error("Error update profile:", err);
-      setErrorMsg("Gagal menyimpan perubahan. Silakan coba lagi.");
+      const errMsg = "Gagal menyimpan perubahan. Silakan coba lagi.";
+      setErrorMsg(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSaving(false);
     }

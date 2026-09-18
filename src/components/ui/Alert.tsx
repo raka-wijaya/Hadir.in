@@ -141,7 +141,10 @@ export function AlertModal({
 
   return (
     <ModalPortal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+        onClick={onClose}
+      >
         <div
           className="
             bg-card
@@ -153,11 +156,12 @@ export function AlertModal({
             shadow-elevated
             space-y-4
             animate-in
-            zoom-in-95
+            fade-in
             max-h-[calc(100vh-2rem)]
             overflow-y-auto
             text-center
           "
+          onClick={(e) => e.stopPropagation()}
         >
           {getIconBadge()}
           <div>
@@ -263,7 +267,10 @@ export function ConfirmModal({
 
   return (
     <ModalPortal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+        onClick={onCancel}
+      >
         <div
           className="
             bg-card
@@ -275,11 +282,12 @@ export function ConfirmModal({
             shadow-elevated
             space-y-4
             animate-in
-            zoom-in-95
+            fade-in
             max-h-[calc(100vh-2rem)]
             overflow-y-auto
             text-center
           "
+          onClick={(e) => e.stopPropagation()}
         >
           {getIconBadge()}
           <div>

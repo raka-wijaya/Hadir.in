@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useAuth } from "@/lib/auth/context";
 import { Absensi } from "@/types";
 import { Clock, AlertTriangle } from "lucide-react";
+import { formatLateDuration } from "@/lib/attendance-utils";
 
 function formatDisplayDate(dateStr?: string | null): string {
   if (!dateStr) return "—";
@@ -88,7 +89,7 @@ export default function TerlambatPage() {
               <Clock className="w-4 h-4" /> Total Akumulasi Keterlambatan
             </span>
             <div className="text-3xl font-black text-primary font-mono">
-              {totalLateMinutes} Menit
+              {formatLateDuration(totalLateMinutes)}
             </div>
           </div>
           <div className="p-3 rounded-2xl bg-primary/20 text-primary">
@@ -125,7 +126,7 @@ export default function TerlambatPage() {
                         {r.jam_masuk || r.checkIn} WIB
                       </td>
                       <td className="py-3.5 px-4 font-mono text-xs font-extrabold text-status-alpa">
-                        +{r.menit_terlambat ?? r.lateMinutes ?? 0} Menit
+                        {formatLateDuration(r.menit_terlambat ?? r.lateMinutes ?? 0, { withPrefixPlus: true })}
                       </td>
                       <td className="py-3.5 px-4">
                         <StatusBadge status="terlambat" />

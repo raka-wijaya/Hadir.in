@@ -29,6 +29,7 @@ import {
 
 import { Statiska } from "@/components/ui/Statiska";
 import { Kedisiplinan } from "@/components/ui/Kedisplinan";
+import { formatLateDuration } from "@/lib/attendance-utils";
 
 function formatTanggalIndo(dateStr?: string | null): string {
   if (!dateStr) return "—";
@@ -642,7 +643,7 @@ export default function AdminDashboardPage() {
                         Riwayat logbook aktivitas terbaru
                       </h3>
 
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] font-sans text-muted-foreground">
                         {logbookList.length} catatan logbook tercatat di sistem
                       </p>
                     </div>
@@ -696,9 +697,6 @@ export default function AdminDashboardPage() {
                                   {item.user_nama ||
                                     item.userName ||
                                     "Peserta Magang"}
-                                  {(item.user_divisi || item.userDivisi || item.divisi) ? (
-                                    <span className="font-normal text-muted-foreground"> - {item.user_divisi || item.userDivisi || item.divisi}</span>
-                                  ) : null}
                                 </h4>
 
                                 <p className="text-[10px] font-sans text-muted-foreground truncate">
@@ -790,9 +788,6 @@ export default function AdminDashboardPage() {
                               <div className="min-w-0">
                                 <h4 className="font-sans text-xs text-foreground truncate">
                                   {task.user_nama || "Peserta Magang"}
-                                  {(task.user_divisi || task.userDivisi || task.divisi) ? (
-                                    <span className="font-normal text-muted-foreground"> - {task.user_divisi || task.userDivisi || task.divisi}</span>
-                                  ) : null}
                                 </h4>
 
                                 <p className="text-[10px] font-sans text-muted-foreground truncate">
@@ -953,9 +948,6 @@ export default function AdminDashboardPage() {
                       <td className="py-3 px-3">
                         <div className="font-sans text-foreground">
                           {rec.user_nama || rec.userName}
-                          {(rec.user_divisi || rec.userDivisi || rec.divisi) ? (
-                            <span className="font-normal text-muted-foreground"> - {rec.user_divisi || rec.userDivisi || rec.divisi}</span>
-                          ) : null}
                         </div>
 
                         <div className="text-[10px] font-sans text-muted-foreground">
@@ -990,9 +982,10 @@ export default function AdminDashboardPage() {
                           <span className="text-status-terlambat">
                             Terlambat
                             {rec.menit_terlambat || rec.lateMinutes
-                              ? ` (+${
-                                  rec.menit_terlambat || rec.lateMinutes
-                                } mnt)`
+                              ? ` (${formatLateDuration(
+                                  rec.menit_terlambat || rec.lateMinutes,
+                                  { withPrefixPlus: true, short: true },
+                                )})`
                               : ""}
                           </span>
                         ) : (

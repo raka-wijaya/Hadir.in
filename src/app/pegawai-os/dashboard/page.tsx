@@ -8,6 +8,8 @@ import { CameraCapture } from "@/components/attendance/CameraCapture";
 import { PhotoModal } from "@/components/attendance/PhotoModal";
 import { useAuth } from "@/lib/auth/context";
 import { Absensi } from "@/types";
+import { showNotification } from "@/components/ui/NotificationProvider";
+import { formatLateDuration } from "@/lib/attendance-utils";
 import {
   CheckCircle2,
   Clock3,
@@ -33,7 +35,6 @@ export default function PegawaiOsDashboardPage() {
 
   const [previewRecord, setPreviewRecord] = useState<Absensi | null>(null);
   const [previewType, setPreviewType] = useState<"MASUK" | "PULANG">("MASUK");
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Form pulang cepat
   const [showEarlyCheckoutForm, setShowEarlyCheckoutForm] = useState(false);
@@ -247,12 +248,12 @@ export default function PegawaiOsDashboardPage() {
 
   const handleSubmitEarlyCheckout = () => {
     if (!alasanPulangCepat.trim()) {
-      setToastMsg("Alasan pulang cepat wajib diisi.");
+      showNotification({ type: "warning", message: "Alasan pulang cepat wajib diisi." });
       return;
     }
 
     if (!tugasDikerjakan.trim()) {
-      setToastMsg("Tugas yang dikerjakan wajib diisi.");
+      showNotification({ type: "warning", message: "Tugas yang dikerjakan wajib diisi." });
       return;
     }
 
@@ -291,17 +292,17 @@ export default function PegawaiOsDashboardPage() {
       const data = await res.json();
 
       if (data.success) {
-        setToastMsg(data.message);
+        showNotification({ type: "success", message: data.message || "Berhasil melakukan absen masuk." });
         setActiveTab("IDLE");
         setPreviewType("MASUK");
         setPreviewRecord(data.record);
         fetchAttendance();
       } else {
-        setToastMsg(data.message || "Gagal melakukan absen masuk.");
+        showNotification({ type: "error", message: data.message || "Gagal melakukan absen masuk." });
       }
     } catch (err) {
       console.error(err);
-      setToastMsg("Gagal menyimpan presensi.");
+      showNotification({ type: "error", message: "Gagal menyimpan presensi." });
     }
   };
 
@@ -329,7 +330,7 @@ export default function PegawaiOsDashboardPage() {
       const data = await res.json();
 
       if (data.success) {
-        setToastMsg(data.message);
+        showNotification({ type: "success", message: data.message || "Berhasil melakukan absen pulang." });
         setActiveTab("IDLE");
         setPreviewType("PULANG");
         setPreviewRecord(data.record);
@@ -340,11 +341,11 @@ export default function PegawaiOsDashboardPage() {
         setShowEarlyCheckoutForm(false);
         fetchAttendance();
       } else {
-        setToastMsg(data.message || "Gagal melakukan absen pulang.");
+        showNotification({ type: "error", message: data.message || "Gagal melakukan absen pulang." });
       }
     } catch (err) {
       console.error(err);
-      setToastMsg("Gagal melakukan absen pulang.");
+      showNotification({ type: "error", message: "Gagal melakukan absen pulang." });
     } finally {
       setIsSubmittingCheckout(false);
     }
@@ -544,10 +545,11 @@ export default function PegawaiOsDashboardPage() {
                   ).toUpperCase() === "TERLAMBAT" && (
                     <p className="text-[10px] font-bold text-status-terlambat mt-1">
                       Terlambat{" "}
-                      {todayRecord?.menit_terlambat ||
-                        todayRecord?.lateMinutes ||
-                        0}{" "}
-                      menit
+                      {formatLateDuration(
+                        todayRecord?.menit_terlambat ||
+                          todayRecord?.lateMinutes ||
+                          0,
+                      )}
                     </p>
                   )}
                 </div>

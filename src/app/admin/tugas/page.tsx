@@ -10,6 +10,7 @@ import React, {
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ModalPortal } from "@/components/ui/ModalPortal";
 import { useAuth } from "@/lib/auth/context";
+import { showNotification } from "@/components/ui/NotificationProvider";
 import { TugasItem, User, LogBook } from "@/types";
 import {
   Briefcase,
@@ -442,12 +443,16 @@ export default function AdminTugasPage() {
     setErrorMessage(null);
 
     if (selectedCreateInternIds.length === 0) {
-      setErrorMessage("Silakan pilih minimal 1 peserta magang.");
+      const msg = "Silakan pilih minimal 1 peserta magang.";
+      setErrorMessage(msg);
+      showNotification({ type: "warning", message: msg });
       return;
     }
 
     if (!formData.judul_tugas.trim()) {
-      setErrorMessage("Judul tugas wajib diisi.");
+      const msg = "Judul tugas wajib diisi.";
+      setErrorMessage(msg);
+      showNotification({ type: "warning", message: msg });
       return;
     }
 
@@ -477,12 +482,14 @@ export default function AdminTugasPage() {
       const json = await res.json();
 
       if (res.ok && json.success) {
-        setSuccessMessage(
+        const successMsg =
           json.message ||
-            (selectedCreateInternIds.length > 1
-              ? `Tugas berhasil dibagikan kepada ${selectedCreateInternIds.length} peserta magang.`
-              : "Tugas berhasil ditambahkan."),
-        );
+          (selectedCreateInternIds.length > 1
+            ? `Tugas berhasil dibagikan kepada ${selectedCreateInternIds.length} peserta magang.`
+            : "Tugas berhasil ditambahkan.");
+
+        setSuccessMessage(successMsg);
+        showNotification({ type: "success", message: successMsg });
 
         setIsCreateModalOpen(false);
 
@@ -490,12 +497,14 @@ export default function AdminTugasPage() {
 
         setTimeout(() => setSuccessMessage(null), 3500);
       } else {
-        setErrorMessage(json.message || "Gagal menambahkan tugas.");
+        const errMsg = json.message || "Gagal menambahkan tugas.";
+        setErrorMessage(errMsg);
+        showNotification({ type: "error", message: errMsg });
       }
     } catch (err: any) {
-      setErrorMessage(
-        err?.message || "Terjadi kesalahan saat menyimpan tugas.",
-      );
+      const errMsg = err?.message || "Terjadi kesalahan saat menyimpan tugas.";
+      setErrorMessage(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSubmitting(false);
     }
@@ -509,7 +518,9 @@ export default function AdminTugasPage() {
     setErrorMessage(null);
 
     if (!formData.judul_tugas.trim()) {
-      setErrorMessage("Judul tugas wajib diisi.");
+      const msg = "Judul tugas wajib diisi.";
+      setErrorMessage(msg);
+      showNotification({ type: "warning", message: msg });
       return;
     }
 
@@ -545,7 +556,9 @@ export default function AdminTugasPage() {
       const json = await res.json();
 
       if (res.ok && json.success) {
-        setSuccessMessage(json.message || "Tugas berhasil diperbarui.");
+        const successMsg = json.message || "Tugas berhasil diperbarui.";
+        setSuccessMessage(successMsg);
+        showNotification({ type: "success", message: successMsg });
 
         setIsEditModalOpen(false);
 
@@ -553,12 +566,14 @@ export default function AdminTugasPage() {
 
         setTimeout(() => setSuccessMessage(null), 3500);
       } else {
-        setErrorMessage(json.message || "Gagal memperbarui tugas.");
+        const errMsg = json.message || "Gagal memperbarui tugas.";
+        setErrorMessage(errMsg);
+        showNotification({ type: "error", message: errMsg });
       }
     } catch (err: any) {
-      setErrorMessage(
-        err?.message || "Terjadi kesalahan saat memperbarui tugas.",
-      );
+      const errMsg = err?.message || "Terjadi kesalahan saat memperbarui tugas.";
+      setErrorMessage(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSubmitting(false);
     }
@@ -578,6 +593,7 @@ export default function AdminTugasPage() {
 
       if (res.ok && json.success) {
         setSuccessMessage("Tugas berhasil dihapus.");
+        showNotification({ type: "success", message: "Tugas berhasil dihapus." });
 
         setIsDeleteModalOpen(false);
 
@@ -585,12 +601,14 @@ export default function AdminTugasPage() {
 
         setTimeout(() => setSuccessMessage(null), 3500);
       } else {
-        setErrorMessage(json.message || "Gagal menghapus tugas.");
+        const errMsg = json.message || "Gagal menghapus tugas.";
+        setErrorMessage(errMsg);
+        showNotification({ type: "error", message: errMsg });
       }
     } catch (err: any) {
-      setErrorMessage(
-        err?.message || "Terjadi kesalahan saat menghapus tugas.",
-      );
+      const errMsg = err?.message || "Terjadi kesalahan saat menghapus tugas.";
+      setErrorMessage(errMsg);
+      showNotification({ type: "error", message: errMsg });
     } finally {
       setIsSubmitting(false);
     }

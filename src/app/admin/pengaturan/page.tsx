@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ConfirmModal } from "@/components/ui/Alert";
 import { ModalPortal } from "@/components/ui/ModalPortal";
+import { showNotification } from "@/components/ui/NotificationProvider";
 
 import type { HariLibur } from "@/types";
 
@@ -82,10 +83,6 @@ export default function AdminPengaturanPage() {
 
   const [aktifManual, setAktifManual] =
     useState<boolean>(true);
-  const [toastMsg, setToastMsg] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
   const allDays: string[] = [
     "Senin",
     "Selasa",
@@ -99,14 +96,10 @@ export default function AdminPengaturanPage() {
     message: string,
     type: "success" | "error" = "success"
   ) => {
-    setToastMsg({
+    showNotification({
       type,
       message,
     });
-
-    setTimeout(() => {
-      setToastMsg(null);
-    }, 4000);
   };
 
   const toInputDate = (
@@ -1066,35 +1059,6 @@ export default function AdminPengaturanPage() {
             <span>Muat Ulang</span>
           </button>
         </div>
-
-
-        {toastMsg && (
-          <div
-            className={`rounded-2xl p-4 flex items-center justify-between text-xs font-bold animate-in fade-in ${
-              toastMsg.type === "error"
-                ? "bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300"
-                : "bg-primary/15 border border-primary/30 text-foreground"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {toastMsg.type === "error" ? (
-                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-              ) : (
-                <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-              )}
-
-              <span>{toastMsg.message}</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setToastMsg(null)}
-              className="hover:underline ml-4 shrink-0 font-extrabold"
-            >
-              Tutup
-            </button>
-          </div>
-        )}
 
         {!isLoading && (
           <div className="bg-card border border-border rounded-2xl p-6 shadow-card">

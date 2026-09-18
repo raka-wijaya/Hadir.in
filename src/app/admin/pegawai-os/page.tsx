@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { User } from "@/types";
 import { AlertModal, ConfirmModal } from "@/components/ui/Alert";
 import { ModalPortal } from "@/components/ui/ModalPortal";
+import { showNotification } from "@/components/ui/NotificationProvider";
 import { Spinner } from "@/components/ui/Spinner";
 import {
   UserCheck,
@@ -61,11 +62,16 @@ export default function AdminPegawaiOsPage() {
   });
 
   const showAlert = (message: string, title = "Peringatan", color: "red" | "green" | "blue" | "yellow" = "red") => {
-    setModalAlert({
-      isOpen: true,
+    const typeMap: Record<string, "success" | "error" | "warning" | "info"> = {
+      green: "success",
+      red: "error",
+      yellow: "warning",
+      blue: "info",
+    };
+    showNotification({
+      type: typeMap[color] || "info",
       title,
       message,
-      color,
     });
   };
 
