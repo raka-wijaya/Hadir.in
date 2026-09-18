@@ -104,13 +104,13 @@ function LoginForm() {
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-card text-card-foreground border border-border rounded-2xl p-5 md:p-6 space-y-5 shadow-card">
         <div className="text-center space-y-1.5">
-          <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center mx-auto shadow-card">
+          <div className="w-9 h-9 font-sans rounded-lg bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center mx-auto shadow-card">
             H
           </div>
-          <h1 className="text-xl font-bold tracking-tight font-sans text-card-foreground">
+          <h1 className="text-lg font-bold font-sans tracking-tight text-card-foreground">
             Hadir.in
           </h1>
-          <p className="text-xs font-semibold font-sans text-muted-foreground">
+          <p className="text-xs font-sans text-muted-foreground">
             Presensi Karyawan & Magang Disdukcapil Sidoarjo
           </p>
         </div>
@@ -234,6 +234,7 @@ function LoginForm() {
                   p-1
                   rounded-lg
                   transition-colors
+                  cursor-pointer
                 "
                 aria-label={
                   showPassword ? "Sembunyikan password" : "Tampilkan password"
@@ -272,6 +273,7 @@ function LoginForm() {
               disabled:opacity-50
               disabled:cursor-not-allowed
               disabled:active:scale-100
+              cursor-pointer
             "
           >
             {isLoading ? (
@@ -280,7 +282,6 @@ function LoginForm() {
               </>
             ) : (
               <>
-                <LogIn className="w-4 h-4" />
                 <span className="font-sans">Masuk</span>
               </>
             )}

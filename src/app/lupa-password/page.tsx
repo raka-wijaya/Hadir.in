@@ -212,7 +212,7 @@ export default function LupaPasswordPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Masukkan alamat email terdaftar"
+              placeholder="Masukkan email terdaftar"
               autoComplete="email"
               className={inputClass}
               required
@@ -251,6 +251,7 @@ export default function LupaPasswordPage() {
                   p-1
                   rounded-md
                   transition-colors
+                  cursor-pointer
                 "
                 aria-label={
                   showPassword ? "Sembunyikan password" : "Tampilkan password"
@@ -332,6 +333,7 @@ export default function LupaPasswordPage() {
                   p-1
                   rounded-md
                   transition-colors
+                  cursor-pointer
                 "
                 aria-label={
                   showConfirm ? "Sembunyikan password" : "Tampilkan password"
@@ -371,6 +373,7 @@ export default function LupaPasswordPage() {
               disabled:cursor-not-allowed
               disabled:active:scale-100
               font-sans
+              cursor-pointer
             "
           >
             {isLoading ? (
@@ -378,7 +381,7 @@ export default function LupaPasswordPage() {
                 <Spinner className="text-current" />
               </>
             ) : (
-              <>Reset Password Sekarang</>
+              <span className="font-sans">Reset Password</span>
             )}
           </button>
         </form>

@@ -228,74 +228,11 @@ export default function RegisterPage() {
   const inputClass =
     "w-full h-9 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-foreground placeholder:text-muted-foreground transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring";
 
-  // if (successMsg) {
-  //   return (
-  //     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-3">
-  //       <div className="w-full max-w-sm bg-card text-card-foreground border border-border rounded-xl p-5 space-y-4 shadow-card text-center">
-  //         <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center mx-auto">
-  //           <ShieldCheck className="w-6 h-6 text-primary" />
-  //         </div>
-
-  //         <div className="space-y-1.5">
-  //           <h2 className="text-base font-black font-sans text-card-foreground">
-  //             Pendaftaran Akun Berhasil!
-  //           </h2>
-
-  //           <p className="text-xs font-sans text-muted-foreground leading-relaxed">
-  //             {successMsg}
-  //           </p>
-
-  //           <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-2.5">
-  //             <div className="flex items-center font-sans justify-center gap-1.5 text-primary font-bold text-xs">
-  //               <ShieldCheck className="w-4 h-4" />
-  //               Role: {selectedRole}
-  //             </div>
-
-  //             <p className="text-[10px] font-sans text-muted-foreground mt-1">
-  //               {selectedRole === ("ANAK_MAGANG" as any)
-  //                 ? "Akun telah aktif dan dapat langsung digunakan untuk masuk."
-  //                 : "Akun telah didaftarkan dan saat ini dalam proses verifikasi Admin. Anda dapat masuk setelah akun Anda disetujui."}
-  //             </p>
-  //           </div>
-  //         </div>
-
-  //         <button
-  //           type="button"
-  //           onClick={() => router.push("/login")}
-  //           className="
-  //             w-full
-  //             min-h-[40px]
-  //             py-2
-  //             px-4
-  //             rounded-lg
-  //             bg-primary
-  //             text-primary-foreground
-  //             font-black
-  //             text-xs
-  //             hover:opacity-90
-  //             active:scale-[0.99]
-  //             transition-all
-  //             flex
-  //             items-center
-  //             justify-center
-  //             gap-2
-  //             shadow-card
-  //             font-sans
-  //           "
-  //         >
-  //           <ShieldCheck className="w-4 h-4" />
-  //           Masuk Sekarang
-  //         </button>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-3 py-6">
       <div className="w-full max-w-md bg-card text-card-foreground border border-border rounded-xl p-4 md:p-6 shadow-card space-y-4">
         <div className="text-center space-y-1">
-          <div className="w-9 h-9 font-sans rounded-lg bg-primary text-primary-foreground font-black text-base flex items-center justify-center mx-auto shadow-card">
+          <div className="w-9 h-9 font-sans rounded-lg bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center mx-auto shadow-card">
             H
           </div>
 
@@ -303,35 +240,21 @@ export default function RegisterPage() {
             Daftar Akun Internal
           </h1>
 
-          <p className="text-xs font-semibold font-sans text-muted-foreground">
+          <p className="text-xs font-sans text-muted-foreground">
             Pendaftaran Akun Sistem Presensi Disdukcapil Sidoarjo
           </p>
         </div>
 
-        {errorMsg && (
-          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-2.5 flex items-center justify-center gap-2 text-xs font-bold text-destructive text-center animate-in fade-in">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div className="space-y-2 p-3 rounded-lg border border-border bg-background">
-            <div className="flex items-start gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Shield className="w-4 h-4 text-primary" />
-              </div>
+            <div className="flex items-start flex-col gap-2">
+              <p className="text-xs font-sans font-bold text-card-foreground">
+                Pilih Role Akun Internal
+              </p>
 
-              <div>
-                <p className="text-xs font-sans font-bold text-card-foreground">
-                  Pilih Role Akun Internal
-                </p>
-
-                <p className="text-xs text-muted-foreground font-sans">
-                  Pilih role sesuai jabatan atau penugasan Anda.
-                </p>
-              </div>
+              <p className="text-xs text-muted-foreground font-sans">
+                Pilih role sesuai jabatan atau penugasan Anda.
+              </p>
             </div>
 
             <div className="space-y-1">
@@ -428,7 +351,7 @@ export default function RegisterPage() {
                   type="tel"
                   value={form.no_hp}
                   onChange={set("no_hp")}
-                  placeholder="Masukkan no wa"
+                  placeholder="Masukkan no hp"
                   autoComplete="tel"
                   className={inputClass}
                 />
@@ -459,7 +382,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors"
+                    className="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors"
                     aria-label={
                       showPassword
                         ? "Sembunyikan password"
@@ -487,7 +410,7 @@ export default function RegisterPage() {
                     type={showConfirm ? "text" : "password"}
                     value={form.confirmPassword}
                     onChange={set("confirmPassword")}
-                    placeholder="Ulangi password"
+                    placeholder="Konfirmasi password"
                     autoComplete="new-password"
                     className={`${inputClass} pr-9`}
                     required
@@ -496,7 +419,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirm((prev) => !prev)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors"
+                    className="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors"
                     aria-label={
                       showConfirm
                         ? "Sembunyikan konfirmasi password"
@@ -602,13 +525,12 @@ export default function RegisterPage() {
               disabled:opacity-50
               disabled:cursor-not-allowed
               disabled:active:scale-100
+              cursor-pointer
             "
           >
             {isLoading ? (
               <>
-                <Spinner className="font-black" />
-
-                <span className="font-sans">Mendaftarkan Akun...</span>
+                <Spinner className="text-current" />
               </>
             ) : (
               <>
@@ -627,7 +549,7 @@ export default function RegisterPage() {
               href="/login"
               className="font-extrabold text-primary font-sans hover:opacity-80 hover:underline inline-flex items-center gap-1 transition-all"
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
+              {/* <ShieldCheck className="w-3.5 h-3.5" /> */}
               Masuk di sini
             </Link>
           </p>
