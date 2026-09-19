@@ -36,38 +36,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
-
-function getKategoriIcon(kategori: string) {
-  const k = (kategori || "").toLowerCase();
-  if (k === "programmer") return <Code className="w-3.5 h-3.5" />;
-  if (k === "media") return <ImageIcon className="w-3.5 h-3.5" />;
-  if (k === "tambah bio data") return <UserPlus className="w-3.5 h-3.5" />;
-  if (k === "pindah keluar") return <ArrowUpRight className="w-3.5 h-3.5" />;
-  if (k === "pindah datang") return <ArrowDownLeft className="w-3.5 h-3.5" />;
-  return <NotebookPen className="w-3.5 h-3.5" />;
-}
-
-function getKategoriBadgeClass(kategori: string): string {
-  const k = (kategori || "").toLowerCase();
-  switch (k) {
-    case "akta kelahiran":
-      return "bg-primary/15 text-primary border-primary/30";
-    case "akta kematian":
-      return "bg-destructive/15 text-destructive border-destructive/30";
-    case "tambah bio data":
-      return "status-izin";
-    case "pindah keluar":
-      return "status-terlambat";
-    case "pindah datang":
-      return "status-hadir";
-    case "media":
-      return "status-sakit";
-    case "programmer":
-      return "bg-primary/20 text-primary border-primary/40";
-    default:
-      return "bg-primary/15 text-primary border-primary/30";
-  }
-}
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 export default function MagangDashboardPage() {
   const { user } = useAuth();
@@ -82,9 +51,11 @@ export default function MagangDashboardPage() {
 
   // Form pulang cepat
   const [showEarlyCheckoutForm, setShowEarlyCheckoutForm] = useState(false);
-
   const [alasanPulangCepat, setAlasanPulangCepat] = useState("");
 
+  // Peringatan log book sebelum absen pulang
+  const [showLogbookWarningModal, setShowLogbookWarningModal] = useState(false);
+  const [isCheckingLogbook, setIsCheckingLogbook] = useState(false);
 
   const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false);
 
@@ -393,13 +364,40 @@ export default function MagangDashboardPage() {
     return now < normalCheckoutTime;
   };
 
-  const handleStartCheckout = () => {
+  const proceedToCheckout = () => {
     if (isEarlyCheckout()) {
       setShowEarlyCheckoutForm(true);
       return;
     }
 
     setActiveTab("CAPTURE_OUT");
+  };
+
+  const handleStartCheckout = async () => {
+    try {
+      setIsCheckingLogbook(true);
+      const uid = getEffectiveUserId();
+      if (uid) {
+        const res = await fetch(
+          `/api/log-book?peserta_magang_id=${encodeURIComponent(uid)}&tanggal=${todayStr}`,
+          { cache: "no-store" }
+        );
+        if (res.ok) {
+          const json = await res.json();
+          const hasLogbook = json.success && Array.isArray(json.data) && json.data.length > 0;
+          if (!hasLogbook) {
+            setShowLogbookWarningModal(true);
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Gagal memeriksa log book:", err);
+    } finally {
+      setIsCheckingLogbook(false);
+    }
+
+    proceedToCheckout();
   };
 
   const handleSubmitEarlyCheckout = () => {
@@ -755,16 +753,18 @@ export default function MagangDashboardPage() {
                   <button
                     type="button"
                     onClick={handleStartCheckout}
-                    disabled={isSubmittingCheckout}
+                    disabled={isSubmittingCheckout || isCheckingLogbook}
                     className="w-full rounded-xl border border-border bg-card text-foreground px-4 py-3 text-sm font-extrabold flex items-center justify-center gap-2 hover:bg-muted transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Camera className="w-4 h-4" />
 
                     {isSubmittingCheckout
                       ? "Memproses..."
-                      : isEarlyCheckout()
-                        ? "Absen Pulang Cepat"
-                        : "Absen Pulang"}
+                      : isCheckingLogbook
+                        ? "Memeriksa Log Book..."
+                        : isEarlyCheckout()
+                          ? "Absen Pulang Cepat"
+                          : "Absen Pulang"}
                   </button>
                 ) : todayRecord?.jam_keluar ||
                   todayRecord?.jam_pulang ||
@@ -867,7 +867,6 @@ export default function MagangDashboardPage() {
                         "BELUM_DIKERJAKAN",
                     )
                     .map((task) => {
-                      const katLabel = task.kategori || "Umum";
                       const isUpdating = updatingTugasId === task.id;
 
                       return (
@@ -875,17 +874,11 @@ export default function MagangDashboardPage() {
                           key={task.id}
                           className="flex items-center justify-between gap-3 bg-card border border-border/80 rounded-xl px-3 py-2.5"
                         >
-                          {/* Kategori + Judul */}
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span
-                              className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getKategoriBadgeClass(
-                                katLabel,
-                              )}`}
-                            >
-                              {getKategoriIcon(katLabel)}
-
-                              <span className="capitalize">{katLabel}</span>
-                            </span>
+                          {/* Judul Tugas Tanpa Kategori */}
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                              <Briefcase className="w-3.5 h-3.5" />
+                            </div>
 
                             <span className="text-xs font-extrabold text-foreground truncate">
                               {task.judul_tugas || task.judulTugas || "—"}
@@ -1136,6 +1129,70 @@ export default function MagangDashboardPage() {
             </div>
           )}
         </div>
+
+        {/* Modal Peringatan Log Book Sebelum Absen Pulang */}
+        {showLogbookWarningModal && (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <div className="bg-card border border-border rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4 animate-in zoom-in-95">
+                <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                      <AlertTriangle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm text-foreground">
+                        Peringatan Log Book
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        Belum ada aktivitas hari ini
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowLogbookWarningModal(false)}
+                    className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+                  <p>
+                    Kamu <strong className="text-foreground">belum mengisi log book harian</strong> untuk tanggal{" "}
+                    <strong className="text-foreground">{formatDate(todayStr)}</strong>.
+                  </p>
+                  <p>
+                    Sebagai peserta magang, disarankan untuk mengisi log book terlebih dahulu sebelum melakukan absen pulang.
+                  </p>
+                </div>
+
+                <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                  <Link
+                    href="/magang/log-book"
+                    onClick={() => setShowLogbookWarningModal(false)}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-95 transition-all shadow-card flex items-center justify-center gap-1.5"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Isi Log Book Sekarang</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLogbookWarningModal(false);
+                      proceedToCheckout();
+                    }}
+                    className="px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Tetap Lanjut Absen</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ModalPortal>
+        )}
       </div>
     </DashboardLayout>
   );

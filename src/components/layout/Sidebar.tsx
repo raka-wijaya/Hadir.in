@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth/context";
@@ -38,6 +38,8 @@ interface NavMenuItem {
   icon: React.ReactNode;
 }
 
+import { LogBookLogoutModal } from "@/components/ui/LogBookLogoutModal";
+
 interface NavMenuGroup {
   category: string;
   items: NavMenuItem[];
@@ -49,6 +51,8 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [showLogBookLogoutWarning, setShowLogBookLogoutWarning] =
+    useState(false);
 
   const effectiveRole = user?.role
     ? String(user.role).toUpperCase()
@@ -57,6 +61,35 @@ export function Sidebar({
     : pathname.startsWith("/pegawai-os")
     ? "KARYAWAN_OS"
     : "ANAK_MAGANG";
+
+  const handleLogoutClick = async () => {
+    const isMagang =
+      effectiveRole === "ANAK_MAGANG" || effectiveRole === "MAGANG";
+    if (isMagang && user?.id) {
+      try {
+        const todayStr = new Intl.DateTimeFormat("sv-SE", {
+          timeZone: "Asia/Jakarta",
+        }).format(new Date());
+
+        const res = await fetch(
+          `/api/log-book?peserta_magang_id=${encodeURIComponent(user.id)}&tanggal=${todayStr}`,
+          { cache: "no-store" },
+        );
+        if (res.ok) {
+          const json = await res.json();
+          const hasLogbook =
+            json.success && Array.isArray(json.data) && json.data.length > 0;
+          if (!hasLogbook) {
+            setShowLogBookLogoutWarning(true);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memeriksa log book:", err);
+      }
+    }
+    logout();
+  };
 
   const superAdminMenu: NavMenuGroup[] = [
     {
@@ -410,10 +443,7 @@ export function Sidebar({
   const sidebarContent = (
     <div className="h-full flex flex-col bg-sidebar border-r border-sidebar-border w-[260px]">
       <div className="p-5 border-b border-sidebar-border flex items-center justify-between shrink-0">
-        <Link
-          href="/"
-          className="flex items-center gap-3 group"
-        >
+        <Link href="/" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground font-black text-lg flex items-center justify-center shadow-sm group-hover:scale-105 transition-all">
             H
           </div>
@@ -433,7 +463,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={onCloseMobile}
-            className="lg:hidden p-1.5 rounded-lg text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all"
+            className="lg:hidden p-1.5 cursor-pointer rounded-lg text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all"
             aria-label="Tutup menu"
           >
             <X className="w-5 h-5" />
@@ -441,12 +471,8 @@ export function Sidebar({
         )}
       </div>
       <nav className="flex-1 min-h-0 p-3 space-y-4 overflow-y-auto">
-
         {navMenuItems.map((group) => (
-          <div
-            key={group.category}
-            className="space-y-1"
-          >
+          <div key={group.category} className="space-y-1">
             <p className="px-3 text-[10px] font-extrabold text-muted-foreground tracking-wider uppercase mb-1">
               {group.category}
             </p>
@@ -478,64 +504,47 @@ export function Sidebar({
                     {item.icon}
                   </span>
 
-                  <span className="truncate">
-                    {item.title}
-                  </span>
+                  <span className="truncate">{item.title}</span>
                 </Link>
               );
             })}
           </div>
         ))}
-
       </nav>
 
       <div className="p-3 border-t border-sidebar-border bg-sidebar shrink-0">
-
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-border shadow-card">
-
           <div className="flex items-center gap-2.5 overflow-hidden min-w-0">
-
             <img
               src={
                 user?.avatar ||
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  user?.nama ||
-                    user?.name ||
-                    "User"
+                  user?.nama || user?.name || "User",
                 )}&background=f59e0b&color=000000&bold=true`
               }
-              alt={
-                user?.nama ||
-                user?.name ||
-                "User Avatar"
-              }
+              alt={user?.nama || user?.name || "User Avatar"}
               className="w-8 h-8 rounded-full object-cover border border-primary shrink-0"
             />
 
             <div className="truncate min-w-0">
               <p className="text-xs font-bold text-foreground truncate">
-                {user?.nama ||
-                  user?.name ||
-                  "Pengguna"}
+                {user?.nama || user?.name || "Pengguna"}
               </p>
 
               <p className="text-[10px] font-medium text-muted-foreground truncate">
-                {ROLE_LABELS[
-                  effectiveRole as UserRole
-                ] || effectiveRole}
+                {ROLE_LABELS[effectiveRole as UserRole] || effectiveRole}
               </p>
             </div>
           </div>
-
+          {/* 
           <button
             type="button"
-            onClick={logout}
+            onClick={handleLogoutClick}
             title="Keluar Akun"
-            className="p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-all shrink-0"
+            className="p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-all shrink-0 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
-          </button>
-
+          </button> */}
         </div>
       </div>
     </div>
@@ -550,7 +559,6 @@ export function Sidebar({
       {mobileOpen && (
         <ModalPortal>
           <div className="lg:hidden fixed inset-0 z-50 flex">
-
             <div
               className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-in fade-in"
               onClick={onCloseMobile}
@@ -562,6 +570,15 @@ export function Sidebar({
           </div>
         </ModalPortal>
       )}
+
+      <LogBookLogoutModal
+        isOpen={showLogBookLogoutWarning}
+        onClose={() => setShowLogBookLogoutWarning(false)}
+        onConfirmLogout={() => {
+          setShowLogBookLogoutWarning(false);
+          logout();
+        }}
+      />
     </>
   );
 }

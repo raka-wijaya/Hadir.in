@@ -32,6 +32,7 @@ import {
   InfoIcon,
   AlertTriangleIcon,
   Filter,
+  RefreshCw,
 } from "lucide-react";
 
 export default function AdminPendaftaranPage() {
@@ -99,32 +100,30 @@ export default function AdminPendaftaranPage() {
 
   const tidakLolosCount = list.filter((p) => p.status === "DITOLAK").length;
 
-  useEffect(() => {
-    const loadPendaftar = async () => {
-      try {
-        setLoading(true);
+  const loadPendaftar = async () => {
+    try {
+      setLoading(true);
 
-        const response = await fetch("/api/pendaftar", {
-          method: "GET",
-          cache: "no-store",
-        });
+      const response = await fetch("/api/pendaftar", {
+        method: "GET",
+        cache: "no-store",
+      });
 
-        const result = await response.json();
+      const result = await response.json();
 
-        if (!response.ok || !result.success) {
-          throw new Error(
-            result.message || "Gagal mengambil data pendaftar"
-          );
-        }
-
-        setList(result.data);
-      } catch (error) {
-        console.error("Gagal mengambil data pendaftar:", error);
-      } finally {
-        setLoading(false);
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Gagal mengambil data pendaftar");
       }
-    };
 
+      setList(result.data);
+    } catch (error) {
+      console.error("Gagal mengambil data pendaftar:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadPendaftar();
   }, []);
 
@@ -460,25 +459,40 @@ export default function AdminPendaftaranPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => setShowInputModal(true)}
-            className="
-              px-4 py-2.5
-              rounded-default
-              bg-primary
-              text-primary-foreground
-              text-xs md:text-sm
-              font-black
-              hover:opacity-95
-              transition-all
-              flex items-center gap-1.5
-              shadow-card
-              cursor-pointer
-            "
-          >
-            <Plus className="w-4 h-4" />
-            <span>Pendaftaran Magang</span>
-          </button>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              onClick={() => setShowInputModal(true)}
+              className="
+                px-4 py-2.5
+                rounded-default
+                bg-primary
+                text-primary-foreground
+                text-xs md:text-sm
+                font-black
+                hover:opacity-95
+                transition-all
+                flex items-center gap-1.5
+                shadow-card
+                cursor-pointer
+              "
+            >
+              <Plus className="w-4 h-4" />
+              <span>Pendaftaran Magang</span>
+            </button>
+            <button
+              onClick={loadPendaftar}
+              disabled={loading}
+              title="Segarkan Data"
+              className="p-2.5 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${
+                  loading ? "animate-spin text-primary" : ""
+                }`}
+              />
+              <span className="hidden sm:inline">Refresh Data</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -841,9 +855,9 @@ export default function AdminPendaftaranPage() {
         {showInputModal && (
           <ModalPortal>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <form
-              onSubmit={handleCreatePendaftar}
-              className="
+              <form
+                onSubmit={handleCreatePendaftar}
+                className="
                 bg-card
                 border border-border
                 rounded-lg
@@ -855,22 +869,22 @@ export default function AdminPendaftaranPage() {
                 space-y-4
                 animate-in zoom-in-95
               "
-            >
-              <div
-                className="
+              >
+                <div
+                  className="
                 flex items-center justify-between
                 border-b border-border
                 pb-3
               "
-              >
-                <h3 className="font-black text-lg text-foreground">
-                  Input Pendaftaran Baru
-                </h3>
+                >
+                  <h3 className="font-black text-lg text-foreground">
+                    Input Pendaftaran Baru
+                  </h3>
 
-                <button
-                  type="button"
-                  onClick={() => setShowInputModal(false)}
-                  className="
+                  <button
+                    type="button"
+                    onClick={() => setShowInputModal(false)}
+                    className="
                     p-1
                     rounded-sm
                     text-muted-foreground
@@ -878,24 +892,24 @@ export default function AdminPendaftaranPage() {
                     hover:text-foreground
                     transition-colors
                   "
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="space-y-1">
-                  <label className="font-extrabold text-foreground gap-1 flex">
-                    Nama Lengkap<span className="text-status-tolak">*</span>
-                  </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="space-y-1">
+                    <label className="font-extrabold text-foreground gap-1 flex">
+                      Nama Lengkap<span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    required
-                    value={inputNama}
-                    onChange={(e) => setInputNama(e.target.value)}
-                    placeholder="Masukan nama lengkap"
-                    className="
+                    <input
+                      type="text"
+                      required
+                      value={inputNama}
+                      onChange={(e) => setInputNama(e.target.value)}
+                      placeholder="Masukan nama lengkap"
+                      className="
                       w-full
                       rounded-default
                       border border-border
@@ -908,21 +922,21 @@ export default function AdminPendaftaranPage() {
                       focus:ring-2
                       focus:ring-ring/20
                     "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="font-extrabold text-foreground gap-1 flex">
-                    Email <span className="text-status-tolak">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="font-extrabold text-foreground gap-1 flex">
+                      Email <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="email"
-                    required
-                    value={inputEmail}
-                    onChange={(e) => setInputEmail(e.target.value)}
-                    placeholder="Masukan email"
-                    className="
+                    <input
+                      type="email"
+                      required
+                      value={inputEmail}
+                      onChange={(e) => setInputEmail(e.target.value)}
+                      placeholder="Masukan email"
+                      className="
                       w-full
                       rounded-default
                       border border-border
@@ -935,22 +949,22 @@ export default function AdminPendaftaranPage() {
                       focus:ring-2
                       focus:ring-ring/20
                     "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="font-extrabold text-foreground gap-1 flex">
-                    No. HP / WhatsApp
-                    <span className="text-status-tolak">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="font-extrabold text-foreground gap-1 flex">
+                      No. HP / WhatsApp
+                      <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    required
-                    value={inputNoHp}
-                    onChange={(e) => setInputNoHp(e.target.value)}
-                    placeholder="Masukan no. hp"
-                    className="
+                    <input
+                      type="text"
+                      required
+                      value={inputNoHp}
+                      onChange={(e) => setInputNoHp(e.target.value)}
+                      placeholder="Masukan no. hp"
+                      className="
                       w-full
                       rounded-default
                       border border-border
@@ -963,22 +977,22 @@ export default function AdminPendaftaranPage() {
                       focus:ring-2
                       focus:ring-ring/20
                     "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="font-extrabold text-foreground gap-1 flex">
-                    Kampus / Sekolah{" "}
-                    <span className="text-status-tolak">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="font-extrabold text-foreground gap-1 flex">
+                      Kampus / Sekolah{" "}
+                      <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    required
-                    value={inputKampus}
-                    onChange={(e) => setInputKampus(e.target.value)}
-                    placeholder="Masukan nama kampus / sekolah"
-                    className="
+                    <input
+                      type="text"
+                      required
+                      value={inputKampus}
+                      onChange={(e) => setInputKampus(e.target.value)}
+                      placeholder="Masukan nama kampus / sekolah"
+                      className="
                       w-full
                       rounded-default
                       border border-border
@@ -991,20 +1005,20 @@ export default function AdminPendaftaranPage() {
                       focus:ring-2
                       focus:ring-ring/20
                     "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="font-extrabold text-foreground gap-1 flex">
-                    Program Studi <span className="text-status-tolak">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="font-extrabold text-foreground gap-1 flex">
+                      Program Studi <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <input
-                    type="text"
-                    value={inputJurusan}
-                    onChange={(e) => setInputJurusan(e.target.value)}
-                    placeholder="Masukan program studi"
-                    className="
+                    <input
+                      type="text"
+                      value={inputJurusan}
+                      onChange={(e) => setInputJurusan(e.target.value)}
+                      placeholder="Masukan program studi"
+                      className="
                       w-full
                       rounded-default
                       border border-border
@@ -1017,18 +1031,19 @@ export default function AdminPendaftaranPage() {
                       focus:ring-2
                       focus:ring-ring/20
                     "
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="font-extrabold text-foreground gap-1 flex">
-                    Divisi / Bagian <span className="text-status-tolak">*</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="font-extrabold text-foreground gap-1 flex">
+                      Divisi / Bagian{" "}
+                      <span className="text-status-tolak">*</span>
+                    </label>
 
-                  <select
-                    value={inputDivisi}
-                    onChange={(e) => setInputDivisi(e.target.value)}
-                    className="
+                    <select
+                      value={inputDivisi}
+                      onChange={(e) => setInputDivisi(e.target.value)}
+                      className="
                       w-full
                       rounded-default
                       border border-border
@@ -1041,29 +1056,31 @@ export default function AdminPendaftaranPage() {
                       focus:ring-ring/20
                       font-bold
                     "
-                  >
-                    <option value="Programmer">Programmer</option>
+                    >
+                      <option value="Programmer">Programmer</option>
 
-                    <option value="Operator">Operator Layanan Adminduk</option>
+                      <option value="Operator">
+                        Operator Layanan Adminduk
+                      </option>
 
-                    <option value="Branding Development">
-                      Branding Development
-                    </option>
-                  </select>
+                      <option value="Branding Development">
+                        Branding Development
+                      </option>
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-1 text-xs">
-                <label className="font-extrabold text-foreground gap-1 flex">
-                  Alamat Domisili <span className="text-status-tolak">*</span>
-                </label>
+                <div className="space-y-1 text-xs">
+                  <label className="font-extrabold text-foreground gap-1 flex">
+                    Alamat Domisili <span className="text-status-tolak">*</span>
+                  </label>
 
-                <textarea
-                  rows={2}
-                  value={inputAlamat}
-                  onChange={(e) => setInputAlamat(e.target.value)}
-                  placeholder="Masukan alamat"
-                  className="
+                  <textarea
+                    rows={2}
+                    value={inputAlamat}
+                    onChange={(e) => setInputAlamat(e.target.value)}
+                    placeholder="Masukan alamat"
+                    className="
                     w-full
                     rounded-default
                     border border-border
@@ -1076,14 +1093,14 @@ export default function AdminPendaftaranPage() {
                     focus:ring-2
                     focus:ring-ring/20
                   "
-                />
-              </div>
+                  />
+                </div>
 
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowInputModal(false)}
-                  className="
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowInputModal(false)}
+                    className="
                     flex-1
                     py-2.5
                     rounded-default
@@ -1096,13 +1113,13 @@ export default function AdminPendaftaranPage() {
                     hover:text-accent-foreground
                     transition-all
                   "
-                >
-                  Batal
-                </button>
+                  >
+                    Batal
+                  </button>
 
-                <button
-                  type="submit"
-                  className="
+                  <button
+                    type="submit"
+                    className="
                     flex-1
                     py-2.5
                     rounded-default
@@ -1114,11 +1131,11 @@ export default function AdminPendaftaranPage() {
                     hover:opacity-95
                     transition-all
                   "
-                >
-                  Simpan Pendaftaran
-                </button>
-              </div>
-            </form>
+                  >
+                    Simpan Pendaftaran
+                  </button>
+                </div>
+              </form>
             </div>
           </ModalPortal>
         )}
@@ -1126,8 +1143,8 @@ export default function AdminPendaftaranPage() {
         {selectedDetail && (
           <ModalPortal>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-            <div
-              className="
+              <div
+                className="
               bg-card
               border border-border
               rounded-lg
@@ -1139,40 +1156,40 @@ export default function AdminPendaftaranPage() {
               max-h-[calc(100vh-2rem)]
               overflow-y-auto
             "
-            >
-              <div
-                className="
+              >
+                <div
+                  className="
                 flex items-center justify-between
                 border-b border-border
                 pb-3
               "
-              >
-                <div>
-                  <span
-                    className="
+                >
+                  <div>
+                    <span
+                      className="
                     text-xs
                     font-mono
                     font-bold
                     text-primary
                   "
-                  >
-                    {selectedDetail.kode_pendaftaran}
-                  </span>
+                    >
+                      {selectedDetail.kode_pendaftaran}
+                    </span>
 
-                  <h3
-                    className="
+                    <h3
+                      className="
                     text-lg
                     font-black
                     text-foreground
                   "
-                  >
-                    Detail &amp; Verifikasi Pendaftar
-                  </h3>
-                </div>
+                    >
+                      Detail &amp; Verifikasi Pendaftar
+                    </h3>
+                  </div>
 
-                <button
-                  onClick={() => setSelectedDetail(null)}
-                  className="
+                  <button
+                    onClick={() => setSelectedDetail(null)}
+                    className="
                     p-1
                     rounded-sm
                     text-muted-foreground
@@ -1180,14 +1197,14 @@ export default function AdminPendaftaranPage() {
                     hover:text-foreground
                     transition-colors
                   "
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-              <div className="space-y-3 text-xs">
-                <div
-                  className="
+                <div className="space-y-3 text-xs">
+                  <div
+                    className="
                   grid grid-cols-2
                   gap-3
                   bg-muted/50
@@ -1195,128 +1212,128 @@ export default function AdminPendaftaranPage() {
                   rounded-default
                   border border-border
                 "
-                >
-                  <div>
-                    <span
-                      className="
+                  >
+                    <div>
+                      <span
+                        className="
                       text-[10px]
                       font-bold
                       text-muted-foreground
                     "
-                    >
-                      Nama
-                    </span>
+                      >
+                        Nama
+                      </span>
 
-                    <p className="font-extrabold text-foreground">
-                      {selectedDetail.nama}
-                    </p>
-                  </div>
+                      <p className="font-extrabold text-foreground">
+                        {selectedDetail.nama}
+                      </p>
+                    </div>
 
-                  <div>
-                    <span
-                      className="
+                    <div>
+                      <span
+                        className="
                       text-[10px]
                       font-bold
                       text-muted-foreground
                     "
-                    >
-                      Email
-                    </span>
+                      >
+                        Email
+                      </span>
 
-                    <p className="font-extrabold text-foreground">
-                      {selectedDetail.email}
-                    </p>
-                  </div>
+                      <p className="font-extrabold text-foreground">
+                        {selectedDetail.email}
+                      </p>
+                    </div>
 
-                  <div>
-                    <span
-                      className="
+                    <div>
+                      <span
+                        className="
                       text-[10px]
                       font-bold
                       text-muted-foreground
                     "
-                    >
-                      No. HP
-                    </span>
+                      >
+                        No. HP
+                      </span>
 
-                    <p className="font-extrabold text-foreground">
-                      {selectedDetail.no_hp}
-                    </p>
-                  </div>
+                      <p className="font-extrabold text-foreground">
+                        {selectedDetail.no_hp}
+                      </p>
+                    </div>
 
-                  <div>
-                    <span
-                      className="
+                    <div>
+                      <span
+                        className="
                       text-[10px]
                       font-bold
                       text-muted-foreground
                     "
-                    >
-                      Divisi Pilihan
-                    </span>
+                      >
+                        Divisi Pilihan
+                      </span>
 
-                    <p className="font-extrabold text-primary">
-                      {selectedDetail.bagian}
-                    </p>
+                      <p className="font-extrabold text-primary">
+                        {selectedDetail.bagian}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div
-                  className="
+                  <div
+                    className="
                   bg-muted/50
                   p-3
                   rounded-default
                   border border-border
                   space-y-1
                 "
-                >
-                  <span
-                    className="
+                  >
+                    <span
+                      className="
                     text-[10px]
                     font-bold
                     text-muted-foreground
                   "
-                  >
-                    Kampus &amp; Jurusan
-                  </span>
+                    >
+                      Kampus &amp; Jurusan
+                    </span>
 
-                  <p className="font-extrabold text-foreground">
-                    {selectedDetail.sekolah_kampus} —{" "}
-                    {selectedDetail.study_program ||
-                      selectedDetail.jurusan ||
-                      "-"}
-                  </p>
-                </div>
+                    <p className="font-extrabold text-foreground">
+                      {selectedDetail.sekolah_kampus} —{" "}
+                      {selectedDetail.study_program ||
+                        selectedDetail.jurusan ||
+                        "-"}
+                    </p>
+                  </div>
 
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
-                    Dokumen &amp; Berkas Lampiran
-                  </span>
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
+                      Dokumen &amp; Berkas Lampiran
+                    </span>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div className="p-2.5 rounded-default border border-border bg-muted/40 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                          <FileText className="w-3.5 h-3.5 text-primary" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="p-2.5 rounded-default border border-border bg-muted/40 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                            <FileText className="w-3.5 h-3.5 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-bold text-foreground truncate">
+                              Curriculum Vitae (CV)
+                            </p>
+                            <p className="text-[9px] text-muted-foreground truncate">
+                              {selectedDetail.file_cv
+                                ? selectedDetail.file_cv.split("/").pop()
+                                : "Tidak dilampirkan"}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-foreground truncate">
-                            Curriculum Vitae (CV)
-                          </p>
-                          <p className="text-[9px] text-muted-foreground truncate">
-                            {selectedDetail.file_cv
-                              ? selectedDetail.file_cv.split("/").pop()
-                              : "Tidak dilampirkan"}
-                          </p>
-                        </div>
-                      </div>
 
-                      {selectedDetail.file_cv ? (
-                        <a
-                          href={selectedDetail.file_cv}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="
+                        {selectedDetail.file_cv ? (
+                          <a
+                            href={selectedDetail.file_cv}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="
                             px-2 py-1
                             rounded-md
                             bg-primary/10
@@ -1331,40 +1348,40 @@ export default function AdminPendaftaranPage() {
                             gap-1
                             shrink-0
                           "
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Buka</span>
-                        </a>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground italic shrink-0">
-                          -
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="p-2.5 rounded-default border border-border bg-muted/40 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-7 h-7 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0">
-                          <Building2 className="w-3.5 h-3.5 text-amber-500" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-foreground truncate">
-                            Berkas Portofolio
-                          </p>
-                          <p className="text-[9px] text-muted-foreground truncate">
-                            {selectedDetail.portfolio_file
-                              ? selectedDetail.portfolio_file.split("/").pop()
-                              : "Tidak dilampirkan"}
-                          </p>
-                        </div>
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Buka</span>
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground italic shrink-0">
+                            -
+                          </span>
+                        )}
                       </div>
 
-                      {selectedDetail.portfolio_file ? (
-                        <a
-                          href={selectedDetail.portfolio_file}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="
+                      <div className="p-2.5 rounded-default border border-border bg-muted/40 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0">
+                            <Building2 className="w-3.5 h-3.5 text-amber-500" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-bold text-foreground truncate">
+                              Berkas Portofolio
+                            </p>
+                            <p className="text-[9px] text-muted-foreground truncate">
+                              {selectedDetail.portfolio_file
+                                ? selectedDetail.portfolio_file.split("/").pop()
+                                : "Tidak dilampirkan"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {selectedDetail.portfolio_file ? (
+                          <a
+                            href={selectedDetail.portfolio_file}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="
                             px-2 py-1
                             rounded-md
                             bg-amber-500/10
@@ -1380,36 +1397,36 @@ export default function AdminPendaftaranPage() {
                             gap-1
                             shrink-0
                           "
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Buka</span>
-                        </a>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground italic shrink-0">
-                          -
-                        </span>
-                      )}
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Buka</span>
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground italic shrink-0">
+                            -
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-1">
-                  <label
-                    className="
+                  <div className="space-y-1">
+                    <label
+                      className="
                     text-xs
                     font-extrabold
                     text-foreground
                   "
-                  >
-                    Catatan Admin
-                  </label>
+                    >
+                      Catatan Admin
+                    </label>
 
-                  <textarea
-                    rows={2}
-                    value={adminNoteInput}
-                    onChange={(e) => setAdminNoteInput(e.target.value)}
-                    placeholder="Masukkan catatan kelulusan..."
-                    className="
+                    <textarea
+                      rows={2}
+                      value={adminNoteInput}
+                      onChange={(e) => setAdminNoteInput(e.target.value)}
+                      placeholder="Masukkan catatan kelulusan..."
+                      className="
                       w-full
                       rounded-default
                       border border-border
@@ -1423,30 +1440,30 @@ export default function AdminPendaftaranPage() {
                       focus:ring-2
                       focus:ring-ring/20
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div
-                className="
+                <div
+                  className="
                 flex
                 flex-col sm:flex-row
                 items-stretch
                 gap-3
                 pt-2
               "
-              >
-                <button
-                  onClick={async () => {
-                    await updateStatus(
-                      selectedDetail.id,
-                      "DITOLAK",
-                      adminNoteInput,
-                    );
+                >
+                  <button
+                    onClick={async () => {
+                      await updateStatus(
+                        selectedDetail.id,
+                        "DITOLAK",
+                        adminNoteInput,
+                      );
 
-                    setSelectedDetail(null);
-                  }}
-                  className="
+                      setSelectedDetail(null);
+                    }}
+                    className="
                     flex-1
                     py-2.5
                     px-4
@@ -1459,43 +1476,43 @@ export default function AdminPendaftaranPage() {
                     hover:bg-destructive/20
                     transition-all
                   "
-                >
-                  Tidak Lolos
-                </button>
+                  >
+                    Tidak Lolos
+                  </button>
 
-                <button
-                  onClick={async () => {
-                    const pendaftarSnapshot = { ...selectedDetail };
+                  <button
+                    onClick={async () => {
+                      const pendaftarSnapshot = { ...selectedDetail };
 
-                    await updateStatus(
-                      selectedDetail.id,
-                      "DITERIMA",
-                      adminNoteInput,
-                    );
-
-                    setSelectedDetail(null);
-
-                    const userResult = await createUserFromPendaftar(
-                      pendaftarSnapshot as Pendaftar,
-                    );
-
-                    if (userResult.success) {
-                      setBannerAlert({
-                        title: "Akun Peserta Dibuat",
-                        message: userResult.password
-                          ? `${userResult.message} Password default: ${userResult.password}`
-                          : userResult.message,
-                        color: "green",
-                      });
-                    } else {
-                      showAlert(
-                        `Status berhasil diubah, namun gagal membuat akun: ${userResult.message}`,
-                        "Perhatian",
-                        "yellow",
+                      await updateStatus(
+                        selectedDetail.id,
+                        "DITERIMA",
+                        adminNoteInput,
                       );
-                    }
-                  }}
-                  className="
+
+                      setSelectedDetail(null);
+
+                      const userResult = await createUserFromPendaftar(
+                        pendaftarSnapshot as Pendaftar,
+                      );
+
+                      if (userResult.success) {
+                        setBannerAlert({
+                          title: "Akun Peserta Dibuat",
+                          message: userResult.password
+                            ? `${userResult.message} Password default: ${userResult.password}`
+                            : userResult.message,
+                          color: "green",
+                        });
+                      } else {
+                        showAlert(
+                          `Status berhasil diubah, namun gagal membuat akun: ${userResult.message}`,
+                          "Perhatian",
+                          "yellow",
+                        );
+                      }
+                    }}
+                    className="
                     flex-1
                     py-2.5
                     px-4
@@ -1508,11 +1525,11 @@ export default function AdminPendaftaranPage() {
                     transition-all
                     shadow-card
                   "
-                >
-                  Lolos Pendaftaran
-                </button>
+                  >
+                    Lolos Pendaftaran
+                  </button>
+                </div>
               </div>
-            </div>
             </div>
           </ModalPortal>
         )}

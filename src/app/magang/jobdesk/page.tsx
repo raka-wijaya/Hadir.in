@@ -7,11 +7,6 @@ import { TugasItem } from "@/types";
 import {
   Briefcase,
   Calendar,
-  Code,
-  Image as ImageIcon,
-  UserPlus,
-  ArrowUpRight,
-  ArrowDownLeft,
   NotebookPen,
   BookOpen,
   CheckCircle2,
@@ -21,38 +16,6 @@ import {
 } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
 import Link from "next/link";
-
-function getKategoriIcon(kategori: string) {
-  const k = (kategori || "").toLowerCase();
-  if (k === "programmer") return <Code className="w-3.5 h-3.5" />;
-  if (k === "media") return <ImageIcon className="w-3.5 h-3.5" />;
-  if (k === "tambah bio data") return <UserPlus className="w-3.5 h-3.5" />;
-  if (k === "pindah keluar") return <ArrowUpRight className="w-3.5 h-3.5" />;
-  if (k === "pindah datang") return <ArrowDownLeft className="w-3.5 h-3.5" />;
-  return <NotebookPen className="w-3.5 h-3.5" />;
-}
-
-function getKategoriBadgeClass(kategori: string): string {
-  const k = (kategori || "").toLowerCase();
-  switch (k) {
-    case "akta kelahiran":
-      return "bg-primary/15 text-primary border-primary/30";
-    case "akta kematian":
-      return "bg-destructive/15 text-destructive border-destructive/30";
-    case "tambah bio data":
-      return "status-izin";
-    case "pindah keluar":
-      return "status-terlambat";
-    case "pindah datang":
-      return "status-hadir";
-    case "media":
-      return "status-sakit";
-    case "programmer":
-      return "bg-primary/20 text-primary border-primary/40";
-    default:
-      return "bg-primary/15 text-primary border-primary/30";
-  }
-}
 
 function formatTanggalIndo(dateStr?: string | null): string {
   if (!dateStr) return "—";

@@ -852,8 +852,8 @@ export interface LeaveRequest {
 
 // ============================================================
 // TUGAS / JOBDESK ITEM
-// Sesuai tabel MySQL: `tugas` (7 Kolom)
-// Kolom: id, peserta_magang_id, log_book_id, judul_tugas, deskripsi, kategori, created_at
+// Sesuai tabel MySQL: `tugas`
+// Kolom: id, peserta_magang_id, log_book_id, judul_tugas, status_pengerjaan, created_at
 // ============================================================
 
 export interface TugasItem {
@@ -870,10 +870,6 @@ export interface TugasItem {
   // Data tugas
   judul_tugas: string;
   judulTugas?: string;
-
-  deskripsi?: string;
-
-  kategori?: string;
 
   status_pengerjaan?: "BELUM_DIKERJAKAN" | "SELESAI" | string;
   statusPengerjaan?: "BELUM_DIKERJAKAN" | "SELESAI" | string;

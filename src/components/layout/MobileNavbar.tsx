@@ -12,7 +12,6 @@ export function MobileNavbar() {
 
   const role = String(user?.role || "ANAK_MAGANG").toUpperCase();
 
-  // Only render bottom nav for non-admin roles (Anak Magang & Anak OS / Pegawai OS)
   if (role.startsWith("ADMIN") || role === "SUPER_ADMIN" || role === "SUPERADMIN") {
     return null;
   }
@@ -56,14 +55,18 @@ export function MobileNavbar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center min-h-[52px] min-w-[64px] rounded-xl px-2 py-1 transition-all ${
+              className={`flex cursor-pointer flex-col items-center justify-center min-h-[52px] min-w-[64px] rounded-xl px-2 py-1 transition-all ${
                 isActive
                   ? "text-primary font-bold bg-primary/10"
                   : "text-muted-foreground hover:text-foreground active:scale-95"
               }`}
             >
-              <div className={isActive ? "scale-110 text-primary" : ""}>{item.icon}</div>
-              <span className="text-[10px] font-semibold mt-1 tracking-tight">{item.title}</span>
+              <div className={isActive ? "scale-110 text-primary" : ""}>
+                {item.icon}
+              </div>
+              <span className="text-[10px] font-semibold mt-1 tracking-tight">
+                {item.title}
+              </span>
             </Link>
           );
         })}

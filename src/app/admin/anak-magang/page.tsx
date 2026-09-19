@@ -4,13 +4,7 @@ import React, { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { User } from "@/types";
-import {
-  Alert,
-  AlertTitle,
-  AlertDescription,
-  AlertModal,
-  ConfirmModal,
-} from "@/components/ui/Alert";
+import { ConfirmModal } from "@/components/ui/Alert";
 import { ModalPortal } from "@/components/ui/ModalPortal";
 import { showNotification } from "@/components/ui/NotificationProvider";
 import { Spinner } from "@/components/ui/Spinner";
@@ -24,9 +18,6 @@ import {
   RefreshCw,
   Pencil,
   Trash2,
-  InfoIcon,
-  CheckCircle2Icon,
-  AlertTriangleIcon,
   Filter,
 } from "lucide-react";
 
@@ -65,24 +56,6 @@ export default function AdminAnakMagangPage() {
   const [editStatus, setEditStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
 
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const [bannerAlert, setBannerAlert] = useState<{
-    title: string;
-    message: string;
-    color: "red" | "green" | "blue" | "yellow";
-  } | null>(null);
-
-  const [modalAlert, setModalAlert] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    color: "red" | "green" | "blue" | "yellow";
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    color: "red",
-  });
 
   const [deleteUserConfirm, setDeleteUserConfirm] = useState<User | null>(null);
 
@@ -479,11 +452,11 @@ export default function AdminAnakMagangPage() {
         prev.filter((u) => String(u.id) !== String(item.id)),
       );
 
-      setBannerAlert({
-        title: "Data Berhasil Dihapus",
-        message: `Data ${name} berhasil dihapus dari sistem.`,
-        color: "blue",
-      });
+      showAlert(
+        `Data ${name} berhasil dihapus dari sistem.`,
+        "Data Berhasil Dihapus",
+        "green",
+      );
     } catch (err: any) {
       console.error(err);
 
@@ -528,41 +501,7 @@ export default function AdminAnakMagangPage() {
           onCancel={() => setDeleteUserConfirm(null)}
         />
 
-        <AlertModal
-          isOpen={modalAlert.isOpen}
-          title={modalAlert.title}
-          message={modalAlert.message}
-          color={modalAlert.color}
-          onClose={() =>
-            setModalAlert((prev) => ({
-              ...prev,
-              isOpen: false,
-            }))
-          }
-        />
 
-        {bannerAlert && (
-          <Alert className="mb-4 relative">
-            {bannerAlert.color === "green" ? (
-              <CheckCircle2Icon className="h-4 w-4" />
-            ) : bannerAlert.color === "red" ? (
-              <AlertTriangleIcon className="h-4 w-4" />
-            ) : (
-              <InfoIcon className="h-4 w-4" />
-            )}
-            <div className="flex-1">
-              <AlertTitle>{bannerAlert.title}</AlertTitle>
-              <AlertDescription>{bannerAlert.message}</AlertDescription>
-            </div>
-            <button
-              onClick={() => setBannerAlert(null)}
-              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </button>
-          </Alert>
-        )}
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
           <div>

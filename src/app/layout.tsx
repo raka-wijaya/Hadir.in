@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 import { NotificationProvider } from "@/components/ui/NotificationProvider";
+import { EnterKeyBlocker } from "@/components/ui/EnterKeyBlocker";
 
 export default function RootLayout({
   children,
@@ -21,7 +22,10 @@ export default function RootLayout({
       <body className="h-full bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
         <MantineProvider defaultColorScheme="auto">
           <AuthProvider>
-            <NotificationProvider>{children}</NotificationProvider>
+            <NotificationProvider>
+              <EnterKeyBlocker />
+              {children}
+            </NotificationProvider>
           </AuthProvider>
         </MantineProvider>
       </body>

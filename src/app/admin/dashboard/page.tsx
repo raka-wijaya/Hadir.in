@@ -442,7 +442,7 @@ export default function AdminDashboardPage() {
           }`}
         >
           {(isSuperAdmin || isAdminMagang) && (
-            <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold font-sans text-primary uppercase tracking-wider">
                   Siswa Magang
@@ -452,7 +452,9 @@ export default function AdminDashboardPage() {
               {isLoading ? (
                 <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
               ) : (
-                <p className="text-xl font-sans text-primary">{totalMagang}</p>
+                <p className="text-[19px] font-sans text-primary">
+                  {totalMagang}
+                </p>
               )}
 
               <span className="text-[10px] font-sans text-muted-foreground">
@@ -462,7 +464,7 @@ export default function AdminDashboardPage() {
           )}
 
           {(isSuperAdmin || isAdminOS) && (
-            <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+            <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold font-sans text-status-izin uppercase tracking-wider">
                   Karyawan OS
@@ -472,7 +474,9 @@ export default function AdminDashboardPage() {
               {isLoading ? (
                 <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
               ) : (
-                <p className="text-xl font-sans text-status-izin">{totalOS}</p>
+                <p className="text-[19px] font-sans text-status-izin">
+                  {totalOS}
+                </p>
               )}
 
               <span className="text-[10px] font-sans text-muted-foreground">
@@ -481,7 +485,7 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold font-sans text-status-hadir uppercase tracking-wider">
                 Hadir
@@ -491,7 +495,7 @@ export default function AdminDashboardPage() {
             {isLoading ? (
               <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
             ) : (
-              <p className="text-xl font-sans text-status-hadir">
+              <p className="text-[19px] font-sans text-status-hadir">
                 {hadirHariIni}
               </p>
             )}
@@ -501,7 +505,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold font-sans text-status-terlambat uppercase tracking-wider">
                 Terlambat
@@ -511,7 +515,7 @@ export default function AdminDashboardPage() {
             {isLoading ? (
               <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
             ) : (
-              <p className="text-xl font-sans text-status-terlambat">
+              <p className="text-[19px] font-sans text-status-terlambat">
                 {terlambatHariIni}
               </p>
             )}
@@ -521,7 +525,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold font-sans text-status-izin uppercase tracking-wider">
                 Izin
@@ -531,7 +535,7 @@ export default function AdminDashboardPage() {
             {isLoading ? (
               <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
             ) : (
-              <p className="text-xl font-sans text-status-izin">
+              <p className="text-[19px] font-sans text-status-izin">
                 {izinSakitHariIni}
               </p>
             )}
@@ -541,7 +545,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold font-sans text-status-alpa uppercase tracking-wider">
                 Tanpa Ket.
@@ -551,7 +555,7 @@ export default function AdminDashboardPage() {
             {isLoading ? (
               <div className="h-8 w-12 bg-muted/60 animate-pulse rounded-lg" />
             ) : (
-              <p className="text-xl font-sans text-status-alpa">
+              <p className="text-[19px] font-sans text-status-alpa">
                 {alpaHariIni}
               </p>
             )}

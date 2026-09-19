@@ -181,7 +181,7 @@ export default function LupaPasswordPage() {
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-card text-card-foreground border border-border rounded-2xl p-5 md:p-6 space-y-4 shadow-card">
         <div className="text-center space-y-1.5">
-          <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground font-sans font-bold text-lg flex items-center justify-center mx-auto shadow-card">
+          <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground font-sans font-bold text-lg flex items-center justify-center mx-auto shadow-card">
             H
           </div>
           <h1 className="text-lg font-bold font-sans tracking-tight text-card-foreground">

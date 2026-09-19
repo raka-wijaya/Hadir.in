@@ -190,8 +190,6 @@ export async function GET(req: NextRequest) {
             logBookId: r.log_book_id ? Number(r.log_book_id) : null,
             judul_tugas: r.judul_tugas || "",
             judulTugas: r.judul_tugas || "",
-            deskripsi: "",
-            kategori: "Umum",
             status_pengerjaan: r.status_pengerjaan || "BELUM_DIKERJAKAN",
             statusPengerjaan: r.status_pengerjaan || "BELUM_DIKERJAKAN",
             created_at: createdAtStr,

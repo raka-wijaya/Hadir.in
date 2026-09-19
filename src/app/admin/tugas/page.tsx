@@ -25,11 +25,6 @@ import {
   Layers,
   ArrowUpDown,
   BookOpen,
-  Code,
-  UserPlus,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Image as ImageIcon,
   RefreshCw,
   Users,
   Eye,
@@ -41,17 +36,6 @@ import {
   Calendar,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
-
-const KATEGORI_OPTIONS = [
-  "programmer",
-  "media",
-  "tambah bio data",
-  "akta kelahiran",
-  "akta kematian",
-  "pindah keluar",
-  "pindah datang",
-  "Umum",
-] as const;
 
 function formatTanggalIndo(dateStr?: string | null): string {
   if (!dateStr) return "—";
@@ -66,63 +50,6 @@ function formatTanggalIndo(dateStr?: string | null): string {
     year: "numeric",
     timeZone: "Asia/Jakarta",
   }).format(d);
-}
-
-function getKategoriIcon(kategori: string) {
-  const k = (kategori || "").toLowerCase();
-
-  if (k === "programmer") {
-    return <Code className="w-3.5 h-3.5" />;
-  }
-
-  if (k === "media") {
-    return <ImageIcon className="w-3.5 h-3.5" />;
-  }
-
-  if (k === "tambah bio data") {
-    return <UserPlus className="w-3.5 h-3.5" />;
-  }
-
-  if (k === "pindah keluar") {
-    return <ArrowUpRight className="w-3.5 h-3.5" />;
-  }
-
-  if (k === "pindah datang") {
-    return <ArrowDownLeft className="w-3.5 h-3.5" />;
-  }
-
-  return <Briefcase className="w-3.5 h-3.5" />;
-}
-
-function getKategoriBadgeClass(kategori: string): string {
-  const k = (kategori || "").toLowerCase();
-
-  switch (k) {
-    case "akta kelahiran":
-      return "status-hadir";
-
-    case "akta kematian":
-      return "bg-muted text-foreground border-border";
-
-    case "tambah bio data":
-      return "status-izin";
-
-    case "pindah keluar":
-      return "status-terlambat";
-
-    case "pindah datang":
-      return "status-pending";
-
-    case "media":
-      return "status-sakit";
-
-    case "programmer":
-      return "bg-primary/20 text-primary border-primary/40";
-
-    case "umum":
-    default:
-      return "bg-secondary text-secondary-foreground border-border";
-  }
 }
 
 function getInitial(name?: string | null): string {
@@ -159,8 +86,6 @@ export default function AdminTugasPage() {
     peserta_magang_id: "",
     log_book_id: "",
     judul_tugas: "",
-    deskripsi: "",
-    kategori: "programmer",
     status_pengerjaan: "BELUM_DIKERJAKAN",
   });
 
@@ -380,17 +305,13 @@ export default function AdminTugasPage() {
   }, [selectedInternId, interns]);
 
   const resetForm = () => {
-    setSelectedCreateInternIds(
-      interns.length > 0 ? [String(interns[0].id)] : [],
-    );
+    setSelectedCreateInternIds([]);
     setInternSearchModal("");
     setIsModalInternDropdownOpen(false);
     setFormData({
-      peserta_magang_id: interns.length > 0 ? String(interns[0].id) : "",
+      peserta_magang_id: "",
       log_book_id: "",
       judul_tugas: "",
-      deskripsi: "",
-      kategori: "programmer",
       status_pengerjaan: "BELUM_DIKERJAKAN",
     });
 
@@ -413,10 +334,6 @@ export default function AdminTugasPage() {
       log_book_id: item.log_book_id ? String(item.log_book_id) : "",
 
       judul_tugas: item.judul_tugas || item.judulTugas || "",
-
-      deskripsi: item.deskripsi || "",
-
-      kategori: item.kategori || "programmer",
 
       status_pengerjaan:
         item.status_pengerjaan || item.statusPengerjaan || "BELUM_DIKERJAKAN",
@@ -461,10 +378,6 @@ export default function AdminTugasPage() {
 
       const payload = {
         judul_tugas: formData.judul_tugas.trim(),
-
-        deskripsi: formData.deskripsi.trim(),
-
-        kategori: formData.kategori,
 
         peserta_magang_ids: selectedCreateInternIds.map(Number),
 
@@ -531,10 +444,6 @@ export default function AdminTugasPage() {
         id: selectedTugas.id,
 
         judul_tugas: formData.judul_tugas.trim(),
-
-        deskripsi: formData.deskripsi.trim(),
-
-        kategori: formData.kategori,
 
         status_pengerjaan: formData.status_pengerjaan,
 
@@ -675,23 +584,6 @@ export default function AdminTugasPage() {
           </div>
         </div>
 
-        {successMessage && (
-          <div className="p-4 rounded-xl status-hadir border flex items-center justify-between gap-3 text-xs font-bold animate-in fade-in">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-
-              <span>{successMessage}</span>
-            </div>
-
-            <button
-              onClick={() => setSuccessMessage(null)}
-              className="cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-card border border-border rounded-2xl p-4 shadow-card space-y-1">
             <div className="flex items-center justify-between">
@@ -779,7 +671,7 @@ export default function AdminTugasPage() {
 
               <input
                 type="text"
-                placeholder="Cari judul tugas..."
+                placeholder="Cari judul tugas"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-8 py-2 bg-input border border-border rounded-xl text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -892,7 +784,15 @@ export default function AdminTugasPage() {
                           }`}
                         >
                           <div className="min-w-0 pr-2">
-                            <p className="truncate">{displayName}{intern.divisi ? <span className="font-normal text-muted-foreground"> - {intern.divisi}</span> : null}</p>
+                            <p className="truncate">
+                              {displayName}
+                              {intern.divisi ? (
+                                <span className="font-normal text-muted-foreground">
+                                  {" "}
+                                  - {intern.divisi}
+                                </span>
+                              ) : null}
+                            </p>
                             <p className="text-[10px] text-muted-foreground font-normal truncate">
                               {displayInst}
                             </p>
@@ -1039,8 +939,16 @@ export default function AdminTugasPage() {
                             <div className="min-w-0">
                               <p className="text-foreground truncate">
                                 {task.user_nama || "Belum Ditentukan"}
-                                {(task.user_divisi || task.userDivisi || task.divisi) ? (
-                                  <span className="font-normal text-muted-foreground"> - {task.user_divisi || task.userDivisi || task.divisi}</span>
+                                {task.user_divisi ||
+                                task.userDivisi ||
+                                task.divisi ? (
+                                  <span className="font-normal text-muted-foreground">
+                                    {" "}
+                                    -{" "}
+                                    {task.user_divisi ||
+                                      task.userDivisi ||
+                                      task.divisi}
+                                  </span>
                                 ) : null}
                               </p>
 
@@ -1548,7 +1456,13 @@ export default function AdminTugasPage() {
 
                                     <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
                                       <span className="text-[10px] text-foreground truncate">
-                                        {i.name || i.nama || "Peserta"}{i.divisi ? <span className="font-normal text-muted-foreground"> - {i.divisi}</span> : null}
+                                        {i.name || i.nama || "Peserta"}
+                                        {i.divisi ? (
+                                          <span className="font-normal text-muted-foreground">
+                                            {" "}
+                                            - {i.divisi}
+                                          </span>
+                                        ) : null}
                                       </span>
 
                                       <span className="text-[8px] text-muted-foreground truncate max-w-[140px]">
@@ -1713,7 +1627,8 @@ export default function AdminTugasPage() {
 
                       {interns.map((i) => (
                         <option key={i.id} value={i.id}>
-                          {i.name || i.nama}{i.divisi ? ` - ${i.divisi}` : ""} (
+                          {i.name || i.nama}
+                          {i.divisi ? ` - ${i.divisi}` : ""} (
                           {i.institution || i.sekolah_kampus || "Anak Magang"})
                         </option>
                       ))}
@@ -1805,8 +1720,16 @@ export default function AdminTugasPage() {
                   <div className="min-w-0">
                     <p className="font-sans text-foreground text-xs">
                       {selectedTugas.user_nama || "Belum Ditentukan"}
-                      {(selectedTugas.user_divisi || selectedTugas.userDivisi || selectedTugas.divisi) ? (
-                        <span className="font-normal"> - {selectedTugas.user_divisi || selectedTugas.userDivisi || selectedTugas.divisi}</span>
+                      {selectedTugas.user_divisi ||
+                      selectedTugas.userDivisi ||
+                      selectedTugas.divisi ? (
+                        <span className="font-normal">
+                          {" "}
+                          -{" "}
+                          {selectedTugas.user_divisi ||
+                            selectedTugas.userDivisi ||
+                            selectedTugas.divisi}
+                        </span>
                       ) : null}
                     </p>
 

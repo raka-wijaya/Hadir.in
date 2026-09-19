@@ -698,6 +698,14 @@ export default function AdminIzinPage() {
           <div className="flex items-center gap-2.5 shrink-0">
             <button
               type="button"
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold transition-all shadow-md hover:shadow-lg cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Tambah Izin
+            </button>
+            <button
+              type="button"
               onClick={loadIzin}
               disabled={isLoading}
               title="Segarkan Data"
@@ -706,14 +714,6 @@ export default function AdminIzinPage() {
               <RefreshCw
                 className={`w-4 h-4 ${isLoading ? "animate-spin text-primary" : ""}`}
               />
-            </button>
-            <button
-              type="button"
-              onClick={handleOpenCreate}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold transition-all shadow-md hover:shadow-lg cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              Tambah Izin
             </button>
           </div>
         </div>
@@ -1003,8 +1003,16 @@ export default function AdminIzinPage() {
                             "
                             >
                               {item.userName}
-                              {(item.userDivisi || item.user_divisi || item.divisi) ? (
-                                <span className="font-normal text-muted-foreground"> - {item.userDivisi || item.user_divisi || item.divisi}</span>
+                              {item.userDivisi ||
+                              item.user_divisi ||
+                              item.divisi ? (
+                                <span className="font-normal text-muted-foreground">
+                                  {" "}
+                                  -{" "}
+                                  {item.userDivisi ||
+                                    item.user_divisi ||
+                                    item.divisi}
+                                </span>
                               ) : null}
                             </div>
                           </div>
@@ -1391,7 +1399,12 @@ export default function AdminIzinPage() {
                                       <div className="flex items-center gap-1.5 flex-wrap">
                                         <p className="text-xs font-bold text-foreground truncate">
                                           {u.name}
-                                          {u.divisi ? <span className="font-normal text-muted-foreground"> - {u.divisi}</span> : null}
+                                          {u.divisi ? (
+                                            <span className="font-normal text-muted-foreground">
+                                              {" "}
+                                              - {u.divisi}
+                                            </span>
+                                          ) : null}
                                         </p>
                                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-foreground">
                                           {u.role}
