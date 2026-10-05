@@ -20,6 +20,7 @@ const ADMIN_PATHS = [
   '/admin/rekap-kehadiran',
   '/admin/pengaturan',
   '/admin/profil',
+  '/admin/magang',
   '/profile'
 ];
 
@@ -32,6 +33,7 @@ const ADMIN_MAGANG_PATHS = [
   '/admin/log-book',
   '/admin/rekap-kehadiran',
   '/admin/profil',
+  '/admin/magang',
   '/profile'
 ];
 

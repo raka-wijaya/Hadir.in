@@ -5,7 +5,7 @@ import { AuthProvider } from "@/lib/auth/context";
 import { MantineProvider } from "@mantine/core";
 
 export const metadata: Metadata = {
-  title: "SiPresma — Sistem Informasi Presensi Magang",
+  title: "Hadir.in — Sistem Informasi Presensi Magang",
   description: "Sistem Informasi Presensi dan Administrasi Magang terpusat untuk pengelolaan data pendaftaran, presensi kamera real time, izin, rekap kehadiran, dan jobdesk.",
 };
 

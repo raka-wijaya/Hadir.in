@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/context";
 import { Captcha } from "@/components/forms/Captcha";
 import { getDefaultDashboardForRole } from "@/lib/permissions";
+import { User as UserType, UserRole, UserStatus } from "@/types";
 
 import {
   Eye,
@@ -42,6 +43,14 @@ function LoginForm() {
     }
   }, [user, router]);
 
+  const formRef = React.useRef<HTMLFormElement | null>(null);
+
+  useEffect(() => {
+    // Pastikan saat halaman dimuat, password dan form selalu bersih
+    setPassword("");
+    setShowPassword(false);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -61,40 +70,143 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          identifier: cleanTarget,
-          email: cleanTarget,
-          password,
-        }),
-      });
+      const LARAVEL_API = process.env.NEXT_PUBLIC_LARAVEL_API || "http://127.0.0.1:8000/api";
 
-      const contentType = res.headers.get("content-type") || "";
-      const data = contentType.includes("application/json")
-        ? await res.json()
-        : null;
+      // Ambil data dari 3 endpoint eksternal
+      const [adminRes, magangRes, osRes] = await Promise.all([
+        fetch(`${LARAVEL_API}/admin`, { cache: "no-store" }).catch(() => null),
+        fetch(`${LARAVEL_API}/peserta-magang`, { cache: "no-store" }).catch(() => null),
+        fetch(`${LARAVEL_API}/karyawan-os`, { cache: "no-store" }).catch(() => null),
+      ]);
 
-      if (!res.ok || !data?.success) {
-        setErrorMsg(
-          data?.message ||
-            (res.status === 404
-              ? "Layanan login tidak tersedia. Mulai ulang server aplikasi lalu coba lagi."
-              : "Email / No. Identitas atau password salah."),
-        );
+      const [adminJson, magangJson, osJson] = await Promise.all([
+        adminRes && adminRes.ok ? adminRes.json().catch(() => null) : null,
+        magangRes && magangRes.ok ? magangRes.json().catch(() => null) : null,
+        osRes && osRes.ok ? osRes.json().catch(() => null) : null,
+      ]);
+
+      const adminList: any[] = adminJson?.data || (Array.isArray(adminJson) ? adminJson : []);
+      const magangList: any[] = magangJson?.data || (Array.isArray(magangJson) ? magangJson : []);
+      const osList: any[] = osJson?.data || (Array.isArray(osJson) ? osJson : []);
+
+      const lowerTarget = cleanTarget.toLowerCase();
+
+      // Helper pencocokan identitas (email, identity_number, phone, nip, nim)
+      const matchIdentifier = (u: any) => {
+        const uEmail = String(u.email || "").trim().toLowerCase();
+        const uIdent = String(u.identity_number || u.identityNumber || u.nip || u.nim || "").trim().toLowerCase();
+        const uPhone = String(u.phone || u.no_hp || "").trim();
+        return uEmail === lowerTarget || (uIdent && uIdent === lowerTarget) || (uPhone && uPhone === cleanTarget);
+      };
+
+      let matchedUser: any = null;
+      let matchedRole: any = null;
+
+      const foundAdmin = adminList.find(matchIdentifier);
+      if (foundAdmin) {
+        matchedUser = foundAdmin;
+        matchedRole = foundAdmin.role || "SUPERADMIN";
+      }
+
+      if (!matchedUser) {
+        const foundOS = osList.find(matchIdentifier);
+        if (foundOS) {
+          matchedUser = foundOS;
+          matchedRole = "KARYAWAN_OS";
+        }
+      }
+
+      if (!matchedUser) {
+        const foundMagang = magangList.find(matchIdentifier);
+        if (foundMagang) {
+          matchedUser = foundMagang;
+          matchedRole = "ANAK_MAGANG";
+        }
+      }
+
+      if (!matchedUser) {
+        setPassword("");
+        setShowPassword(false);
+        setErrorMsg("Email / No. Identitas atau password salah.");
         return;
       }
 
-      login(data.user);
+      // Status check
+      const statusUpper = String(matchedUser.status || "ACTIVE").toUpperCase();
+      const normalizedStatus: UserStatus =
+        statusUpper === "INACTIVE" || statusUpper === "NONAKTIF"
+          ? "INACTIVE"
+          : "ACTIVE";
+      if (normalizedStatus === "INACTIVE") {
+        setPassword("");
+        setShowPassword(false);
+        setErrorMsg("Akun Anda telah dinonaktifkan. Silakan hubungi admin.");
+        return;
+      }
 
-      const targetPath = getDefaultDashboardForRole(data.user.role);
+      // Verification status check
+      const verifStatus = String(matchedUser.verification_status || matchedUser.verificationStatus || "").toUpperCase();
+      if (verifStatus === "PENDING" && matchedRole === "ANAK_MAGANG") {
+        setPassword("");
+        setShowPassword(false);
+        setErrorMsg("Akun Anda masih dalam proses verifikasi oleh Admin. Silakan tunggu persetujuan Admin sebelum dapat masuk.");
+        return;
+      }
+      if (verifStatus === "REJECTED") {
+        const reason = matchedUser.rejection_reason || matchedUser.rejectionReason;
+        setPassword("");
+        setShowPassword(false);
+        setErrorMsg(`Akun Anda telah ditolak oleh Admin.${reason ? ` Alasan: ${reason}` : ""}`);
+        return;
+      }
+
+      // Format user object
+      const safeUser: UserType = {
+        id: String(matchedUser.id),
+        email: matchedUser.email || "",
+        role: (matchedRole as UserRole) || "ANAK_MAGANG",
+        name: matchedUser.name || matchedUser.nama || "",
+        phone: matchedUser.phone || matchedUser.no_hp || null,
+        identity_number: matchedUser.identity_number || matchedUser.identityNumber || null,
+        institution: matchedUser.institution || matchedUser.sekolah_kampus || null,
+        study_program: matchedUser.study_program || matchedUser.jurusan || null,
+        avatar: matchedUser.avatar || matchedUser.avatar_url || null,
+        start_date: matchedUser.start_date || null,
+        end_date: matchedUser.end_date || null,
+        status: normalizedStatus,
+        created_at: matchedUser.created_at || undefined,
+
+        // Aliases & kompatibilitas
+        nama: matchedUser.name || matchedUser.nama || "",
+        no_hp: matchedUser.phone || matchedUser.no_hp || null,
+        identityNumber: matchedUser.identity_number || matchedUser.identityNumber || null,
+        sekolah_kampus: matchedUser.institution || matchedUser.sekolah_kampus || null,
+        studyProgram: matchedUser.study_program || matchedUser.jurusan || null,
+        divisi: matchedUser.divisi || matchedUser.study_program || null,
+        unit_kerja: matchedUser.study_program || null,
+        bagian: matchedUser.study_program || null,
+        startDate: matchedUser.start_date || null,
+        endDate: matchedUser.end_date || null,
+      };
+
+      // Login berhasil
+      setIdentifier("");
+      setPassword("");
+      setShowPassword(false);
+      setErrorMsg(null);
+      if (formRef.current) {
+        formRef.current.reset();
+      }
+
+      login(safeUser);
+
+      const targetPath = getDefaultDashboardForRole(safeUser.role);
       router.push(targetPath);
     } catch (error) {
       console.error("Login request error:", error);
-      setErrorMsg("Tidak dapat terhubung ke server. Silakan coba lagi.");
+      setPassword("");
+      setShowPassword(false);
+      setErrorMsg("Tidak dapat terhubung ke server");
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +227,7 @@ function LoginForm() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-3.5">
           {isTimeoutLogout && (
             <div className="bg-accent border border-primary/30 rounded-xl p-2.5 flex items-start gap-2 animate-in fade-in">
               <Clock className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
@@ -288,7 +400,7 @@ function LoginForm() {
           </button>
         </form>
 
-        <div className="text-center pt-4 border-t border-border space-y-1.5">
+        {/* <div className="text-center pt-4 border-t border-border space-y-1.5">
           <p className="text-xs text-muted-foreground font-semibold font-sans">
             Belum punya akun?{" "}
             <Link
@@ -309,7 +421,7 @@ function LoginForm() {
               <span className="font-sans">Daftar Akun</span>
             </Link>
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );

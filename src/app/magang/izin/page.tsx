@@ -9,8 +9,7 @@ import React, {
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/lib/auth/context";
-import { ConfirmModal } from "@/components/ui/Alert";
-import { showNotification } from "@/components/ui/NotificationProvider";
+import { showNotification, showConfirm } from "@/components/ui/NotificationProvider";
 
 import {
   FileCheck,
@@ -168,8 +167,6 @@ export default function MagangIzinPage() {
   const [deletingId, setDeletingId] =
     useState<string | null>(null);
 
-  const [deleteConfirmItem, setDeleteConfirmItem] =
-    useState<Izin | null>(null);
 
   const [successMsg, setSuccessMsg] =
     useState<string | null>(null);
@@ -603,22 +600,6 @@ export default function MagangIzinPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <ConfirmModal
-          isOpen={Boolean(deleteConfirmItem)}
-          title="Hapus Pengajuan Izin"
-          message={`Apakah Anda yakin ingin menghapus pengajuan izin "${deleteConfirmItem?.jenis}"? Data pengajuan dan lampiran akan dihapus secara permanen.`}
-          confirmLabel="Ya, Hapus Izin"
-          cancelLabel="Batal"
-          confirmColor="red"
-          onConfirm={async () => {
-            if (deleteConfirmItem) {
-              const item = deleteConfirmItem;
-              setDeleteConfirmItem(null);
-              await handleDeleteIzin(item);
-            }
-          }}
-          onCancel={() => setDeleteConfirmItem(null)}
-        />
 
         {/* ==================================================
             HEADER
@@ -1039,7 +1020,14 @@ export default function MagangIzinPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        setDeleteConfirmItem(item)
+                        showConfirm({
+                          title: "Hapus Pengajuan Izin",
+                          message: `Apakah Anda yakin ingin menghapus pengajuan izin "${item.jenis}"? Data pengajuan dan lampiran akan dihapus secara permanen.`,
+                          confirmLabel: "Ya, Hapus Izin",
+                          cancelLabel: "Batal",
+                          confirmColor: "red",
+                          onConfirm: async () => { await handleDeleteIzin(item); },
+                        })
                       }
                       disabled={
                         deletingId === item.id

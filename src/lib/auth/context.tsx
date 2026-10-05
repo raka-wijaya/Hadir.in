@@ -9,7 +9,7 @@ import { useRouter, usePathname } from "next/navigation";
 // Durasi tidak aktif sebelum auto logout (dalam menit)
 const SESSION_TIMEOUT_MINUTES = 10;
 const SESSION_TIMEOUT_MS = SESSION_TIMEOUT_MINUTES * 60 * 1000;
-const LAST_ACTIVITY_KEY = "sipresma_last_activity";
+const LAST_ACTIVITY_KEY = "hadir_in_last_activity";
 // Cek setiap 10 detik agar lebih responsif
 const CHECK_INTERVAL_MS = 10 * 1000;
 // Throttle update aktivitas agar tidak spam localStorage (max 1x per 5 detik)

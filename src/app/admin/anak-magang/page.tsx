@@ -1,12 +1,21 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+
+const LARAVEL_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_LARAVEL_API ||
+  "http://127.0.0.1:8000/api";
+const API_URL = `${LARAVEL_BASE_URL.replace(/\/+$/, "")}/peserta-magang`;
+
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { User } from "@/types";
-import { ConfirmModal } from "@/components/ui/Alert";
+import {
+  showNotification,
+  showConfirm,
+} from "@/components/ui/NotificationProvider";
 import { ModalPortal } from "@/components/ui/ModalPortal";
-import { showNotification } from "@/components/ui/NotificationProvider";
 import { Spinner } from "@/components/ui/Spinner";
 
 import {
@@ -34,6 +43,7 @@ export default function AdminAnakMagangPage() {
 
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [newIdentity, setNewIdentity] = useState("");
   const [newInstitution, setNewInstitution] = useState("");
   const [newProgram, setNewProgram] = useState("");
@@ -42,10 +52,12 @@ export default function AdminAnakMagangPage() {
   const [newEnd, setNewEnd] = useState("2026-10-31");
   const [newBatch, setNewBatch] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
+  const [addErrors, setAddErrors] = useState<Record<string, string[]>>({});
 
   const [editItem, setEditItem] = useState<User | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editPassword, setEditPassword] = useState("");
   const [editIdentity, setEditIdentity] = useState("");
   const [editInstitution, setEditInstitution] = useState("");
   const [editProgram, setEditProgram] = useState("");
@@ -54,10 +66,11 @@ export default function AdminAnakMagangPage() {
   const [editEnd, setEditEnd] = useState("");
   const [editBatch, setEditBatch] = useState<string>("");
   const [editStatus, setEditStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
+  const [editErrors, setEditErrors] = useState<Record<string, string[]>>({});
 
   const [isUpdating, setIsUpdating] = useState(false);
+  const [statusLoadingId, setStatusLoadingId] = useState<string | number | null>(null);
 
-  const [deleteUserConfirm, setDeleteUserConfirm] = useState<User | null>(null);
 
   useEffect(() => {
     if (showAddModal || Boolean(editItem)) {
@@ -102,18 +115,30 @@ export default function AdminAnakMagangPage() {
     });
   };
 
+  const formatValidationErrors = (errors: Record<string, string[]> | undefined) => {
+    if (!errors) return null;
+    return Object.entries(errors)
+      .map(([field, msgs]) => `${field}: ${msgs.join(", ")}`)
+      .join(" | ");
+  };
+
   const loadInterns = async () => {
     try {
       setIsLoading(true);
 
-      const res = await fetch("/api/users/peserta_magang");
+      const res = await fetch(API_URL, {
+        headers: {
+          Accept: "application/json",
+        },
+      });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      if (data.success) {
+      if (res.ok && data?.status === "success" && Array.isArray(data.data)) {
         setInterns(
           data.data.map((u: any) => ({
             ...u,
+            peserta_magang_id: u.id,
             nama: u.name,
             sekolah_kampus: u.institution,
             unit_kerja: u.study_program,
@@ -122,9 +147,17 @@ export default function AdminAnakMagangPage() {
             periode_selesai: u.end_date,
           })),
         );
+      } else {
+        const errorMsg = data?.message || "Gagal memuat data dari API Laravel.";
+        showAlert(errorMsg, "Gagal Memuat Data", "red");
       }
-    } catch (err) {
-      console.error("Terjadi kesalahan saat memuat data peserta magang.", err);
+    } catch (err: any) {
+      console.error("Terjadi kesalahan saat memuat data peserta magang:", err);
+      showAlert(
+        "Gagal terhubung ke API Laravel. Pastikan backend aktif.",
+        "Koneksi Gagal",
+        "red",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -171,13 +204,9 @@ export default function AdminAnakMagangPage() {
     if (!q) return true;
 
     const nameStr = (i.nama || i.name || "").toLowerCase();
-
     const instStr = (i.sekolah_kampus || i.institution || "").toLowerCase();
-
-    const nimStr = (i.identityNumber || "").toLowerCase();
-
+    const nimStr = (i.identityNumber || (i as any).identity_number || "").toLowerCase();
     const batchStr = String(i.batch || "");
-
     const divisiStr = (i.divisi || "").toLowerCase();
 
     return (
@@ -195,20 +224,21 @@ export default function AdminAnakMagangPage() {
     const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
 
     try {
-      const res = await fetch("/api/users/peserta_magang", {
+      setStatusLoadingId(id);
+      const res = await fetch(`${API_URL}/${id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
-          id,
           status: newStatus,
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      if (data.success) {
+      if (res.ok && (data?.status === "success" || data?.success)) {
         setInterns((prev) =>
           prev.map((u) =>
             String(u.id) === String(id)
@@ -226,32 +256,87 @@ export default function AdminAnakMagangPage() {
           "green",
         );
       } else {
-        showAlert(
-          data.message || "Gagal memperbarui status.",
-          "Gagal memperbarui status.",
-          "red",
-        );
+        const errorMsg =
+          data?.errors ? formatValidationErrors(data.errors) : (data?.message || "Gagal memperbarui status.");
+        showAlert(errorMsg, "Gagal Memperbarui Status", "red");
       }
     } catch (err) {
       console.error(err);
-
       showAlert(
-        "Gagal terhubung ke server. Silakan coba beberapa saat lagi.",
-        "Koneksi Gagal. Silakan coba lagi.",
+        "Gagal terhubung ke API Laravel. Silakan coba beberapa saat lagi.",
+        "Koneksi Gagal",
         "red",
       );
+    } finally {
+      setStatusLoadingId(null);
     }
   };
 
   const handleAddIntern = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAddErrors({});
+
+    const cleanPassword = newPassword.trim();
+    if (!cleanPassword) {
+      setAddErrors({ password: ["Password wajib diisi saat membuat akun."] });
+      showAlert("Password wajib diisi.", "Validasi Gagal", "red");
+      return;
+    }
+
+    if (cleanPassword.length < 8) {
+      setAddErrors({ password: ["Password minimal 8 karakter."] });
+      showAlert("Password minimal 8 karakter sesuai aturan backend Laravel.", "Validasi Gagal", "red");
+      return;
+    }
 
     const savedName = newName;
 
-    const closeAndResetForm = () => {
+    try {
+      setIsSaving(true);
+
+      const payload: Record<string, any> = {
+        name: newName.trim(),
+        email: newEmail.trim(),
+        password: cleanPassword,
+        identity_number: newIdentity.trim() || null,
+        institution: newInstitution.trim() || null,
+        study_program: newProgram.trim() || null,
+        divisi: newDivisi.trim() || null,
+        start_date: newStart || null,
+        end_date: newEnd || null,
+        batch: newBatch ? Number(newBatch) : null,
+        status: "ACTIVE",
+      };
+
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || (data && data.status !== "success" && !data.success)) {
+        if (res.status === 422 && data?.errors) {
+          setAddErrors(data.errors);
+          const detailedMsg = formatValidationErrors(data.errors) || data.message || "Validasi gagal.";
+          showAlert(detailedMsg, "Validasi Gagal (422)", "red");
+          return;
+        }
+
+        const msg = data?.message || `Terjadi kesalahan (HTTP ${res.status}).`;
+        showAlert(msg, "Gagal Menambahkan Data", "red");
+        return;
+      }
+
+      // Berhasil: baru reset form dan tutup modal
       setShowAddModal(false);
       setNewName("");
       setNewEmail("");
+      setNewPassword("");
       setNewIdentity("");
       setNewInstitution("");
       setNewProgram("");
@@ -259,39 +344,7 @@ export default function AdminAnakMagangPage() {
       setNewStart("2026-07-01");
       setNewEnd("2026-10-31");
       setNewBatch("");
-    };
-
-    try {
-      setIsSaving(true);
-
-      const res = await fetch("/api/users/peserta_magang", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: newName,
-          email: newEmail,
-          identity_number: newIdentity.trim() || null,
-          password: "123456",
-          role: "ANAK_MAGANG",
-          status: "ACTIVE",
-          institution: newInstitution,
-          study_program: newProgram,
-          divisi: newDivisi.trim() || null,
-          start_date: newStart,
-          end_date: newEnd,
-          batch: newBatch ? Number(newBatch) : null,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Gagal menyimpan data.");
-      }
-
-      closeAndResetForm();
+      setAddErrors({});
 
       showAlert(
         `Data peserta magang "${savedName}" berhasil ditambahkan.`,
@@ -301,11 +354,10 @@ export default function AdminAnakMagangPage() {
 
       await loadInterns();
     } catch (err: any) {
-      closeAndResetForm();
-
+      console.error("Error creating intern:", err);
       showAlert(
-        err?.message || "Gagal menambahkan data peserta magang.",
-        "Gagal menambahkan data peserta magang.",
+        err?.message || "Gagal terhubung ke API Laravel saat menambahkan data.",
+        "Koneksi Gagal",
         "red",
       );
     } finally {
@@ -315,109 +367,101 @@ export default function AdminAnakMagangPage() {
 
   const handleEdit = (item: User) => {
     setEditItem(item);
+    setEditErrors({});
 
     setEditName(item.nama || item.name || "");
-
     setEditEmail(item.email || "");
-
+    setEditPassword(""); // Selalu kosongkan, jangan pernah tampilkan password lama
     setEditIdentity(item.identityNumber || (item as any).identity_number || "");
-
     setEditInstitution(item.sekolah_kampus || item.institution || "");
-
     setEditProgram(
       item.unit_kerja || item.studyProgram || (item as any).study_program || "",
     );
 
     const sDate =
       item.periode_mulai || item.startDate || (item as any).start_date || "";
-
     const eDate =
       item.periode_selesai || item.endDate || (item as any).end_date || "";
 
     setEditStart(typeof sDate === "string" ? sDate.slice(0, 10) : "");
-
     setEditEnd(typeof eDate === "string" ? eDate.slice(0, 10) : "");
-
     setEditStatus((item.status as "ACTIVE" | "INACTIVE") || "ACTIVE");
-
     setEditBatch(item.batch && item.batch !== "-" ? String(item.batch) : "");
-
     setEditDivisi(item.divisi || "");
   };
 
   const handleUpdateIntern = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!editItem) return;
+    setEditErrors({});
+
+    if (editPassword && editPassword.trim().length > 0 && editPassword.trim().length < 8) {
+      setEditErrors({ password: ["Password baru minimal 8 karakter."] });
+      showAlert("Password baru minimal 8 karakter jika ingin diubah.", "Validasi Gagal", "red");
+      return;
+    }
 
     try {
       setIsUpdating(true);
 
-      const res = await fetch("/api/users/peserta_magang", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: editItem.id,
-          name: editName,
-          email: editEmail,
-          identity_number: editIdentity,
-          institution: editInstitution,
-          study_program: editProgram,
-          divisi: editDivisi.trim() || null,
-          start_date: editStart || null,
-          end_date: editEnd || null,
-          status: editStatus,
-          batch: editBatch ? Number(editBatch) : null,
-        }),
-      });
+      const payload: Record<string, any> = {
+        name: editName.trim(),
+        email: editEmail.trim(),
+        identity_number: editIdentity.trim() || null,
+        institution: editInstitution.trim() || null,
+        study_program: editProgram.trim() || null,
+        divisi: editDivisi.trim() || null,
+        start_date: editStart || null,
+        end_date: editEnd || null,
+        status: editStatus,
+        batch: editBatch ? Number(editBatch) : null,
+      };
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Gagal menyimpan perubahan data.");
+      // Hanya kirim password jika admin mengisi password baru
+      if (editPassword && editPassword.trim().length > 0) {
+        payload.password = editPassword.trim();
       }
 
-      setInterns((prev) =>
-        prev.map((u) =>
-          String(u.id) === String(editItem.id)
-            ? ({
-                ...u,
-                name: editName,
-                nama: editName,
-                email: editEmail,
-                identityNumber: editIdentity,
-                institution: editInstitution,
-                sekolah_kampus: editInstitution,
-                studyProgram: editProgram,
-                unit_kerja: editProgram,
-                divisi: editDivisi.trim() || null,
-                startDate: editStart,
-                periode_mulai: editStart,
-                endDate: editEnd,
-                periode_selesai: editEnd,
-                status: editStatus,
-                batch: editBatch ? Number(editBatch) : "-",
-              } as User)
-            : u,
-        ),
-      );
+      const res = await fetch(`${API_URL}/${editItem.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || (data && data.status !== "success" && !data.success)) {
+        if (res.status === 422 && data?.errors) {
+          setEditErrors(data.errors);
+          const detailedMsg = formatValidationErrors(data.errors) || data.message || "Validasi update gagal.";
+          showAlert(detailedMsg, "Validasi Gagal (422)", "red");
+          return;
+        }
+
+        const msg = data?.message || `Gagal menyimpan perubahan data (HTTP ${res.status}).`;
+        showAlert(msg, "Gagal Memperbarui Data", "red");
+        return;
+      }
 
       showAlert(
         `Data peserta magang "${editName}" berhasil diperbarui.`,
-        "Perubahan berhasil disimpan.",
+        "Perubahan Berhasil Disimpan",
         "green",
       );
 
+      // Tutup modal dan reset edit state setelah berhasil
       setEditItem(null);
+      setEditPassword("");
+      setEditErrors({});
       await loadInterns();
     } catch (err: any) {
-      console.error(err);
-
+      console.error("Error updating intern:", err);
       showAlert(
-        err?.message || "Gagal memperbarui data peserta magang.",
-        "Gagal Memperbarui Data.",
+        err?.message || "Gagal terhubung ke API Laravel saat memperbarui data.",
+        "Koneksi Gagal",
         "red",
       );
     } finally {
@@ -429,23 +473,19 @@ export default function AdminAnakMagangPage() {
     const name = item.nama || item.name || "data ini";
 
     try {
-      const res = await fetch("/api/users/peserta_magang", {
+      const res = await fetch(`${API_URL}/${item.id}`, {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        body: JSON.stringify({
-          id: item.id,
-        }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      if (!res.ok || !data.success) {
-        throw new Error(
-          data.message ||
-            "Terjadi kesalahan saat menghapus data. Silakan coba lagi.",
-        );
+      if (!res.ok || (data && data.status !== "success" && !data.success)) {
+        const msg = data?.message || "Terjadi kesalahan saat menghapus data di Laravel API.";
+        showAlert(msg, "Gagal Hapus Data", "red");
+        return;
       }
 
       setInterns((prev) =>
@@ -458,12 +498,10 @@ export default function AdminAnakMagangPage() {
         "green",
       );
     } catch (err: any) {
-      console.error(err);
-
+      console.error("Error deleting intern:", err);
       showAlert(
-        err?.message ||
-          "Terjadi kesalahan saat menghapus data. Silakan coba lagi.",
-        "Gagal Hapus Data",
+        err?.message || "Gagal terhubung ke API Laravel saat menghapus data.",
+        "Koneksi Gagal",
         "red",
       );
     }
@@ -472,44 +510,13 @@ export default function AdminAnakMagangPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <ConfirmModal
-          isOpen={Boolean(deleteUserConfirm)}
-          title="Hapus Data Anak Magang?"
-          message={
-            <span>
-              Data peserta magang milik{" "}
-              <span className="font-bold text-foreground">
-                {deleteUserConfirm?.nama ||
-                  deleteUserConfirm?.name ||
-                  "peserta"}
-              </span>{" "}
-              akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.
-            </span>
-          }
-          confirmLabel="Ya, Hapus"
-          cancelLabel="Batal"
-          confirmColor="red"
-          onConfirm={async () => {
-            if (deleteUserConfirm) {
-              const u = deleteUserConfirm;
-
-              setDeleteUserConfirm(null);
-
-              await handleDelete(u);
-            }
-          }}
-          onCancel={() => setDeleteUserConfirm(null)}
-        />
-
-
-
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-bold font-sans text-foreground tracking-tight">
               Manajemen Anak Magang
             </h1>
 
-            <p className="text-xs md:text-sm text-muted-foreground font-semibold mt-1">
+            <p className="text-xs md:text-sm text-muted-foreground font-sans font-semibold mt-1">
               Kelola data NIM, nama, kampus, periode magang, dan status
               keaktifan peserta.
             </p>
@@ -717,7 +724,6 @@ export default function AdminAnakMagangPage() {
                       <td
                         className="
                         py-3.5 px-4
-                        font-extrabold
                         text-foreground
                         whitespace-nowrap
                       "
@@ -744,7 +750,6 @@ export default function AdminAnakMagangPage() {
                               border border-primary/10
                               flex items-center justify-center
                               text-primary
-                              font-black
                               shrink-0
                             "
                             >
@@ -757,7 +762,6 @@ export default function AdminAnakMagangPage() {
                           <div className="min-w-0">
                             <div
                               className="
-                              font-extrabold
                               text-foreground
                               truncate
                               max-w-[220px]
@@ -765,7 +769,10 @@ export default function AdminAnakMagangPage() {
                             >
                               {item.nama || item.name || "-"}
                               {item.divisi ? (
-                                <span className="font-normal text-muted-foreground"> - {item.divisi}</span>
+                                <span className="text-muted-foreground">
+                                  {" "}
+                                  - {item.divisi}
+                                </span>
                               ) : null}
                             </div>
 
@@ -773,7 +780,6 @@ export default function AdminAnakMagangPage() {
                               className="
                               text-[11px]
                               text-muted-foreground
-                              font-normal
                               truncate
                               max-w-[220px]
                             "
@@ -788,7 +794,6 @@ export default function AdminAnakMagangPage() {
                         className="
                         py-3.5 px-4
                         text-xs
-                        font-bold
                         text-foreground
                         whitespace-nowrap
                       "
@@ -811,15 +816,12 @@ export default function AdminAnakMagangPage() {
                           className="
                           text-[11px]
                           text-muted-foreground
-                          font-normal
                           pl-5.5
                           mt-0.5
                           whitespace-nowrap
                         "
                         >
-                          {item.unit_kerja ||
-                            item.studyProgram ||
-                            "Informatika"}
+                          {item.unit_kerja || item.studyProgram || "-"}
                         </div>
                       </td>
 
@@ -827,19 +829,16 @@ export default function AdminAnakMagangPage() {
                         className="
                         py-3.5 px-4
                         text-xs
-                        font-semibold
                         text-foreground
                         whitespace-nowrap
                       "
                       >
                         {item.divisi ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground font-medium text-xs">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground text-xs">
                             {item.divisi}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground font-normal">
-                            -
-                          </span>
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </td>
 
@@ -847,7 +846,6 @@ export default function AdminAnakMagangPage() {
                         className="
                         py-3.5 px-4
                         text-xs
-                        font-semibold
                         text-foreground
                         whitespace-nowrap
                       "
@@ -880,7 +878,6 @@ export default function AdminAnakMagangPage() {
                         className="
                         py-3.5 px-4
                         text-xs
-                        font-extrabold
                         text-center
                         text-foreground
                         whitespace-nowrap
@@ -891,9 +888,7 @@ export default function AdminAnakMagangPage() {
                             {item.batch}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground font-normal">
-                            -
-                          </span>
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </td>
 
@@ -934,7 +929,27 @@ export default function AdminAnakMagangPage() {
 
                           <button
                             type="button"
-                            onClick={() => setDeleteUserConfirm(item)}
+                            onClick={() =>
+                              showConfirm({
+                                title: "Hapus Data Anak Magang?",
+                                message: (
+                                  <span>
+                                    Data peserta magang milik{" "}
+                                    <span className="font-bold">
+                                      {item.nama || item.name || "peserta"}
+                                    </span>{" "}
+                                    akan dihapus dari sistem. Tindakan ini tidak
+                                    dapat dibatalkan.
+                                  </span>
+                                ),
+                                confirmLabel: "Ya, Hapus",
+                                cancelLabel: "Batal",
+                                confirmColor: "red",
+                                onConfirm: async () => {
+                                  await handleDelete(item);
+                                },
+                              })
+                            }
                             title="Hapus data"
                             className="
                               p-2
@@ -952,6 +967,7 @@ export default function AdminAnakMagangPage() {
                           <button
                             type="button"
                             onClick={() => toggleStatus(item.id, item.status)}
+                            disabled={statusLoadingId === item.id}
                             title={
                               item.status === "ACTIVE"
                                 ? "Nonaktifkan"
@@ -963,6 +979,8 @@ export default function AdminAnakMagangPage() {
                               active:scale-95
                               transition-all
                               cursor-pointer
+                              disabled:opacity-50
+                              disabled:cursor-not-allowed
                               ${
                                 item.status === "ACTIVE"
                                   ? "text-status-terlambat hover:bg-status-terlambat/10"
@@ -970,7 +988,11 @@ export default function AdminAnakMagangPage() {
                               }
                             `}
                           >
-                            <RefreshCw className="w-4 h-4" />
+                            {statusLoadingId === item.id ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              <RefreshCw className="w-4 h-4" />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -1072,13 +1094,16 @@ export default function AdminAnakMagangPage() {
               mt-0.5
             "
                     >
-                      Tambahkan peserta baru ke dalam sistem.
+                      Tambahkan peserta baru ke dalam sistem via Laravel API.
                     </p>
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setAddErrors({});
+                    }}
                     className="
             p-1.5
             rounded-lg
@@ -1092,6 +1117,19 @@ export default function AdminAnakMagangPage() {
                     <X className="w-4 h-4" />
                   </button>
                 </div>
+
+                {Object.keys(addErrors).length > 0 && (
+                  <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1">
+                    <div className="font-bold">Periksa kesalahan input:</div>
+                    <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                      {Object.entries(addErrors).map(([field, msgs]) => (
+                        <li key={field}>
+                          <span className="font-semibold capitalize">{field.replace("_", " ")}</span>: {msgs.join(", ")}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
@@ -1181,6 +1219,37 @@ export default function AdminAnakMagangPage() {
               focus:border-primary
             "
                       required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-extrabold text-foreground flex items-center gap-1">
+                      Password <span className="text-status-tolak">*</span>
+                    </label>
+
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Minimal 8 karakter"
+                      className="
+              w-full
+              rounded-xl
+              border border-border
+              bg-input
+              px-3
+              py-2
+              text-xs
+              text-foreground
+              placeholder:text-muted-foreground
+              transition-all
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary/40
+              focus:border-primary
+            "
+                      required
+                      minLength={8}
                     />
                   </div>
 
@@ -1363,7 +1432,10 @@ export default function AdminAnakMagangPage() {
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setAddErrors({});
+                    }}
                     className="
             px-5
             py-2.5
@@ -1466,7 +1538,10 @@ export default function AdminAnakMagangPage() {
 
                   <button
                     type="button"
-                    onClick={() => setEditItem(null)}
+                    onClick={() => {
+                      setEditItem(null);
+                      setEditErrors({});
+                    }}
                     className="
                     p-1.5
                     rounded-lg
@@ -1480,6 +1555,19 @@ export default function AdminAnakMagangPage() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
+
+                {Object.keys(editErrors).length > 0 && (
+                  <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1">
+                    <div className="font-bold">Periksa kesalahan input:</div>
+                    <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                      {Object.entries(editErrors).map(([field, msgs]) => (
+                        <li key={field}>
+                          <span className="font-semibold capitalize">{field.replace("_", " ")}</span>: {msgs.join(", ")}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
@@ -1584,6 +1672,40 @@ export default function AdminAnakMagangPage() {
                       focus:border-primary
                     "
                       required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      className="
+                    text-xs
+                    font-extrabold
+                    text-foreground
+                  "
+                    >
+                      Password Baru (opsional)
+                    </label>
+
+                    <input
+                      type="password"
+                      value={editPassword}
+                      onChange={(e) => setEditPassword(e.target.value)}
+                      placeholder="Kosongkan jika tidak diubah (min 8 karakter)"
+                      className="
+                      w-full
+                      rounded-xl
+                      border border-border
+                      bg-input
+                      px-3.5 py-2.5
+                      text-xs
+                      text-foreground
+                      placeholder:text-muted-foreground
+                      transition-all
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-primary/40
+                      focus:border-primary
+                    "
                     />
                   </div>
 
@@ -1832,7 +1954,10 @@ export default function AdminAnakMagangPage() {
                 >
                   <button
                     type="button"
-                    onClick={() => setEditItem(null)}
+                    onClick={() => {
+                      setEditItem(null);
+                      setEditErrors({});
+                    }}
                     className="
                     px-6
                     py-2.5
@@ -1873,7 +1998,6 @@ export default function AdminAnakMagangPage() {
                     {isUpdating ? (
                       <span className="inline-flex items-center gap-2">
                         <Spinner size="sm" />
-                        <span>Menyimpan...</span>
                       </span>
                     ) : (
                       "Simpan Perubahan"

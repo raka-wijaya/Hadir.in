@@ -52,30 +52,33 @@ Berdasarkan implementasi source code yang tersedia di dalam project:
 
 Hak akses diatur melalui permission matrix di `src/lib/permissions.ts`:
 
-| Role | Dashboard Default | Hak Akses Halaman |
-| :--- | :--- | :--- |
-| **`SUPERADMIN`** | `/admin/dashboard` | Akses penuh ke seluruh menu: Dashboard, Pendaftaran, Anak Magang, Pegawai OS, Izin, Log Book, Rekap Kehadiran, Tugas, Pengaturan Sistem, Verifikasi Akun, Profil. |
-| **`ADMIN_MAGANG`** | `/admin/dashboard` | Dashboard, Pendaftaran Magang, Data Anak Magang, Izin, Log Book, Rekap Kehadiran, Profil. |
-| **`ADMIN_OS`** | `/admin/dashboard` | Dashboard, Data Pegawai OS, Izin, Rekap Kehadiran, Profil. |
-| **`ANAK_MAGANG`** | `/magang/dashboard` | Dashboard, Kehadiran (Check-in/Check-out), Terlambat, Pengajuan Izin, Riwayat Presensi, Profil, Jobdesk/Tugas, Log Book Harian. |
-| **`KARYAWAN_OS`** | `/pegawai-os/dashboard` | Dashboard, Kehadiran (Check-in/Check-out), Terlambat, Pengajuan Izin, Riwayat Presensi, Profil. |
+| Role               | Dashboard Default       | Hak Akses Halaman                                                                                                                                                 |
+| :----------------- | :---------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`SUPERADMIN`**   | `/admin/dashboard`      | Akses penuh ke seluruh menu: Dashboard, Pendaftaran, Anak Magang, Pegawai OS, Izin, Log Book, Rekap Kehadiran, Tugas, Pengaturan Sistem, Verifikasi Akun, Profil. |
+| **`ADMIN_MAGANG`** | `/admin/dashboard`      | Dashboard, Pendaftaran Magang, Data Anak Magang, Izin, Log Book, Rekap Kehadiran, Profil.                                                                         |
+| **`ADMIN_OS`**     | `/admin/dashboard`      | Dashboard, Data Pegawai OS, Izin, Rekap Kehadiran, Profil.                                                                                                        |
+| **`ANAK_MAGANG`**  | `/magang/dashboard`     | Dashboard, Kehadiran (Check-in/Check-out), Terlambat, Pengajuan Izin, Riwayat Presensi, Profil, Jobdesk/Tugas, Log Book Harian.                                   |
+| **`KARYAWAN_OS`**  | `/pegawai-os/dashboard` | Dashboard, Kehadiran (Check-in/Check-out), Terlambat, Pengajuan Izin, Riwayat Presensi, Profil.                                                                   |
 
 ---
 
 ## Teknologi yang Digunakan
 
 ### Core Framework & Bahasa
+
 - **Next.js**: `^16.3.2` (React Framework dengan App Router architecture)
 - **React**: `^19.2.4` / React DOM `^19.2.4`
 - **TypeScript**: `^5.9.3`
 - **Node.js**: Environment runtime server-side
 
 ### Database & Data Access
+
 - **MySQL Database**: Engine database relasional
 - **mysql2 / promise**: `^3.13.0` (Connection pooling client native untuk eksekusi query parameterized)
 - **Prisma**: `^7.9.1` & `@prisma/client: ^7.9.1` (Schema definitions dan declarative models)
 
 ### Styling & UI Components
+
 - **TailwindCSS**: `^4.0.0`
 - **Mantine Core**: `@mantine/core ^9.5.1` & `@mantine/hooks ^9.5.1`
 - **HeroUI**: `@heroui/react ^3.2.4`
@@ -86,6 +89,7 @@ Hak akses diatur melalui permission matrix di `src/lib/permissions.ts`:
 - **clsx** (`^2.1.1`) & **tailwind-merge** (`^3.6.0`): Dynamic class merging utilities
 
 ### Keamanan & Utilitas
+
 - **bcryptjs**: `^3.0.3` (Hashing dan verifikasi password)
 - **date-fns**: `^4.4.0` (Manipulasi tanggal dan waktu)
 
@@ -94,7 +98,7 @@ Hak akses diatur melalui permission matrix di `src/lib/permissions.ts`:
 ## Struktur Project
 
 ```text
-SiPresma/
+Hadir.in/
 ├── public/
 │   ├── uploads/                     # Direktori penyimpanan media lokal
 │   │   ├── absensi/DD-MM-YYYY/      # Foto bukti check-in/check-out
@@ -118,7 +122,6 @@ SiPresma/
 │   │   │   ├── rekap-kehadiran/     # Laporan & rekap presensi
 │   │   │   ├── roles/               # Pengaturan role
 │   │   │   ├── tugas/               # Distribusi tugas/jobdesk
-│   │   │   └── verifikasi-akun/     # Verifikasi akun pendaftar baru
 │   │   ├── api/                     # Backend API Route Handlers
 │   │   │   ├── absensi/             # Endpoint presensi harian
 │   │   │   ├── admin/               # Endpoint data admin
@@ -226,7 +229,9 @@ SiPresma/
 Database utama menggunakan engine **MySQL** (default nama database: `hadir_in`). Interaksi aktif query backend menggunakan native connection pool via `mysql2/promise` dengan placeholder query `?` untuk keamanan dari injeksi SQL.
 
 ### 1. Tabel `admin`
+
 Menyimpan kredensial dan data profil untuk administrator.
+
 - **Primary Key**: `id` (INT Auto Increment)
 - **Kolom Penting**:
   - `name`: VARCHAR - Nama lengkap admin
@@ -241,7 +246,9 @@ Menyimpan kredensial dan data profil untuk administrator.
   - `created_at`, `updated_at`: TIMESTAMP
 
 ### 2. Tabel `peserta_magang`
+
 Menyimpan data peserta magang yang terdaftar aktif.
+
 - **Primary Key**: `id` (INT Auto Increment)
 - **Kolom Penting**:
   - `name`: VARCHAR - Nama lengkap siswa/mahasiswa
@@ -260,7 +267,9 @@ Menyimpan data peserta magang yang terdaftar aktif.
   - Berelasi ke `log_book` via tugas atau identitas peserta
 
 ### 3. Tabel `karyawan_os`
+
 Menyimpan data karyawan Outsourcing (OS).
+
 - **Primary Key**: `id` (INT Auto Increment)
 - **Kolom Penting**:
   - `name`: VARCHAR
@@ -276,7 +285,9 @@ Menyimpan data karyawan Outsourcing (OS).
 - **Relasi**: Berelasi ke `absensi.karyawan_os_id` (1-to-many)
 
 ### 4. Tabel `absensi`
+
 Mencatat presensi harian untuk peserta magang maupun karyawan OS.
+
 - **Primary Key**: `id` (INT Auto Increment)
 - **Foreign Keys**:
   - `peserta_magang_id`: INT (Nullable) -> `peserta_magang(id)`
@@ -296,7 +307,9 @@ Mencatat presensi harian untuk peserta magang maupun karyawan OS.
   - `status`: ENUM (`HADIR`, `IZIN`, `SAKIT`, `ALPA`)
 
 ### 5. Tabel `izin`
+
 Menyimpan rekaman permohonan izin/sakit.
+
 - **Primary Key**: `id` (INT Auto Increment)
 - **Kolom Penting**:
   - `peserta_magang_id`: INT (Nullable)
@@ -309,7 +322,9 @@ Menyimpan rekaman permohonan izin/sakit.
   - `created_at`: TIMESTAMP
 
 ### 6. Tabel `tugas`
+
 Menyimpan tugas/jobdesk yang diberikan kepada peserta magang.
+
 - **Primary Key**: `id` (INT Auto Increment)
 - **Foreign Key**:
   - `peserta_magang_id`: INT -> `peserta_magang(id)`
@@ -318,10 +333,12 @@ Menyimpan tugas/jobdesk yang diberikan kepada peserta magang.
   - `judul_tugas`: VARCHAR
   - `status_pengerjaan`: ENUM (`BELUM_DIKERJAKAN`, `SELESAI`)
   - `created_at`, `updated_at`: TIMESTAMP
-- *Catatan Skema*: Kolom `deskripsi` dan `kategori` telah dihapus melalui migrasi pembaruan tabel agar referensi kategori dan detail pengerjaan langsung terintegrasi dengan tabel `log_book`.
+- _Catatan Skema_: Kolom `deskripsi` dan `kategori` telah dihapus melalui migrasi pembaruan tabel agar referensi kategori dan detail pengerjaan langsung terintegrasi dengan tabel `log_book`.
 
 ### 7. Tabel `log_book`
+
 Mencatat aktivitas detail harian peserta magang.
+
 - **Primary Key**: `id` (INT Auto Increment)
 - **Kolom Penting**:
   - `tanggal`: DATE
@@ -332,7 +349,9 @@ Mencatat aktivitas detail harian peserta magang.
   - `created_at`: TIMESTAMP
 
 ### 8. Tabel `pendaftaran`
+
 Menampung calon peserta yang mendaftar program magang secara online.
+
 - **Primary Key**: `id` (INT Auto Increment)
 - **Kolom Penting**:
   - `nama`: VARCHAR
@@ -348,7 +367,9 @@ Menampung calon peserta yang mendaftar program magang secara online.
   - `created_at`: TIMESTAMP
 
 ### 9. Tabel `pengaturan_sistem`
+
 Konfigurasi operasional global aplikasi.
+
 - **Primary Key**: `id` (INT)
 - **Kolom Penting**:
   - `jam_masuk`: TIME (Default: `'07:30'`)
@@ -370,6 +391,7 @@ Konfigurasi operasional global aplikasi.
 Semua endpoint berakar di path `/api/` dan mengembalikan format JSON terstandarisasi `{ success, data, message }`.
 
 ### Autentikasi (`/api/auth`)
+
 - **`POST /api/auth/login`**
   - **Fungsi**: Login pengguna lintas entitas.
   - **Body**: `{ identifier: string, password: string }`
@@ -382,6 +404,7 @@ Semua endpoint berakar di path `/api/` dan mengembalikan format JSON terstandari
   - **Fungsi**: Memperbarui kata sandi akun pengguna.
 
 ### Presensi (`/api/absensi` & `/api/attendance`)
+
 - **`GET /api/absensi`**
   - **Fungsi**: Mengambil daftar data presensi harian dengan parameter filter (`tanggal`, `bulan`, `tahun`, `user_id`, `role`).
 - **`POST /api/absensi`**
@@ -392,6 +415,7 @@ Semua endpoint berakar di path `/api/` dan mengembalikan format JSON terstandari
   - **Fungsi**: Menghapus data rekaman absensi tertentu.
 
 ### Perizinan (`/api/izin`)
+
 - **`GET /api/izin`**
   - **Fungsi**: Menampilkan riwayat permohonan izin berdasarkan filter user atau semua pengguna untuk admin.
 - **`POST /api/izin`**
@@ -400,6 +424,7 @@ Semua endpoint berakar di path `/api/` dan mengembalikan format JSON terstandari
   - **Fungsi**: Menghapus data permohonan izin.
 
 ### Manajemen Tugas & Jobdesk (`/api/tugas` & `/api/jobdesk`)
+
 - **`GET /api/tugas`**
   - **Fungsi**: Mengambil daftar tugas berdasarkan filter `peserta_magang_id`.
 - **`POST /api/tugas`**
@@ -410,6 +435,7 @@ Semua endpoint berakar di path `/api/` dan mengembalikan format JSON terstandari
   - **Fungsi**: Menghapus tugas dari database.
 
 ### Log Book Kegiatan (`/api/log-book`)
+
 - **`GET /api/log-book`**
   - **Fungsi**: Mengambil daftar log kegiatan berdasarkan tanggal atau identitas peserta.
 - **`POST /api/log-book`**
@@ -420,6 +446,7 @@ Semua endpoint berakar di path `/api/` dan mengembalikan format JSON terstandari
   - **Fungsi**: Menghapus entri log book.
 
 ### Pendaftaran Magang (`/api/pendaftar` & `/api/pendaftaran`)
+
 - **`GET /api/pendaftar`**
   - **Fungsi**: Mengambil daftar data pelamar magang dengan filter status (`PENDING`, `DITERIMA`, `DITOLAK`).
 - **`POST /api/pendaftar`**
@@ -430,6 +457,7 @@ Semua endpoint berakar di path `/api/` dan mengembalikan format JSON terstandari
   - **Fungsi**: Menghapus data pelamar.
 
 ### Pengaturan & Utilitas Sistem
+
 - **`GET /api/settings`** & **`POST /api/settings`**: Membaca dan memperbarui record pengaturan jam kerja, toleransi, nomor WA, hari libur, dan jadwal pendaftaran di tabel `pengaturan_sistem`.
 - **`GET /api/server-time`**: Mengembalikan timestamp dan objek jam server aktual dalam zona waktu `Asia/Jakarta` agar presensi tidak dimanipulasi oleh jam lokal perangkat pengguna.
 - **`GET /api/statistics`**: Mengembalikan rekapitulasi data presensi hari ini (jumlah hadir, terlambat, izin, alpa, pulang cepat).
@@ -531,7 +559,7 @@ Alur dan aturan bisnis presensi bekerja sebagai berikut:
 1. **Pencatatan Aktivitas**:
    - Peserta magang mencatat kegiatan kerja harian pada menu `/magang/log-book`.
    - Setiap entri mencatat tanggal pelaksanaan, `waktu_mulai`, `waktu_selesai`, serta deskripsi detail `aktivitas`.
-3. **Monitoring & Cetak Laporan**:
+2. **Monitoring & Cetak Laporan**:
    - Admin memantau seluruh catatan log book di `/admin/log-book`.
    - Halaman dilengkapi fitur cetak laporan log book untuk arsip pertanggungjawaban kegiatan magang.
 
@@ -597,6 +625,7 @@ NEXT_PUBLIC_TIMEZONE="Asia/Jakarta"
 ## Instalasi & Menjalankan Project
 
 ### Prasyarat Sistem
+
 - **Node.js**: Versi `>= 18.18.0` (Disarankan Node.js LTS)
 - **Database**: MySQL Server versi `>= 5.7` atau `>= 8.0`
 - **Package Manager**: `npm` (atau `yarn` / `pnpm`)
@@ -604,18 +633,21 @@ NEXT_PUBLIC_TIMEZONE="Asia/Jakarta"
 ### Langkah-langkah Instalasi
 
 1. **Clone Repository**:
+
    ```bash
    git clone <repository_url>
    cd Hadirin
    ```
 
 2. **Install Dependensi**:
+
    ```bash
    npm install
    ```
 
 3. **Konfigurasi Environment**:
    Salin file konfigurasi dan sesuaikan kredensial database Anda:
+
    ```bash
    cp .env.example .env # atau sesuaikan file .env yang ada
    ```
@@ -632,13 +664,14 @@ NEXT_PUBLIC_TIMEZONE="Asia/Jakarta"
    ```text
    http://localhost:3000
    ```
-   *(Sesuai konfigurasi script `package.json`, server berjalan pada mode `next dev -H 0.0.0.0` sehingga dapat diakses melalui IP lokal jaringan).*
+   _(Sesuai konfigurasi script `package.json`, server berjalan pada mode `next dev -H 0.0.0.0` sehingga dapat diakses melalui IP lokal jaringan)._
 
 ---
 
 ## Build & Deployment
 
 ### Build Production
+
 Untuk menguji dan menghasilkan bundle production yang dioptimasi:
 
 ```bash
@@ -646,14 +679,17 @@ npm run build
 ```
 
 ### Menjalankan Mode Production
+
 Setelah proses build selesai, jalankan server production:
 
 ```bash
 npm run start
 ```
+
 Server production akan mendengarkan request pada port 3000 di seluruh interface network (`0.0.0.0:3000`).
 
 ### Pertimbangan Deployment
+
 1. **Penyimpanan Berkas Unggahan (Persistent Storage)**:
    - File presensi, avatar, dan berkas izin disimpan secara lokal pada folder `public/uploads/`.
    - Pada deployment berbasis container (Docker) atau serverless (Vercel/AWS Amplify), pastikan direktori `public/uploads` dimount ke persistent volume, atau migrasikan ke Object Storage pihak ketiga (misal: S3/Cloudinary) jika sistem dideploy secara stateless.
@@ -672,7 +708,8 @@ Berdasarkan implementasi source code aktif:
 - **File Storage Safety**: Direktori unggahan diorganisir per tanggal dan kategori dengan penamaan acak/timestamp unik untuk mencegah penimpaan file (file overwriting).
 - **Pembatasan Tombol Enter Global**: Mengurangi risiko submit data formulir ganda secara tidak sengaja oleh pengguna.
 
-*Catatan Keamanan Tambahan dari Analisis Source Code*:
+_Catatan Keamanan Tambahan dari Analisis Source Code_:
+
 - Otorisasi endpoint API saat ini berfokus pada validasi payload server-side; disarankan untuk menambahkan middleware validasi token/session cookie tersentralisasi (HTTP-only) untuk proteksi endpoint API yang lebih ketat.
 - Rate limiting dan CSRF token: `Belum ditemukan dalam source code`.
 
@@ -686,7 +723,7 @@ Berdasarkan implementasi source code aktif:
    - Buka endpoint `http://localhost:3000/api/db-status` untuk mengecek konektivitas database langsung dari API.
 
 2. **Gagal Mengunggah Foto Presensi**:
-   - Pastikan folder `public/uploads/absensi/` memiliki izin baca dan tulis (*write permission*) oleh user runtime Node.js.
+   - Pastikan folder `public/uploads/absensi/` memiliki izin baca dan tulis (_write permission_) oleh user runtime Node.js.
    - Pastikan izin akses webcam/kamera telah diizinkan pada browser pengguna.
 
 3. **Akun Baru Tidak Bisa Login**:

@@ -1,5 +1,5 @@
 // ============================================================
-// SiPresma — Type Definitions
+// Hadir.in — Type Definitions
 // Design System v2
 //
 // Database mapping:
@@ -224,6 +224,8 @@ export interface User {
   unit_kerja?: string;
 
   bagian?: string;
+
+  semester?: number | string | null;
 
   divisi?: string | null;
 
@@ -517,6 +519,8 @@ export interface Pendaftar {
   study_program: string;
 
   jurusan?: string;
+
+  semester?: string | number | null;
 
   // ----------------------------------------------------------
   // Address & Divisi

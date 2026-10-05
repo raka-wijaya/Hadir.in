@@ -8,12 +8,7 @@ import React, {
   useRef,
 } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import {
-  Alert,
-  AlertTitle,
-  AlertDescription,
-  AlertModal,
-} from "@/components/ui/Alert";
+
 import { ModalPortal } from "@/components/ui/ModalPortal";
 import { showNotification } from "@/components/ui/NotificationProvider";
 import { Spinner } from "@/components/ui/Spinner";
@@ -184,17 +179,7 @@ export default function AdminIzinPage() {
     catatanAdmin: "",
   });
 
-  const [modalAlert, setModalAlert] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    color: "red" | "green" | "blue" | "yellow";
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    color: "red",
-  });
+
 
   const showAlert = (
     message: string,
@@ -674,13 +659,7 @@ export default function AdminIzinPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <AlertModal
-          isOpen={modalAlert.isOpen}
-          title={modalAlert.title}
-          message={modalAlert.message}
-          color={modalAlert.color}
-          onClose={() => setModalAlert((prev) => ({ ...prev, isOpen: false }))}
-        />
+
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
           <div>

@@ -1,4 +1,4 @@
-// Prisma Schema for SiPresma (MySQL Database)
+// Prisma Schema for Hadir.in (MySQL Database)
 
 generator client {
   provider = "prisma-client-js"
@@ -77,6 +77,7 @@ model User {
   institution    String?
   unit_kerja     String?
   studyProgram   String?
+  semester       Int?
   bagian         String?
   periode_mulai  String?
   periode_selesai String?
@@ -187,7 +188,7 @@ model Tugas {
 
 model SystemSetting {
   id                        Int      @id @default(1)
-  systemName                String   @default("SiPresma")
+  systemName                String   @default("Hadir.in")
   timezone                  String   @default("Asia/Jakarta")
   jamMasukStandar           String   @default("07:30") @map("check_in_time")
   jamPulangStandar          String   @default("16:00") @map("check_out_time")

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/Alert";
 import { ServerClock } from "@/components/ui/ServerClock";
 import { CameraCapture } from "@/components/attendance/CameraCapture";
 import { PhotoModal } from "@/components/attendance/PhotoModal";
@@ -833,16 +832,16 @@ export default function MagangDashboardPage() {
               (task.status_pengerjaan || "BELUM_DIKERJAKAN") ===
               "BELUM_DIKERJAKAN",
           ).length > 0 && (
-            <Alert className="border-primary/30 bg-primary/5 text-foreground shadow-card">
-              <Briefcase className="text-primary mt-1" />
+            <div className="relative w-full rounded-2xl border border-primary/30 bg-primary/5 text-foreground shadow-card px-4 py-3.5 flex items-start gap-3">
+              <Briefcase className="w-5 h-5 text-primary shrink-0 mt-0.5" />
 
-              <div className="col-start-2 flex-1 space-y-3">
+              <div className="flex-1 space-y-3">
                 <div>
-                  <AlertTitle className="text-sm font-extrabold text-foreground">
+                  <h4 className="text-sm font-extrabold text-foreground">
                     Ada Tugas Baru
-                  </AlertTitle>
+                  </h4>
 
-                  <AlertDescription className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Kamu memiliki{" "}
                     <span className="font-bold text-primary">
                       {
@@ -855,7 +854,7 @@ export default function MagangDashboardPage() {
                       tugas
                     </span>{" "}
                     yang perlu dikerjakan.
-                  </AlertDescription>
+                  </p>
                 </div>
 
                 {/* Daftar tugas yang belum dikerjakan */}
@@ -905,7 +904,7 @@ export default function MagangDashboardPage() {
                     })}
                 </div>
               </div>
-            </Alert>
+            </div>
           )}
 
         {previewRecord && (

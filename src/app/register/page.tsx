@@ -55,6 +55,7 @@ function PasswordRequirement({
 
 export default function RegisterPage() {
   const router = useRouter();
+  const formRef = React.useRef<HTMLFormElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -69,6 +70,22 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
+
+  // Pastikan form selalu bersih ketika halaman pertama kali dibuka atau dibuka kembali
+  React.useEffect(() => {
+    setForm({
+      nama: "",
+      email: "",
+      no_hp: "",
+      identity_number: "",
+      password: "",
+      confirmPassword: "",
+    });
+    setShowPassword(false);
+    setShowConfirm(false);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  }, []);
 
   const set =
     (key: keyof typeof form) =>
@@ -184,6 +201,14 @@ export default function RegisterPage() {
         : null;
 
       if (!res.ok || !data?.success) {
+        // Kosongkan password dan konfirmasi password saat pendaftaran gagal
+        setForm((prev) => ({
+          ...prev,
+          password: "",
+          confirmPassword: "",
+        }));
+        setShowPassword(false);
+        setShowConfirm(false);
         const errMsg =
           data?.message || "Gagal memproses pendaftaran akun internal.";
         setErrorMsg(errMsg);
@@ -193,6 +218,22 @@ export default function RegisterPage() {
           message: errMsg,
         });
         return;
+      }
+
+      // Reset seluruh form dan state
+      setForm({
+        nama: "",
+        email: "",
+        no_hp: "",
+        identity_number: "",
+        password: "",
+        confirmPassword: "",
+      });
+      setShowPassword(false);
+      setShowConfirm(false);
+      setErrorMsg(null);
+      if (formRef.current) {
+        formRef.current.reset();
       }
 
       const successText =
@@ -213,6 +254,14 @@ export default function RegisterPage() {
       });
     } catch (error) {
       console.error("Register request error:", error);
+      // Kosongkan password saat request gagal
+      setForm((prev) => ({
+        ...prev,
+        password: "",
+        confirmPassword: "",
+      }));
+      setShowPassword(false);
+      setShowConfirm(false);
       const errMsg = "Gagal terhubung ke server. Silakan coba lagi.";
       setErrorMsg(errMsg);
       showNotification({
@@ -245,7 +294,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-3.5">
           <div className="space-y-2 p-3 rounded-lg border border-border bg-background">
             <div className="flex items-start flex-col gap-2">
               <p className="text-xs font-sans font-bold text-card-foreground">
@@ -267,7 +316,7 @@ export default function RegisterPage() {
                 onChange={(e) =>
                   setSelectedRole(e.target.value as InternalRole)
                 }
-                className={`${inputClass} font-semibold`}
+                className={`${inputClass} font-semibold cursor-pointer`}
               >
                 <option value="KARYAWAN_OS">
                   KARYAWAN OS | Karyawan Outsourcing

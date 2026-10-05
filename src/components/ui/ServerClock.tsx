@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
-const LAST_ACTIVITY_KEY = "sipresma_last_activity";
+const LAST_ACTIVITY_KEY = "hadir_in_last_activity";
 const SHOW_COUNTDOWN_THRESHOLD_MS = 3 * 60 * 1000;
 
 export function ServerClock({ className = "" }: { className?: string }) {
@@ -23,7 +23,7 @@ export function ServerClock({ className = "" }: { className?: string }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const calcRemaining = useCallback(() => {
-    const user = localStorage.getItem("sipresma_user");
+    const user = localStorage.getItem("hadirin");
     const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
 
     setIsLoggedIn(Boolean(user));

@@ -6,7 +6,7 @@ import { ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
 
 export default function AdminRolesPage() {
   const roles = [
-    { name: "Super Admin", code: "SUPERADMIN", desc: "Akses penuh seluruh fitur sistem SiPresma" },
+    { name: "Super Admin", code: "SUPERADMIN", desc: "Akses penuh seluruh fitur sistem Hadir.in" },
     { name: "Admin Magang", code: "ADMIN_MAGANG", desc: "Pengelolaan data anak magang, izin & pendaftaran" },
     { name: "Admin OS", code: "ADMIN_OS", desc: "Pengelolaan pegawai OS, izin & rekap OS" },
     { name: "Anak Magang", code: "ANAK_MAGANG", desc: "Absensi kamera, izin, riwayat & jobdesk magang" },
@@ -28,8 +28,16 @@ export default function AdminRolesPage() {
   const hasAccess = (roleCode: string, featureKey: string) => {
     if (roleCode === "SUPER_ADMIN" || roleCode === "SUPERADMIN") return true;
     if (roleCode === "ADMIN_MAGANG") {
-      return ["dashboard", "pendaftaran", "magang", "izin", "rekap", "jobdesk"].includes(featureKey);
+      return [
+        "dashboard",
+        "pendaftaran",
+        "magang",
+        "izin",
+        "rekap",
+        "jobdesk",
+      ].includes(featureKey);
     }
+
     if (roleCode === "ADMIN_OS") {
       return ["dashboard", "os", "izin", "rekap"].includes(featureKey);
     }
@@ -50,7 +58,7 @@ export default function AdminRolesPage() {
             Manajemen Role & Hak Akses (RBAC)
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground">
-            Matriks permission hak akses fitur berdasarkan 5 peran pengguna SiPresma
+            Matriks permission hak akses fitur berdasarkan 5 peran pengguna Hadir.in
           </p>
         </div>
 

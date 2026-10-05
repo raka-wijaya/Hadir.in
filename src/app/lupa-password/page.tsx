@@ -5,19 +5,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { showNotification } from "@/components/ui/NotificationProvider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Eye,
-  EyeOff,
-  KeyRound,
-  ShieldCheck,
-  Lock,
-  Mail,
-  CheckCircle2,
-  ArrowLeft,
-  AlertTriangle,
-} from "lucide-react";
-
-type StepType = "form" | "success";
+import { Eye, EyeOff, Lock, Mail, AlertTriangle } from "lucide-react";
 
 function PasswordRequirement({
   valid,
@@ -49,13 +37,34 @@ function PasswordRequirement({
 
 export default function LupaPasswordPage() {
   const router = useRouter();
-  const [step, setStep] = useState<StepType>("form");
+  const formRef = React.useRef<HTMLFormElement | null>(null);
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  /**
+   * API Laravel
+   */
+  const API_ENDPOINTS = [
+    "http://127.0.0.1:8000/api/admin",
+    "http://127.0.0.1:8000/api/peserta-magang",
+    "http://127.0.0.1:8000/api/karyawan-os",
+  ];
+
+  // Pastikan form bersih saat halaman dimuat
+  React.useEffect(() => {
+    setEmail("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setShowConfirm(false);
+  }, []);
+
   const inputClass =
     "w-full rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground placeholder:text-muted-foreground transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring";
 
@@ -136,28 +145,152 @@ export default function LupaPasswordPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const normalizedEmail = email.trim().toLowerCase();
+
+      /**
+       * Cari email pada:
+       * 1. admin
+       * 2. peserta-magang
+       * 3. karyawan-os
+       */
+      let foundUser: any = null;
+      let foundEndpoint = "";
+
+      for (const endpoint of API_ENDPOINTS) {
+        try {
+          const res = await fetch(endpoint, {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+            },
+          });
+
+          if (!res.ok) {
+            continue;
+          }
+
+          const contentType = res.headers.get("content-type") || "";
+
+          if (!contentType.includes("application/json")) {
+            continue;
+          }
+
+          const data = await res.json();
+
+          /**
+           * Mendukung beberapa kemungkinan
+           * response Laravel:
+           *
+           * [
+           *   {...}
+           * ]
+           *
+           * atau:
+           *
+           * {
+           *   data: [...]
+           * }
+           */
+          const users = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.data)
+              ? data.data
+              : Array.isArray(data?.users)
+                ? data.users
+                : [];
+
+          const user = users.find(
+            (item: any) =>
+              String(item?.email || "").trim().toLowerCase() ===
+              normalizedEmail,
+          );
+
+          if (user) {
+            foundUser = user;
+            foundEndpoint = endpoint;
+            break;
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      /**
+       * Email tidak ditemukan pada
+       * ketiga endpoint Laravel.
+       */
+      if (!foundUser) {
+        setNewPassword("");
+        setConfirmPassword("");
+        setShowPassword(false);
+        setShowConfirm(false);
+
+        showNotification({
+          type: "error",
+          message:
+            "Email tidak ditemukan. Periksa kembali alamat email Anda.",
+        });
+
+        return;
+      }
+
+      /**
+       * Update password menggunakan
+       * endpoint Laravel yang sesuai.
+       *
+       * Contoh:
+       * PATCH /api/admin/1
+       * PATCH /api/peserta-magang/1
+       * PATCH /api/karyawan-os/1
+       */
+      const updateRes = await fetch(
+        `${foundEndpoint}/${foundUser.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            password: newPassword,
+          }),
         },
-        body: JSON.stringify({
-          email: email.trim(),
-          newPassword,
-        }),
-      });
+      );
 
-      const contentType = res.headers.get("content-type") || "";
+      const updateContentType =
+        updateRes.headers.get("content-type") || "";
 
-      const data = contentType.includes("application/json")
-        ? await res.json()
+      const updateData = updateContentType.includes("application/json")
+        ? await updateRes.json()
         : null;
 
-      if (!res.ok || !data?.success) {
-        const errMsg =
-          data?.message || "Gagal mereset password. Periksa alamat email Anda.";
-        showNotification({ type: "error", message: errMsg });
+      if (!updateRes.ok) {
+        setNewPassword("");
+        setConfirmPassword("");
+        setShowPassword(false);
+        setShowConfirm(false);
+
+        showNotification({
+          type: "error",
+          message:
+            updateData?.message ||
+            "Gagal mengubah password. Silakan coba kembali.",
+        });
+
         return;
+      }
+
+      /**
+       * Reset seluruh form setelah berhasil.
+       */
+      setEmail("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowPassword(false);
+      setShowConfirm(false);
+
+      if (formRef.current) {
+        formRef.current.reset();
       }
 
       showNotification({
@@ -165,12 +298,22 @@ export default function LupaPasswordPage() {
         title: "Password Berhasil Diubah",
         message:
           "Password akun Anda telah berhasil direset. Silakan masuk menggunakan password baru Anda.",
+        confirmLabel: "Ke Halaman Login",
+        onClose: () => {
+          router.push("/login");
+        },
       });
-      setStep("success");
     } catch {
+      // Kosongkan field password jika terjadi error koneksi
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowPassword(false);
+      setShowConfirm(false);
+
       showNotification({
         type: "error",
-        message: "Gagal terhubung ke server. Periksa koneksi internet Anda.",
+        message:
+          "Gagal terhubung ke server. Periksa koneksi internet Anda.",
       });
     } finally {
       setIsLoading(false);
@@ -184,22 +327,30 @@ export default function LupaPasswordPage() {
           <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground font-sans font-bold text-lg flex items-center justify-center mx-auto shadow-card">
             H
           </div>
+
           <h1 className="text-lg font-bold font-sans tracking-tight text-card-foreground">
             Lupa Password
           </h1>
+
           <p className="text-xs font-sans text-muted-foreground">
             Masukkan email terdaftar dan buat password baru
           </p>
         </div>
+
         <div className="bg-accent border border-primary/25 rounded-lg p-2.5 flex items-start gap-2">
           <AlertTriangle className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+
           <p className="text-xs font-sans text-accent-foreground leading-relaxed">
-            Masukkan email yang terdaftar, kemudian buat password baru. Pastikan
-            Anda mengingat password baru ini.
+            Masukkan email yang terdaftar, kemudian buat password baru.
+            Pastikan Anda mengingat password baru ini.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          className="space-y-3"
+        >
           <div className="space-y-1">
             <label className="text-xs font-sans font-bold text-card-foreground flex items-center gap-1">
               <Mail className="w-3.5 h-3.5 text-primary" />
@@ -240,7 +391,9 @@ export default function LupaPasswordPage() {
 
               <button
                 type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
+                onClick={() =>
+                  setShowPassword((prev) => !prev)
+                }
                 className="
                   absolute
                   right-2.5
@@ -254,7 +407,9 @@ export default function LupaPasswordPage() {
                   cursor-pointer
                 "
                 aria-label={
-                  showPassword ? "Sembunyikan password" : "Tampilkan password"
+                  showPassword
+                    ? "Sembunyikan password"
+                    : "Tampilkan password"
                 }
               >
                 {showPassword ? (
@@ -322,7 +477,9 @@ export default function LupaPasswordPage() {
 
               <button
                 type="button"
-                onClick={() => setShowConfirm((prev) => !prev)}
+                onClick={() =>
+                  setShowConfirm((prev) => !prev)
+                }
                 className="
                   absolute
                   right-2.5
@@ -336,7 +493,9 @@ export default function LupaPasswordPage() {
                   cursor-pointer
                 "
                 aria-label={
-                  showConfirm ? "Sembunyikan password" : "Tampilkan password"
+                  showConfirm
+                    ? "Sembunyikan password"
+                    : "Tampilkan password"
                 }
               >
                 {showConfirm ? (

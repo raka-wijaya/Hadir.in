@@ -24,6 +24,7 @@ import {
   MessageSquareText,
   NotebookPen,
   Briefcase,
+  Globe,
 } from "lucide-react";
 import { ModalPortal } from "@/components/ui/ModalPortal";
 
@@ -104,17 +105,17 @@ export function Sidebar({
     },
 
     {
-      category: "PENDAFTARAN & VERIFIKASI",
+      category: "PENDAFTARAN & LANDING PAGE",
       items: [
-        {
-          title: "Verifikasi Akun",
-          href: "/admin/verifikasi-akun",
-          icon: <ShieldCheck className="w-4 h-4" />,
-        },
         {
           title: "Pendaftaran Magang",
           href: "/admin/pendaftaran",
           icon: <ClipboardList className="w-4 h-4" />,
+        },
+        {
+          title: "Landing Page Magang",
+          href: "/admin/magang",
+          icon: <Globe className="w-4 h-4" />,
         },
       ],
     },
@@ -202,6 +203,11 @@ export function Sidebar({
           title: "Pendaftaran Magang",
           href: "/admin/pendaftaran",
           icon: <ClipboardList className="w-4 h-4" />,
+        },
+        {
+          title: "Landing Page Magang",
+          href: "/admin/magang",
+          icon: <Globe className="w-4 h-4" />,
         },
       ],
     },

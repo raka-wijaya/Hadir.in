@@ -43,6 +43,11 @@ async function ensurePesertaMagangSchema() {
         `ALTER TABLE peserta_magang ADD COLUMN divisi VARCHAR(150) NULL AFTER batch`
       );
     }
+    if (!existing.has("semester")) {
+      await mysqlPool.query(
+        `ALTER TABLE peserta_magang ADD COLUMN semester TINYINT UNSIGNED NULL AFTER study_program`
+      );
+    }
     isPesertaMagangTableChecked = true;
   } catch (err) {
     console.warn("Auto-migration check peserta_magang schema:", err);
@@ -67,6 +72,7 @@ export async function GET(req: Request) {
         identity_number,
         institution,
         study_program,
+        semester,
         divisi,
         avatar,
         start_date,
@@ -115,6 +121,7 @@ export async function GET(req: Request) {
         identity_number: row.identity_number || null,
         institution: row.institution || null,
         study_program: row.study_program || null,
+        semester: row.semester !== null && row.semester !== undefined ? Number(row.semester) : null,
         avatar: row.avatar || null,
         start_date: startDateFormatted,
         end_date: endDateFormatted,
@@ -178,6 +185,7 @@ export async function POST(req: Request) {
     const rawEndDate = body.end_date || body.endDate || body.periode_selesai;
     const rawBatch = body.batch;
     const rawDivisi = body.divisi;
+    const rawSemester = body.semester;
 
     if (!rawName || !rawEmail) {
       return NextResponse.json(
@@ -198,6 +206,13 @@ export async function POST(req: Request) {
     const studyProgram = rawStudyProgram
       ? String(rawStudyProgram).trim().slice(0, 150)
       : null;
+    const semester =
+      rawSemester !== undefined &&
+      rawSemester !== null &&
+      rawSemester !== "" &&
+      rawSemester !== "-"
+        ? Number(rawSemester)
+        : null;
     const startDate = rawStartDate
       ? String(rawStartDate).trim().slice(0, 10)
       : null;
@@ -249,8 +264,8 @@ export async function POST(req: Request) {
     const hashedPassword = await hashPassword(rawPassword);
 
     const [insertRes]: any = await mysqlPool.query(
-      `INSERT INTO peserta_magang (name, email, password, status, phone, identity_number, institution, study_program, divisi, avatar, start_date, end_date, batch)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO peserta_magang (name, email, password, status, phone, identity_number, institution, study_program, semester, divisi, avatar, start_date, end_date, batch)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name,
         email,
@@ -260,6 +275,7 @@ export async function POST(req: Request) {
         identityNumber,
         institution,
         studyProgram,
+        semester,
         divisi,
         finalAvatar,
         startDate,
@@ -343,6 +359,7 @@ export async function PATCH(req: Request) {
       rejectionReason,
       batch,
       divisi,
+      semester,
     } = body;
 
     if (!id) {
@@ -501,6 +518,14 @@ export async function PATCH(req: Request) {
       params.push(
         divisi !== null && divisi !== ""
           ? String(divisi).trim().slice(0, 150)
+          : null
+      );
+    }
+    if (semester !== undefined) {
+      fields.push("semester = ?");
+      params.push(
+        semester !== null && semester !== "" && semester !== "-"
+          ? Number(semester)
           : null
       );
     }

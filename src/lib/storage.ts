@@ -47,7 +47,7 @@ export function toDDMMYYYY(dateInput?: string | Date | null): string {
  */
 export async function saveStorageFile(
   fileOrBase64: any,
-  category: "absensi" | "izin" | "pendaftar" | "avatars" = "absensi",
+  category: "absensi" | "izin" | "pendaftar" | "avatars" | "magang" = "absensi",
   prefix: string = "foto",
   userIdOrIdentifier?: string | number,
   dateInput?: string | Date
