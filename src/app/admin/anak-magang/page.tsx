@@ -7,6 +7,14 @@ const LARAVEL_BASE_URL =
   process.env.NEXT_PUBLIC_LARAVEL_API ||
   "http://127.0.0.1:8000/api";
 const API_URL = `${LARAVEL_BASE_URL.replace(/\/+$/, "")}/peserta-magang`;
+const API_PENGATURAN = `${LARAVEL_BASE_URL.replace(/\/+$/, "")}/pengaturan-sistem`;
+
+// Interface Pengaturan Sistem dari backend Laravel
+interface PengaturanSistem {
+  tanggal_buka: string;
+  tanggal_tutup: string;
+  batch?: number | string | null;
+}
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -28,11 +36,17 @@ import {
   Pencil,
   Trash2,
   Filter,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export default function AdminAnakMagangPage() {
   const [interns, setInterns] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Data Pengaturan Sistem Aktif dari backend Laravel
+  const [settings, setSettings] = useState<PengaturanSistem | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   const [search, setSearch] = useState("");
   const [debounceSearch, setDebounceSearch] = useState("");
@@ -48,11 +62,9 @@ export default function AdminAnakMagangPage() {
   const [newInstitution, setNewInstitution] = useState("");
   const [newProgram, setNewProgram] = useState("");
   const [newDivisi, setNewDivisi] = useState("");
-  const [newStart, setNewStart] = useState("2026-07-01");
-  const [newEnd, setNewEnd] = useState("2026-10-31");
-  const [newBatch, setNewBatch] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [addErrors, setAddErrors] = useState<Record<string, string[]>>({});
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const [editItem, setEditItem] = useState<User | null>(null);
   const [editName, setEditName] = useState("");
@@ -62,15 +74,11 @@ export default function AdminAnakMagangPage() {
   const [editInstitution, setEditInstitution] = useState("");
   const [editProgram, setEditProgram] = useState("");
   const [editDivisi, setEditDivisi] = useState("");
-  const [editStart, setEditStart] = useState("");
-  const [editEnd, setEditEnd] = useState("");
-  const [editBatch, setEditBatch] = useState<string>("");
   const [editStatus, setEditStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
   const [editErrors, setEditErrors] = useState<Record<string, string[]>>({});
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [statusLoadingId, setStatusLoadingId] = useState<string | number | null>(null);
-
 
   useEffect(() => {
     if (showAddModal || Boolean(editItem)) {
@@ -100,11 +108,33 @@ export default function AdminAnakMagangPage() {
     });
   };
 
+  const MONTH_NAMES_ID = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+  ];
+
   const formatDate = (date: string | Date | null | undefined) => {
     if (!date) return "-";
+    const str = String(date).trim();
+    if (!str) return "-";
+
+    // Format YYYY-MM-DD
+    const ymd = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (ymd) {
+      const [, y, m, d] = ymd;
+      const mIdx = parseInt(m, 10) - 1;
+      return `${d} ${MONTH_NAMES_ID[mIdx] || m} ${y}`;
+    }
+
+    // Format DD-MM-YYYY
+    const dmy = str.match(/^(\d{2})-(\d{2})-(\d{4})/);
+    if (dmy) {
+      const [, d, m, y] = dmy;
+      const mIdx = parseInt(m, 10) - 1;
+      return `${d} ${MONTH_NAMES_ID[mIdx] || m} ${y}`;
+    }
 
     const d = new Date(date);
-
     if (isNaN(d.getTime())) return "-";
 
     return d.toLocaleDateString("id-ID", {
@@ -120,6 +150,43 @@ export default function AdminAnakMagangPage() {
     return Object.entries(errors)
       .map(([field, msgs]) => `${field}: ${msgs.join(", ")}`)
       .join(" | ");
+  };
+
+  const loadSettings = async () => {
+    try {
+      setSettingsLoading(true);
+      const res = await fetch(API_PENGATURAN, {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const result = await res.json();
+      let rawData = result?.data ?? result?.settings ?? result;
+      if (Array.isArray(rawData)) {
+        rawData = rawData[0] || null;
+      }
+
+      if (rawData?.tanggal_buka && rawData?.tanggal_tutup) {
+        setSettings({
+          tanggal_buka: rawData.tanggal_buka,
+          tanggal_tutup: rawData.tanggal_tutup,
+          batch: rawData.batch ?? null,
+        });
+      }
+    } catch (err: any) {
+      console.error("Gagal mengambil pengaturan sistem:", err);
+      showAlert(
+        "Gagal mengambil pengaturan sistem. Silakan coba lagi.",
+        "Pengaturan Sistem",
+        "red"
+      );
+    } finally {
+      setSettingsLoading(false);
+    }
   };
 
   const loadInterns = async () => {
@@ -164,6 +231,7 @@ export default function AdminAnakMagangPage() {
   };
 
   useEffect(() => {
+    loadSettings();
     loadInterns();
   }, []);
 
@@ -302,9 +370,9 @@ export default function AdminAnakMagangPage() {
         institution: newInstitution.trim() || null,
         study_program: newProgram.trim() || null,
         divisi: newDivisi.trim() || null,
-        start_date: newStart || null,
-        end_date: newEnd || null,
-        batch: newBatch ? Number(newBatch) : null,
+        start_date: settings?.tanggal_buka || null,
+        end_date: settings?.tanggal_tutup || null,
+        batch: settings?.batch ? Number(settings.batch) : null,
         status: "ACTIVE",
       };
 
@@ -341,9 +409,6 @@ export default function AdminAnakMagangPage() {
       setNewInstitution("");
       setNewProgram("");
       setNewDivisi("");
-      setNewStart("2026-07-01");
-      setNewEnd("2026-10-31");
-      setNewBatch("");
       setAddErrors({});
 
       showAlert(
@@ -377,16 +442,7 @@ export default function AdminAnakMagangPage() {
     setEditProgram(
       item.unit_kerja || item.studyProgram || (item as any).study_program || "",
     );
-
-    const sDate =
-      item.periode_mulai || item.startDate || (item as any).start_date || "";
-    const eDate =
-      item.periode_selesai || item.endDate || (item as any).end_date || "";
-
-    setEditStart(typeof sDate === "string" ? sDate.slice(0, 10) : "");
-    setEditEnd(typeof eDate === "string" ? eDate.slice(0, 10) : "");
     setEditStatus((item.status as "ACTIVE" | "INACTIVE") || "ACTIVE");
-    setEditBatch(item.batch && item.batch !== "-" ? String(item.batch) : "");
     setEditDivisi(item.divisi || "");
   };
 
@@ -404,6 +460,13 @@ export default function AdminAnakMagangPage() {
     try {
       setIsUpdating(true);
 
+      const existingStartDate =
+        editItem.periode_mulai || editItem.startDate || (editItem as any).start_date || settings?.tanggal_buka || null;
+      const existingEndDate =
+        editItem.periode_selesai || editItem.endDate || (editItem as any).end_date || settings?.tanggal_tutup || null;
+      const existingBatch =
+        editItem.batch && editItem.batch !== "-" ? Number(editItem.batch) : (settings?.batch ? Number(settings.batch) : null);
+
       const payload: Record<string, any> = {
         name: editName.trim(),
         email: editEmail.trim(),
@@ -411,10 +474,10 @@ export default function AdminAnakMagangPage() {
         institution: editInstitution.trim() || null,
         study_program: editProgram.trim() || null,
         divisi: editDivisi.trim() || null,
-        start_date: editStart || null,
-        end_date: editEnd || null,
+        start_date: existingStartDate,
+        end_date: existingEndDate,
         status: editStatus,
-        batch: editBatch ? Number(editBatch) : null,
+        batch: existingBatch,
       };
 
       // Hanya kirim password jika admin mengisi password baru
@@ -1094,7 +1157,7 @@ export default function AdminAnakMagangPage() {
               mt-0.5
             "
                     >
-                      Tambahkan peserta baru ke dalam sistem via Laravel API.
+                      Tambahkan peserta baru.
                     </p>
                   </div>
 
@@ -1227,18 +1290,20 @@ export default function AdminAnakMagangPage() {
                       Password <span className="text-status-tolak">*</span>
                     </label>
 
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Minimal 8 karakter"
-                      className="
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Masukkan password"
+                        className="
               w-full
               rounded-xl
               border border-border
               bg-input
               px-3
               py-2
+              pr-10
               text-xs
               text-foreground
               placeholder:text-muted-foreground
@@ -1248,9 +1313,69 @@ export default function AdminAnakMagangPage() {
               focus:ring-primary/40
               focus:border-primary
             "
-                      required
-                      minLength={8}
-                    />
+                        required
+                        minLength={8}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-1 rounded-lg"
+                        aria-label={showNewPassword ? "Sembunyikan password" : "Tampilkan password"}
+                      >
+                        {showNewPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Password strength indicator */}
+                    {newPassword.length > 0 && (() => {
+                      let score = 0;
+                      if (newPassword.length >= 8) score++;
+                      if (/[A-Z]/.test(newPassword)) score++;
+                      if (/[0-9]/.test(newPassword)) score++;
+                      if (/[^A-Za-z0-9]/.test(newPassword)) score++;
+                      const labels = ["Lemah", "Cukup", "Kuat", "Sangat Kuat"];
+                      const colors = [
+                        "bg-red-500",
+                        "bg-yellow-400",
+                        "bg-emerald-400",
+                        "bg-emerald-500",
+                      ];
+                      const textColors = [
+                        "text-red-500",
+                        "text-yellow-500",
+                        "text-emerald-400",
+                        "text-emerald-500",
+                      ];
+                      return (
+                        <div className="mt-1.5 space-y-1">
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4].map((i) => (
+                              <div
+                                key={i}
+                                className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                                  i <= score ? colors[score - 1] : "bg-border"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <p className={`text-[10px] font-bold ${textColors[score - 1]}`}>
+                            {labels[score - 1]}
+                            {score < 4 && (
+                              <span className="text-muted-foreground font-normal ml-1">
+                                —{score === 0 || !newPassword.length ? "" :
+                                  !(/[A-Z]/.test(newPassword)) ? "tambahkan huruf kapital" :
+                                  !(/[0-9]/.test(newPassword)) ? "tambahkan angka" :
+                                  "tambahkan simbol (!@#$...)"}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="space-y-1">
@@ -1344,89 +1469,32 @@ export default function AdminAnakMagangPage() {
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-extrabold text-foreground flex gap-1">
-                      Batch
-                      <span className="text-status-tolak">*</span>
-                    </label>
+                </div>
 
-                    <input
-                      type="text"
-                      value={newBatch}
-                      onChange={(e) => setNewBatch(e.target.value)}
-                      placeholder="Masukkan batch"
-                      className="
-              w-full
-              rounded-xl
-              border border-border
-              bg-input
-              px-3
-              py-2
-              text-xs
-              text-foreground
-              placeholder:text-muted-foreground
-              transition-all
-              focus:outline-none
-              focus:ring-2
-              focus:ring-primary/40
-              focus:border-primary
-            "
-                    />
+                {/* Info banner periode & batch dari Pengaturan Sistem (readonly) */}
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-start justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Calendar className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                        Periode Magang (Otomatis dari Pengaturan Sistem)
+                      </span>
+                      <p className="font-extrabold text-foreground">
+                        {settings?.tanggal_buka && settings?.tanggal_tutup
+                          ? `${formatDate(settings.tanggal_buka)} s.d. ${formatDate(settings.tanggal_tutup)}`
+                          : settingsLoading
+                          ? "Memuat pengaturan..."
+                          : "Belum ada periode aktif"}
+                      </p>
+                    </div>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-extrabold text-foreground">
-                      Periode Mulai
-                    </label>
-
-                    <input
-                      type="date"
-                      value={newStart}
-                      onChange={(e) => setNewStart(e.target.value)}
-                      className="
-              w-full
-              rounded-xl
-              border border-border
-              bg-input
-              px-3
-              py-2
-              text-xs
-              text-foreground
-              transition-all
-              focus:outline-none
-              focus:ring-2
-              focus:ring-primary/40
-              focus:border-primary
-            "
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-extrabold text-foreground">
-                      Periode Selesai
-                    </label>
-
-                    <input
-                      type="date"
-                      value={newEnd}
-                      onChange={(e) => setNewEnd(e.target.value)}
-                      className="
-              w-full
-              rounded-xl
-              border border-border
-              bg-input
-              px-3
-              py-2
-              text-xs
-              text-foreground
-              transition-all
-              focus:outline-none
-              focus:ring-2
-              focus:ring-primary/40
-              focus:border-primary
-            "
-                    />
-                  </div>
+                  {settings?.batch !== null && settings?.batch !== undefined && (
+                    <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[11px] font-bold shrink-0">
+                      Batch {settings.batch}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
@@ -1815,98 +1883,6 @@ export default function AdminAnakMagangPage() {
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-extrabold text-foreground">
-                      Batch <span className="text-status-tolak">*</span>
-                    </label>
-
-                    <input
-                      type="text"
-                      value={editBatch}
-                      onChange={(e) => setEditBatch(e.target.value)}
-                      placeholder="Masukkan batch"
-                      className="
-                      w-full
-                      rounded-xl
-                      border border-border
-                      bg-input
-                      px-3.5 py-2.5
-                      text-xs
-                      text-foreground
-                      placeholder:text-muted-foreground
-                      transition-all
-                      focus:outline-none
-                      focus:ring-2
-                      focus:ring-primary/40
-                      focus:border-primary
-                    "
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label
-                      className="
-                    text-xs
-                    font-extrabold
-                    text-foreground
-                  "
-                    >
-                      Periode Mulai
-                    </label>
-
-                    <input
-                      type="date"
-                      value={editStart}
-                      onChange={(e) => setEditStart(e.target.value)}
-                      className="
-                      w-full
-                      rounded-xl
-                      border border-border
-                      bg-input
-                      px-3.5 py-2.5
-                      text-xs
-                      text-foreground
-                      transition-all
-                      focus:outline-none
-                      focus:ring-2
-                      focus:ring-primary/40
-                      focus:border-primary
-                    "
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label
-                      className="
-                    text-xs
-                    font-extrabold
-                    text-foreground
-                  "
-                    >
-                      Periode Selesai
-                    </label>
-
-                    <input
-                      type="date"
-                      value={editEnd}
-                      onChange={(e) => setEditEnd(e.target.value)}
-                      className="
-                      w-full
-                      rounded-xl
-                      border border-border
-                      bg-input
-                      px-3.5 py-2.5
-                      text-xs
-                      text-foreground
-                      transition-all
-                      focus:outline-none
-                      focus:ring-2
-                      focus:ring-primary/40
-                      focus:border-primary
-                    "
-                    />
-                  </div>
-
                   <div className="space-y-1 md:col-span-2">
                     <label
                       className="
@@ -1944,6 +1920,32 @@ export default function AdminAnakMagangPage() {
                       <option value="INACTIVE">Nonaktif (INACTIVE)</option>
                     </select>
                   </div>
+                </div>
+
+                {/* Info banner periode & batch dari Pengaturan Sistem (readonly) */}
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-start justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Calendar className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                        Periode Magang (Otomatis dari Pengaturan Sistem)
+                      </span>
+                      <p className="font-extrabold text-foreground">
+                        {settings?.tanggal_buka && settings?.tanggal_tutup
+                          ? `${formatDate(settings.tanggal_buka)} s.d. ${formatDate(settings.tanggal_tutup)}`
+                          : formatDate(editItem?.periode_mulai || (editItem as any)?.start_date) !== "-"
+                          ? `${formatDate(editItem?.periode_mulai || (editItem as any)?.start_date)} s.d. ${formatDate(editItem?.periode_selesai || (editItem as any)?.end_date)}`
+                          : "Mengikuti data peserta yang sudah tersimpan"}
+                      </p>
+                    </div>
+                  </div>
+                  {(settings?.batch !== null && settings?.batch !== undefined) && (
+                    <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[11px] font-bold shrink-0">
+                      Batch {settings.batch ?? editItem?.batch}
+                    </span>
+                  )}
                 </div>
 
                 <div

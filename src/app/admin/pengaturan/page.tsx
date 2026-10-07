@@ -164,6 +164,7 @@ export default function AdminPengaturanPage() {
   ]);
   const [noWaMagang, setNoWaMagang] = useState<string>("");
   const [noWaOS, setNoWaOS] = useState<string>("");
+  const [batch, setBatch] = useState<number | null>(null);
   const [hariLiburList, setHariLiburList] = useState<HariLibur[]>([]);
 
   // Form tambah hari libur
@@ -182,6 +183,7 @@ export default function AdminPengaturanPage() {
   const [isSavingEditLibur, setIsSavingEditLibur] = useState<boolean>(false);
   const [deletingLiburId, setDeletingLiburId] = useState<string | null>(null);
   const [isDeletingPengaturan, setIsDeletingPengaturan] = useState<boolean>(false);
+  const [isSavingPeriode, setIsSavingPeriode] = useState<boolean>(false);
 
   const [tanggalBuka, setTanggalBuka] = useState<string>("2026-08-01");
   const [tanggalTutup, setTanggalTutup] = useState<string>("2026-08-31");
@@ -501,6 +503,7 @@ export default function AdminPengaturanPage() {
     setHariKerja(["Senin", "Selasa", "Rabu", "Kamis", "Jumat"]);
     setNoWaMagang("");
     setNoWaOS("");
+    setBatch(null);
     setTanggalBuka("2026-08-01");
     setTanggalTutup("2026-08-31");
     setAktifManual(true);
@@ -549,6 +552,13 @@ export default function AdminPengaturanPage() {
     );
     setNoWaOS(
       settings.no_wa_admin_os == null ? "" : String(settings.no_wa_admin_os)
+    );
+
+    const batchVal = settings.batch;
+    setBatch(
+      batchVal !== null && batchVal !== undefined && batchVal !== "" && batchVal !== "-"
+        ? Number(batchVal) || null
+        : null
     );
 
     setTanggalBuka(
@@ -620,6 +630,7 @@ export default function AdminPengaturanPage() {
       ),
       no_wa_admin_magang: noWaMagang || null,
       no_wa_admin_os: noWaOS || null,
+      batch: batch ?? null,
       tanggal_buka: toApiDate(tanggalBuka),
       tanggal_tutup: toApiDate(tanggalTutup),
       aktif_manual: aktifManual,
@@ -955,6 +966,53 @@ export default function AdminPengaturanPage() {
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSavePeriode = async () => {
+    if (!tanggalBuka || !tanggalTutup) {
+      showToast("Tanggal buka dan tanggal tutup wajib diisi.", "error");
+      return;
+    }
+
+    if (tanggalTutup < tanggalBuka) {
+      showToast(
+        "Tanggal tutup tidak boleh lebih awal dari tanggal buka.",
+        "error"
+      );
+      return;
+    }
+
+    try {
+      setIsSavingPeriode(true);
+
+      const payload = buildSavePayload();
+
+      const url = pengaturanId ? `${API_PENGATURAN}/${pengaturanId}` : API_PENGATURAN;
+      const method = pengaturanId ? "PUT" : "POST";
+
+      await requestLaravel(url, {
+        method,
+        body: JSON.stringify(payload),
+      });
+
+      showToast("Periode pendaftaran magang berhasil disimpan.");
+      await loadSettings();
+    } catch (error: unknown) {
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        showToast(
+          "Tidak dapat terhubung ke server Laravel. Periksa URL API, server Laravel, atau konfigurasi CORS.",
+          "error"
+        );
+      } else {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat menyimpan periode pendaftaran.";
+        showToast(message, "error");
+      }
+    } finally {
+      setIsSavingPeriode(false);
     }
   };
 
@@ -1295,6 +1353,32 @@ export default function AdminPengaturanPage() {
                   </div>
                 </div>
 
+                <div className="space-y-1">
+                  <label className="text-xs font-bold font-sans text-foreground">
+                    Nomor Batch
+                  </label>
+                  <div className="relative w-full sm:w-48">
+                    <input
+                      id="input-batch"
+                      type="number"
+                      min={1}
+                      max={999}
+                      placeholder="Batch"
+                      value={batch ?? ""}
+                      onChange={(e) =>
+                        setBatch(e.target.value === "" ? null : Number(e.target.value))
+                      }
+                      className="w-full rounded-xl border border-border bg-input pl-4 pr-16 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold font-sans text-muted-foreground pointer-events-none">
+                      Batch
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-sans">
+                    Nomor gelombang pendaftaran magang. Kosongkan jika tidak relevan.
+                  </p>
+                </div>
+
                 <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-muted/40">
                   <div>
                     <label
@@ -1314,6 +1398,25 @@ export default function AdminPengaturanPage() {
                     onChange={(e) => setAktifManual(e.target.checked)}
                     className="w-5 h-5 accent-primary cursor-pointer rounded shrink-0"
                   />
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={handleSavePeriode}
+                    disabled={isSavingPeriode || isLoading}
+                    className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs hover:opacity-95 transition-all flex items-center gap-2 shadow-card disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isSavingPeriode ? (
+                      <>
+                        <Spinner className="text-current" />
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-sans">Simpan Periode</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 

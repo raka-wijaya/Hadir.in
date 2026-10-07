@@ -177,20 +177,6 @@ export default function LupaPasswordPage() {
 
           const data = await res.json();
 
-          /**
-           * Mendukung beberapa kemungkinan
-           * response Laravel:
-           *
-           * [
-           *   {...}
-           * ]
-           *
-           * atau:
-           *
-           * {
-           *   data: [...]
-           * }
-           */
           const users = Array.isArray(data)
             ? data
             : Array.isArray(data?.data)
@@ -215,10 +201,6 @@ export default function LupaPasswordPage() {
         }
       }
 
-      /**
-       * Email tidak ditemukan pada
-       * ketiga endpoint Laravel.
-       */
       if (!foundUser) {
         setNewPassword("");
         setConfirmPassword("");
@@ -234,15 +216,6 @@ export default function LupaPasswordPage() {
         return;
       }
 
-      /**
-       * Update password menggunakan
-       * endpoint Laravel yang sesuai.
-       *
-       * Contoh:
-       * PATCH /api/admin/1
-       * PATCH /api/peserta-magang/1
-       * PATCH /api/karyawan-os/1
-       */
       const updateRes = await fetch(
         `${foundEndpoint}/${foundUser.id}`,
         {
@@ -328,7 +301,7 @@ export default function LupaPasswordPage() {
             H
           </div>
 
-          <h1 className="text-lg font-bold font-sans tracking-tight text-card-foreground">
+          <h1 className="text-lg font-semibold font-sans tracking-tight text-card-foreground">
             Lupa Password
           </h1>
 
@@ -352,10 +325,9 @@ export default function LupaPasswordPage() {
           className="space-y-3"
         >
           <div className="space-y-1">
-            <label className="text-xs font-sans font-bold text-card-foreground flex items-center gap-1">
-              <Mail className="w-3.5 h-3.5 text-primary" />
+            <label className="text-xs font-sans text-card-foreground flex items-center gap-1">
               Alamat Email
-              <span className="text-status-tolak">*</span>
+              <span className="text-destructive">*</span>
             </label>
 
             <input
@@ -371,10 +343,9 @@ export default function LupaPasswordPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-sans font-bold text-card-foreground flex items-center gap-1">
-              <Lock className="w-3.5 h-3.5 text-primary" />
+            <label className="text-xs font-sans text-card-foreground flex items-center gap-1">
               Password Baru
-              <span className="text-status-tolak">*</span>
+              <span className="text-destructive">*</span>
             </label>
 
             <div className="relative">
@@ -422,7 +393,7 @@ export default function LupaPasswordPage() {
 
             {newPassword && (
               <div className="mt-2 rounded-lg border border-border bg-background/50 p-2.5 space-y-1.5">
-                <p className="text-xs font-semibold text-muted-foreground">
+                <p className="text-xs font-bold font-sans text-muted-foreground">
                   Password harus memiliki:
                 </p>
 
@@ -457,10 +428,9 @@ export default function LupaPasswordPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-sans font-bold text-card-foreground flex items-center gap-1">
-              <Lock className="w-3.5 h-3.5 text-primary" />
+            <label className="text-xs font-sans text-card-foreground flex items-center gap-1">
               Konfirmasi Password Baru
-              <span className="text-status-tolak">*</span>
+              <span className="text-destructive">*</span>
             </label>
 
             <div className="relative">
@@ -469,7 +439,7 @@ export default function LupaPasswordPage() {
                 type={showConfirm ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Masukkan ulang password baru"
+                placeholder="Masukkan konfirmasi password baru"
                 autoComplete="new-password"
                 className={`${inputClass} pr-10`}
                 required
@@ -545,25 +515,6 @@ export default function LupaPasswordPage() {
           </button>
         </form>
 
-        <div className="text-center pt-3 border-t border-border">
-          <Link
-            href="/login"
-            className="
-              text-[11px]
-              font-extrabold
-              text-primary
-              hover:opacity-80
-              hover:underline
-              inline-flex
-              items-center
-              gap-1
-              transition-all
-              font-sans
-            "
-          >
-            Kembali ke Halaman Login
-          </Link>
-        </div>
       </div>
     </div>
   );

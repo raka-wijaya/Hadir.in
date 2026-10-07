@@ -1,39 +1,59 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useAuth } from "@/lib/auth/context";
 import { ModalPortal } from "@/components/ui/ModalPortal";
 import {
   showNotification,
   showConfirm,
 } from "@/components/ui/NotificationProvider";
 import { Spinner } from "@/components/ui/Spinner";
+import { useAuth } from "@/lib/auth/context";
+
 import {
-  Globe,
-  Footprints,
-  Briefcase,
-  GitMerge,
-  Gift,
-  CalendarDays,
   Plus,
   Edit2,
   Trash2,
-  RefreshCw,
   Save,
+  X,
+  Upload,
+  Image as ImageIcon,
+  CalendarDays,
+  Clock,
+  Users,
+  Award,
+  FileText,
+  ListChecks,
+  Info,
+  MapPin,
+  Mail,
+  Phone,
+  Globe,
   CheckCircle2,
   AlertCircle,
   ShieldAlert,
-  Search,
   ExternalLink,
-  X,
-  ImageIcon,
-  Upload,
 } from "lucide-react";
+
 import Link from "next/link";
 
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://127.0.0.1:8000/api"
+).replace(/\/+$/, "");
+
+const API_ENDPOINTS = {
+  footer: `${API_BASE_URL}/footer`,
+  program: `${API_BASE_URL}/program-magang`,
+  informasi: `${API_BASE_URL}/informasi-pendaftaran`,
+  benefit: `${API_BASE_URL}/benefit-program-magang`,
+  timeline: `${API_BASE_URL}/timelane_kegiatan`,
+  proses: `${API_BASE_URL}/proses-program-magang`,
+};
+
 interface FooterData {
-  id?: number | string;
+  id?: number;
   alamat?: string;
   email?: string;
   telepon?: string;
@@ -44,87 +64,154 @@ interface FooterData {
   facebook?: string;
   twitter_x?: string;
   jam_operasional?: string;
-  [key: string]: any;
 }
 
 interface ProgramMagangData {
-  id?: number | string;
+  id?: number;
   judul?: string;
   nama_program?: string;
   title?: string;
+
   deskripsi?: string;
   description?: string;
+
   durasi?: string;
   duration?: string;
+
   kategori?: string;
   tipe?: string;
-  kuota?: number | string;
+
+  kuota?: string;
   status?: string;
-  gambar?: string;
-  gambar1?: string;
-  gambar2?: string;
-  gambar3?: string;
-  [key: string]: any;
+
+  gambar?: string | null;
+  gambar1?: string | null;
+  gambar2?: string | null;
+  gambar3?: string | null;
 }
 
 interface ProsesMagangData {
-  id?: number | string;
-  step?: number | string;
-  langkah?: number | string;
-  urutan?: number | string;
+  id?: number;
+  step?: number;
+  langkah?: number;
+  urutan?: number;
+
   judul?: string;
   title?: string;
+
   deskripsi?: string;
   description?: string;
-  [key: string]: any;
 }
 
 interface BenefitMagangData {
-  id?: number | string;
+  id?: number;
+
   judul?: string;
   title?: string;
+
   deskripsi?: string;
   description?: string;
+
   icon?: string;
-  [key: string]: any;
 }
 
 interface TimelineKegiatanData {
-  id?: number | string;
+  id?: number;
+
   kegiatan?: string;
   judul?: string;
   title?: string;
+
   tanggal?: string;
   tanggal_mulai?: string;
   tanggal_selesai?: string;
+
   deskripsi?: string;
   description?: string;
+
   status?: string;
-  urutan?: number | string;
-  [key: string]: any;
+  urutan?: number;
 }
 
-export default function AdminMagangPage() {
+interface InformasiPendaftaranData {
+  id?: number;
+  judul?: string;
+  title?: string;
+  deskripsi?: string;
+  description?: string;
+  syarat?: string;
+  keterangan?: string;
+  urutan?: number;
+}
+
+type ActiveTab =
+  | "footer"
+  | "program"
+  | "proses"
+  | "informasi"
+  | "benefit"
+  | "timeline";
+
+type ModalType =
+  | "program"
+  | "proses"
+  | "informasi"
+  | "benefit"
+  | "timeline"
+  | null;
+
+type ModalMode = "add" | "edit";
+
+function parseApiResponse(json: any) {
+  if (json?.data !== undefined) {
+    return json.data;
+  }
+
+  if (json?.result !== undefined) {
+    return json.result;
+  }
+
+  return json;
+}
+
+async function parseResponse(response: Response) {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+
+  const text = await response.text();
+
+  return text ? { message: text } : {};
+}
+
+function notify(
+  type: "success" | "error" | "warning" | "info",
+  message: React.ReactNode,
+  title?: string
+) {
+  showNotification({ type, message, title });
+}
+
+export default function LandingPageMagangPage() {
   const { user } = useAuth();
 
-  // Role validation
   const role = String(user?.role || "").toUpperCase();
-  const isSuperAdmin = role === "SUPERADMIN" || role === "SUPER_ADMIN";
+
+  const isSuperAdmin =
+    role === "SUPERADMIN" || role === "SUPER_ADMIN";
+
   const isAdminMagang = role === "ADMIN_MAGANG";
 
-  // Active Tab
-  const [activeTab, setActiveTab] = useState<
-    "footer" | "program" | "proses" | "benefit" | "timeline"
-  >("program");
+  const [activeTab, setActiveTab] =
+    useState<ActiveTab>("program");
 
-  // Loading States
-  const [loading, setLoading] = useState<boolean>(false);
-  const [saving, setSaving] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Search filter for tables
-  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Data States
   const [footerData, setFooterData] = useState<FooterData>({
     alamat: "",
     email: "",
@@ -138,394 +225,886 @@ export default function AdminMagangPage() {
     jam_operasional: "",
   });
 
-  const [programList, setProgramList] = useState<ProgramMagangData[]>([]);
-  const [prosesList, setProsesList] = useState<ProsesMagangData[]>([]);
-  const [benefitList, setBenefitList] = useState<BenefitMagangData[]>([]);
-  const [timelineList, setTimelineList] = useState<TimelineKegiatanData[]>([]);
+  const [programList, setProgramList] = useState<
+    ProgramMagangData[]
+  >([]);
 
-  // Modal State
-  const [modalType, setModalType] = useState<
-    "program" | "proses" | "benefit" | "timeline" | null
-  >(null);
-  const [modalMode, setModalMode] = useState<"add" | "edit">("add");
-  const [activeItem, setActiveItem] = useState<any>(null);
+  const [prosesList, setProsesList] = useState<
+    ProsesMagangData[]
+  >([]);
 
-  // Gambar file state for program modal — supports up to 3 photos
-  const [gambarFiles, setGambarFiles] = useState<(File | null)[]>([null, null, null]);
-  const [gambarPreviews, setGambarPreviews] = useState<(string | null)[]>([null, null, null]);
+  const [informasiList, setInformasiList] = useState<
+    InformasiPendaftaranData[]
+  >([]);
+
+  const [benefitList, setBenefitList] = useState<
+    BenefitMagangData[]
+  >([]);
+
+  const [timelineList, setTimelineList] = useState<
+    TimelineKegiatanData[]
+  >([]);
+
+  const [modalType, setModalType] =
+    useState<ModalType>(null);
+
+  const [modalMode, setModalMode] =
+    useState<ModalMode>("add");
+
+  const [activeItem, setActiveItem] =
+    useState<any>(null);
+
+  const [gambarFiles, setGambarFiles] = useState<
+    Array<File | null>
+  >([null, null, null]);
+
+  const [gambarPreviews, setGambarPreviews] = useState<
+    Array<string | null>
+  >([null, null, null]);
+
   const gambarInputRefs = [
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
   ];
 
-  // Helper to reset gambar states
   const resetGambar = () => {
     setGambarFiles([null, null, null]);
     setGambarPreviews([null, null, null]);
-    gambarInputRefs.forEach((r) => { if (r.current) r.current.value = ""; });
+
+    gambarInputRefs.forEach((ref) => {
+      if (ref.current) {
+        ref.current.value = "";
+      }
+    });
   };
 
-  // Prevent background scroll when modal open
   useEffect(() => {
     if (modalType) {
       document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
     }
+
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
     };
   }, [modalType]);
 
-  // Helper response parser
-  const parseApiResponse = (json: any) => {
-    if (!json) return null;
-    if (json.data !== undefined) return json.data;
-    if (json.result !== undefined) return json.result;
-    return json;
-  };
-
-  // 1. Fetch Footer
-  const fetchFooter = useCallback(async () => {
+  const fetchFooter = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/magang/footer", {
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const data = parseApiResponse(json);
-        if (data && typeof data === "object") {
-          setFooterData((prev) => ({
-            ...prev,
-            ...data,
-          }));
-        }
-      } else {
-        showNotification({
-          type: "warning",
-          title: "Peringatan Footer",
-          message: `Gagal memuat footer (Status: ${res.status})`,
-        });
-      }
-    } catch (err: any) {
-      console.error("fetchFooter error:", err);
-      showNotification({
-        type: "error",
-        title: "Gagal Memuat Footer",
-        message: "Tidak dapat mengambil data footer dari server.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  // 2. Fetch Program Magang
-  const fetchProgramMagang = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/magang/program", {
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const data = parseApiResponse(json);
-        setProgramList(Array.isArray(data) ? data : []);
-      } else {
-        showNotification({
-          type: "warning",
-          title: "Peringatan Program Magang",
-          message: `Gagal memuat program magang (Status: ${res.status})`,
-        });
-      }
-    } catch (err: any) {
-      console.error("fetchProgramMagang error:", err);
-      showNotification({
-        type: "error",
-        title: "Gagal Memuat Data",
-        message: "Tidak dapat mengambil data program magang.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 3. Fetch Proses Program Magang
-  const fetchProsesProgramMagang = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/magang/proses", {
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const data = parseApiResponse(json);
-        setProsesList(Array.isArray(data) ? data : []);
-      } else {
-        showNotification({
-          type: "warning",
-          title: "Peringatan Proses Magang",
-          message: `Gagal memuat alur/proses (Status: ${res.status})`,
-        });
-      }
-    } catch (err: any) {
-      console.error("fetchProsesProgramMagang error:", err);
-      showNotification({
-        type: "error",
-        title: "Gagal Memuat Data",
-        message: "Tidak dapat mengambil data proses magang.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 4. Fetch Benefit Program Magang
-  const fetchBenefitProgramMagang = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/magang/benefit", {
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const data = parseApiResponse(json);
-        setBenefitList(Array.isArray(data) ? data : []);
-      } else {
-        showNotification({
-          type: "warning",
-          title: "Peringatan Benefit Magang",
-          message: `Gagal memuat benefit (Status: ${res.status})`,
-        });
-      }
-    } catch (err: any) {
-      console.error("fetchBenefitProgramMagang error:", err);
-      showNotification({
-        type: "error",
-        title: "Gagal Memuat Data",
-        message: "Tidak dapat mengambil data benefit magang.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 5. Fetch Timeline Kegiatan
-  const fetchTimelineKegiatan = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/magang/timeline", {
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const data = parseApiResponse(json);
-        setTimelineList(Array.isArray(data) ? data : []);
-      } else {
-        showNotification({
-          type: "warning",
-          title: "Peringatan Timeline",
-          message: `Gagal memuat timeline (Status: ${res.status})`,
-        });
-      }
-    } catch (err: any) {
-      console.error("fetchTimelineKegiatan error:", err);
-      showNotification({
-        type: "error",
-        title: "Gagal Memuat Data",
-        message: "Tidak dapat mengambil data timeline kegiatan.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Initial Load based on tab
-  useEffect(() => {
-    if (activeTab === "footer") fetchFooter();
-    else if (activeTab === "program") fetchProgramMagang();
-    else if (activeTab === "proses") fetchProsesProgramMagang();
-    else if (activeTab === "benefit") fetchBenefitProgramMagang();
-    else if (activeTab === "timeline") fetchTimelineKegiatan();
-  }, [
-    activeTab,
-    fetchFooter,
-    fetchProgramMagang,
-    fetchProsesProgramMagang,
-    fetchBenefitProgramMagang,
-    fetchTimelineKegiatan,
-  ]);
-
-  // Save Footer (POST / PUT)
-  const handleSaveFooter = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setSaving(true);
-      const res = await fetch("/api/magang/footer", {
-        method: "POST",
+      const response = await fetch(API_ENDPOINTS.footer, {
+        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify(footerData),
+        cache: "no-store",
       });
 
-      if (res.ok) {
-        showNotification({
-          type: "success",
-          title: "Berhasil Menyimpan",
-          message: "Data footer landing page berhasil diperbarui.",
-        });
-        fetchFooter();
-      } else {
-        const errorJson = await res.json().catch(() => ({}));
-        showNotification({
-          type: "error",
-          title: "Gagal Menyimpan Footer",
-          message: errorJson.message || `Server merespon dengan status ${res.status}`,
-        });
+      const json = await parseResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          json?.message || "Gagal mengambil data footer"
+        );
       }
-    } catch (err: any) {
-      showNotification({
-        type: "error",
-        title: "Error Menyimpan",
-        message: err.message || "Gagal menyimpan data footer.",
+
+      const data = parseApiResponse(json);
+
+      if (Array.isArray(data)) {
+        setFooterData(data[0] || {});
+      } else {
+        setFooterData(data || {});
+      }
+    } catch (error: any) {
+      console.error("Fetch footer error:", error);
+
+      notify(
+        "error",
+        error?.message || "Gagal mengambil data footer"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProgramMagang = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch(API_ENDPOINTS.program, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-store",
       });
+
+      const json = await parseResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          json?.message ||
+            "Gagal mengambil data program magang"
+        );
+      }
+
+      const data = parseApiResponse(json);
+
+      setProgramList(
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : []
+      );
+    } catch (error: any) {
+      console.error(
+        "Fetch program magang error:",
+        error
+      );
+
+      notify(
+        "error",
+        error?.message ||
+          "Gagal mengambil data program magang"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProsesProgramMagang = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch(API_ENDPOINTS.proses, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      });
+
+      const json = await parseResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          json?.message ||
+            "Gagal mengambil data proses program magang"
+        );
+      }
+
+      const data = parseApiResponse(json);
+
+      setProsesList(
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : []
+      );
+    } catch (error: any) {
+      console.error(
+        "Fetch proses program magang error:",
+        error
+      );
+
+      notify(
+        "error",
+        error?.message ||
+          "Gagal mengambil data proses program magang"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInformasiPendaftaran = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch(API_ENDPOINTS.informasi, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      });
+
+      const json = await parseResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          json?.message ||
+            "Gagal mengambil data informasi pendaftaran"
+        );
+      }
+
+      const data = parseApiResponse(json);
+
+      setInformasiList(
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : []
+      );
+    } catch (error: any) {
+      console.error(
+        "Fetch informasi pendaftaran error:",
+        error
+      );
+
+      notify(
+        "error",
+        error?.message ||
+          "Gagal mengambil data informasi pendaftaran"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBenefitProgramMagang = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        API_ENDPOINTS.benefit,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+          cache: "no-store",
+        }
+      );
+
+      const json = await parseResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          json?.message ||
+            "Gagal mengambil data benefit program magang"
+        );
+      }
+
+      const data = parseApiResponse(json);
+
+      setBenefitList(
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : []
+      );
+    } catch (error: any) {
+      console.error(
+        "Fetch benefit error:",
+        error
+      );
+
+      notify(
+        "error",
+        error?.message ||
+          "Gagal mengambil data benefit"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTimelineKegiatan = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        API_ENDPOINTS.timeline,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+          cache: "no-store",
+        }
+      );
+
+      const json = await parseResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          json?.message ||
+            "Gagal mengambil data timeline kegiatan"
+        );
+      }
+
+      const data = parseApiResponse(json);
+
+      setTimelineList(
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : []
+      );
+    } catch (error: any) {
+      console.error(
+        "Fetch timeline error:",
+        error
+      );
+
+      notify(
+        "error",
+        error?.message ||
+          "Gagal mengambil data timeline"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "footer") {
+      fetchFooter();
+    }
+
+    if (activeTab === "program") {
+      fetchProgramMagang();
+    }
+
+    if (activeTab === "proses") {
+      fetchProsesProgramMagang();
+    }
+
+    if (activeTab === "informasi") {
+      fetchInformasiPendaftaran();
+    }
+
+    if (activeTab === "benefit") {
+      fetchBenefitProgramMagang();
+    }
+
+    if (activeTab === "timeline") {
+      fetchTimelineKegiatan();
+    }
+  }, [activeTab]);
+
+  const handleSaveFooter = async () => {
+    try {
+      setSaving(true);
+
+      const response = await fetch(
+        API_ENDPOINTS.footer,
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(footerData),
+        }
+      );
+
+      const json = await parseResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          json?.message || "Gagal menyimpan footer"
+        );
+      }
+
+      const data = parseApiResponse(json);
+
+      if (data && typeof data === "object") {
+        setFooterData(
+          Array.isArray(data)
+            ? data[0] || footerData
+            : data
+        );
+      }
+
+      notify(
+        "success",
+        "Data footer berhasil disimpan"
+      );
+    } catch (error: any) {
+      console.error(
+        "Save footer error:",
+        error
+      );
+
+      notify(
+        "error",
+        error?.message ||
+          "Gagal menyimpan data footer"
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  // Submit Modal Form (Add / Edit for Program, Proses, Benefit, Timeline)
-  const handleModalSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAdd = (type: ModalType) => {
+    resetGambar();
+
+    setModalType(type);
+    setModalMode("add");
+
+    if (type === "program") {
+      setActiveItem({
+        judul: "",
+        deskripsi: "",
+        durasi: "3 Bulan",
+        kategori: "Fulltime",
+        kuota: "Tersedia",
+        status: "Aktif",
+      });
+    }
+
+    if (type === "proses") {
+      setActiveItem({
+        step: prosesList.length + 1,
+        urutan: prosesList.length + 1,
+        judul: "",
+        deskripsi: "",
+      });
+    }
+
+    if (type === "informasi") {
+      setActiveItem({
+        urutan: informasiList.length + 1,
+        judul: "",
+        deskripsi: "",
+        syarat: "",
+        keterangan: "",
+      });
+    }
+
+    if (type === "benefit") {
+      setActiveItem({
+        judul: "",
+        deskripsi: "",
+        icon: "Award",
+      });
+    }
+
+    if (type === "timeline") {
+      setActiveItem({
+        kegiatan: "",
+        tanggal: "",
+        deskripsi: "",
+        status: "Mendatang",
+        urutan: timelineList.length + 1,
+      });
+    }
+  };
+
+  const handleEdit = (
+    type: ModalType,
+    item: any
+  ) => {
+    resetGambar();
+
+    setModalType(type);
+    setModalMode("edit");
+
+    setActiveItem({
+      ...item,
+    });
+
+    if (type === "program") {
+      const images = [
+        item?.gambar1 || item?.gambar || null,
+        item?.gambar2 || null,
+        item?.gambar3 || null,
+      ];
+
+      setGambarPreviews(images);
+    }
+  };
+
+  const handleCloseModal = () => {
+    if (saving) return;
+
+    setModalType(null);
+    setModalMode("add");
+    setActiveItem(null);
+
+    resetGambar();
+  };
+
+  const handleGambarChange = (
+    index: number,
+    file: File | null
+  ) => {
+    if (!file) return;
+
+    if (
+      ![
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+      ].includes(file.type)
+    ) {
+      notify(
+        "error",
+        "Format gambar harus JPG, PNG, atau WebP"
+      );
+
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      notify(
+        "error",
+        "Ukuran gambar maksimal 5 MB"
+      );
+
+      return;
+    }
+
+    const newFiles = [...gambarFiles];
+    newFiles[index] = file;
+
+    setGambarFiles(newFiles);
+
+    const preview = URL.createObjectURL(file);
+
+    const newPreviews = [...gambarPreviews];
+    newPreviews[index] = preview;
+
+    setGambarPreviews(newPreviews);
+
+    const newItem = {
+      ...activeItem,
+    };
+
+    if (index === 0) {
+      newItem.gambar = undefined;
+      newItem.gambar1 = undefined;
+    }
+
+    if (index === 1) {
+      newItem.gambar2 = undefined;
+    }
+
+    if (index === 2) {
+      newItem.gambar3 = undefined;
+    }
+
+    setActiveItem(newItem);
+  };
+
+  const handleRemoveGambar = (index: number) => {
+    const newFiles = [...gambarFiles];
+    newFiles[index] = null;
+
+    setGambarFiles(newFiles);
+
+    const newPreviews = [...gambarPreviews];
+    newPreviews[index] = null;
+
+    setGambarPreviews(newPreviews);
+
+    const newItem = {
+      ...activeItem,
+    };
+
+    if (index === 0) {
+      newItem.gambar = null;
+      newItem.gambar1 = null;
+    }
+
+    if (index === 1) {
+      newItem.gambar2 = null;
+    }
+
+    if (index === 2) {
+      newItem.gambar3 = null;
+    }
+
+    setActiveItem(newItem);
+
+    if (gambarInputRefs[index].current) {
+      gambarInputRefs[index].current!.value = "";
+    }
+  };
+
+  const handleSubmitModal = async () => {
     if (!modalType || !activeItem) return;
 
     try {
       setSaving(true);
+
       let endpoint = "";
-      const method = modalMode === "add" ? "POST" : "PUT";
 
       if (modalType === "program") {
-        endpoint = "/api/magang/program";
-      } else if (modalType === "proses") {
-        endpoint = "/api/magang/proses";
-      } else if (modalType === "benefit") {
-        endpoint = "/api/magang/benefit";
-      } else if (modalType === "timeline") {
-        endpoint = "/api/magang/timeline";
+        endpoint = API_ENDPOINTS.program;
       }
 
-      let res: Response;
+      if (modalType === "proses") {
+        endpoint = API_ENDPOINTS.proses;
+      }
 
-      // Untuk program dengan file gambar → pakai FormData (support 3 foto)
-      const hasNewFile = gambarFiles.some((f) => f !== null);
-      if (modalType === "program" && hasNewFile) {
-        const fd = new FormData();
-        gambarFiles.forEach((file, i) => {
-          if (file) fd.append(`gambar${i + 1}`, file);
-        });
-        // append semua field lain dari activeItem
-        for (const [k, v] of Object.entries(activeItem)) {
-          if (!k.startsWith("gambar") && v !== undefined && v !== null) {
-            fd.append(k, String(v));
+      if (modalType === "informasi") {
+        endpoint = API_ENDPOINTS.informasi;
+      }
+
+      if (modalType === "benefit") {
+        endpoint = API_ENDPOINTS.benefit;
+      }
+
+      if (modalType === "timeline") {
+        endpoint = API_ENDPOINTS.timeline;
+      }
+
+      if (!endpoint) {
+        throw new Error("Endpoint API tidak ditemukan");
+      }
+
+      const hasNewImages =
+        modalType === "program" &&
+        gambarFiles.some((file) => file !== null);
+
+      let response: Response;
+
+      if (hasNewImages) {
+        const formData = new FormData();
+
+        gambarFiles.forEach((file, index) => {
+          if (file) {
+            formData.append(
+              `gambar${index + 1}`,
+              file
+            );
           }
+        });
+
+        Object.entries(activeItem).forEach(
+          ([key, value]) => {
+            if (
+              key.startsWith("gambar") ||
+              value === undefined ||
+              value === null
+            ) {
+              return;
+            }
+
+            formData.append(
+              key,
+              String(value)
+            );
+          }
+        );
+
+        if (modalMode === "edit") {
+          formData.append("_method", "PUT");
         }
-        res = await fetch(endpoint, { method, body: fd });
-      } else {
-        res = await fetch(endpoint, {
-          method,
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify(activeItem),
+
+        response = await fetch(endpoint, {
+          method:
+            modalMode === "edit"
+              ? "POST"
+              : "POST",
+          headers: {
+            Accept: "application/json",
+          },
+          body: formData,
         });
+      } else {
+        const payload = {
+          ...activeItem,
+        };
+
+        if (modalMode === "edit") {
+          response = await fetch(endpoint, {
+            method: "PUT",
+            headers: {
+              Accept: "application/json",
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+        } else {
+          response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+        }
       }
 
-      if (res.ok) {
-        showNotification({
-          type: "success",
-          title: "Berhasil",
-          message: `Data ${modalType} berhasil ${
-            modalMode === "add" ? "ditambahkan" : "diperbarui"
-          }.`,
-        });
-        setModalType(null);
-        setActiveItem(null);
-        resetGambar();
+      const json = await parseResponse(response);
 
-        // Refresh data
-        if (modalType === "program") fetchProgramMagang();
-        else if (modalType === "proses") fetchProsesProgramMagang();
-        else if (modalType === "benefit") fetchBenefitProgramMagang();
-        else if (modalType === "timeline") fetchTimelineKegiatan();
-      } else {
-        const errorJson = await res.json().catch(() => ({}));
-        showNotification({
-          type: "error",
-          title: "Operasi Gagal",
-          message: errorJson.message || `Gagal menyimpan data (Status ${res.status})`,
-        });
+      if (!response.ok) {
+        throw new Error(
+          json?.message ||
+            `Gagal ${
+              modalMode === "edit"
+                ? "mengubah"
+                : "menambahkan"
+            } data`
+        );
       }
-    } catch (err: any) {
-      showNotification({
-        type: "error",
-        title: "Error API",
-        message: err.message || "Gagal menyimpan data.",
-      });
+
+      notify(
+        "success",
+        modalMode === "edit"
+          ? "Data berhasil diperbarui"
+          : "Data berhasil ditambahkan"
+      );
+
+      handleCloseModal();
+
+      if (modalType === "program") {
+        await fetchProgramMagang();
+      }
+
+      if (modalType === "proses") {
+        await fetchProsesProgramMagang();
+      }
+
+      if (modalType === "informasi") {
+        await fetchInformasiPendaftaran();
+      }
+
+      if (modalType === "benefit") {
+        await fetchBenefitProgramMagang();
+      }
+
+      if (modalType === "timeline") {
+        await fetchTimelineKegiatan();
+      }
+    } catch (error: any) {
+      console.error(
+        "Submit modal error:",
+        error
+      );
+
+      notify(
+        "error",
+        error?.message ||
+          "Terjadi kesalahan saat menyimpan data"
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  // Delete Item with Confirmation
-  const handleDeleteItem = (
-    type: "program" | "proses" | "benefit" | "timeline",
-    id: number | string,
-    titleText: string
+  const handleDelete = (
+    type: ModalType,
+    id?: number
   ) => {
+    if (!id) {
+      notify(
+        "error",
+        "ID data tidak ditemukan"
+      );
+
+      return;
+    }
+
     showConfirm({
-      title: "Konfirmasi Hapus",
-      message: `Apakah Anda yakin ingin menghapus data "${titleText}"? Data yang dihapus tidak dapat dikembalikan.`,
+      title: "Hapus Data",
+      message: "Apakah Anda yakin ingin menghapus data ini?",
       confirmLabel: "Hapus",
       cancelLabel: "Batal",
       confirmColor: "red",
       onConfirm: async () => {
         try {
           setLoading(true);
+
           let endpoint = "";
-          if (type === "program") endpoint = `/api/magang/program?id=${id}`;
-          else if (type === "proses") endpoint = `/api/magang/proses?id=${id}`;
-          else if (type === "benefit") endpoint = `/api/magang/benefit?id=${id}`;
-          else if (type === "timeline") endpoint = `/api/magang/timeline?id=${id}`;
 
-          let res = await fetch(endpoint, {
-            method: "DELETE",
-            headers: { Accept: "application/json" },
-          });
-
-          if (res.ok) {
-            showNotification({
-              type: "success",
-              title: "Dihapus",
-              message: `Data ${type} berhasil dihapus.`,
-            });
-            if (type === "program") fetchProgramMagang();
-            else if (type === "proses") fetchProsesProgramMagang();
-            else if (type === "benefit") fetchBenefitProgramMagang();
-            else if (type === "timeline") fetchTimelineKegiatan();
-          } else {
-            showNotification({
-              type: "error",
-              title: "Gagal Menghapus",
-              message: `Status respons: ${res.status}`,
-            });
+          if (type === "program") {
+            endpoint = API_ENDPOINTS.program;
           }
-        } catch (err: any) {
-          showNotification({
-            type: "error",
-            title: "Error API",
-            message: err.message || "Gagal menghapus data.",
-          });
+
+          if (type === "proses") {
+            endpoint = API_ENDPOINTS.proses;
+          }
+
+          if (type === "informasi") {
+            endpoint = API_ENDPOINTS.informasi;
+          }
+
+          if (type === "benefit") {
+            endpoint = API_ENDPOINTS.benefit;
+          }
+
+          if (type === "timeline") {
+            endpoint = API_ENDPOINTS.timeline;
+          }
+
+          if (!endpoint) {
+            throw new Error(
+              "Endpoint delete tidak ditemukan"
+            );
+          }
+
+          const response = await fetch(
+            `${endpoint}?id=${encodeURIComponent(
+              String(id)
+            )}`,
+            {
+              method: "DELETE",
+              headers: {
+                Accept: "application/json",
+              },
+            }
+          );
+
+          const json = await parseResponse(response);
+
+          if (!response.ok) {
+            throw new Error(
+              json?.message ||
+                "Gagal menghapus data"
+            );
+          }
+
+          notify(
+            "success",
+            "Data berhasil dihapus"
+          );
+
+          if (type === "program") {
+            await fetchProgramMagang();
+          }
+
+          if (type === "proses") {
+            await fetchProsesProgramMagang();
+          }
+
+          if (type === "informasi") {
+            await fetchInformasiPendaftaran();
+          }
+
+          if (type === "benefit") {
+            await fetchBenefitProgramMagang();
+          }
+
+          if (type === "timeline") {
+            await fetchTimelineKegiatan();
+          }
+        } catch (error: any) {
+          console.error(
+            "Delete error:",
+            error
+          );
+
+          notify(
+            "error",
+            error?.message ||
+              "Gagal menghapus data"
+          );
         } finally {
           setLoading(false);
         }
@@ -533,1307 +1112,1992 @@ export default function AdminMagangPage() {
     });
   };
 
+  const filteredProgramList =
+    programList.filter((item) => {
+      const keyword = searchTerm.toLowerCase();
+
+      return (
+        String(
+          item.judul ||
+            item.nama_program ||
+            item.title ||
+            ""
+        )
+          .toLowerCase()
+          .includes(keyword) ||
+        String(
+          item.deskripsi ||
+            item.description ||
+            ""
+        )
+          .toLowerCase()
+          .includes(keyword)
+      );
+    });
+
+  const filteredProsesList =
+    prosesList.filter((item) => {
+      const keyword = searchTerm.toLowerCase();
+
+      return (
+        String(
+          item.judul ||
+            item.title ||
+            ""
+        )
+          .toLowerCase()
+          .includes(keyword) ||
+        String(
+          item.deskripsi ||
+            item.description ||
+            ""
+        )
+          .toLowerCase()
+          .includes(keyword)
+      );
+    });
+
+  const filteredInformasiList =
+    informasiList.filter((item) => {
+      const keyword = searchTerm.toLowerCase();
+
+      return (
+        String(
+          item.judul ||
+            item.title ||
+            ""
+        )
+          .toLowerCase()
+          .includes(keyword) ||
+        String(
+          item.deskripsi ||
+            item.description ||
+            item.syarat ||
+            item.keterangan ||
+            ""
+        )
+          .toLowerCase()
+          .includes(keyword)
+      );
+    });
+
+  const filteredBenefitList =
+    benefitList.filter((item) => {
+      const keyword = searchTerm.toLowerCase();
+
+      return (
+        String(
+          item.judul ||
+            item.title ||
+            ""
+        )
+          .toLowerCase()
+          .includes(keyword) ||
+        String(
+          item.deskripsi ||
+            item.description ||
+            ""
+        )
+          .toLowerCase()
+          .includes(keyword)
+      );
+    });
+
+  const filteredTimelineList =
+    timelineList.filter((item) => {
+      const keyword = searchTerm.toLowerCase();
+
+      return (
+        String(
+          item.kegiatan ||
+            item.judul ||
+            item.title ||
+            ""
+        )
+          .toLowerCase()
+          .includes(keyword) ||
+        String(
+          item.deskripsi ||
+            item.description ||
+            ""
+        )
+          .toLowerCase()
+          .includes(keyword)
+      );
+    });
+
+  const renderBenefitIcon = (
+    iconName?: string
+  ) => {
+    const icons: Record<
+      string,
+      React.ComponentType<any>
+    > = {
+      Award,
+      Users,
+      Clock,
+      FileText,
+      ListChecks,
+      CheckCircle2,
+      Globe,
+    };
+
+    const Icon =
+      icons[iconName || "Award"] || Award;
+
+    return <Icon className="w-5 h-5" />;
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-bold font-sans text-foreground tracking-tight">
               Landing Page Magang
             </h1>
-            <p className="text-xs md:text-sm text-muted-foreground font-semibold mt-1">
-              Kelola 5 data konten landing page: Footer, Program, Proses, Benefit, dan Timeline Magang
+
+            <p className="text-xs md:text-sm text-muted-foreground font-sans font-semibold mt-1">
+              Kelola konten landing page program
+              magang.
             </p>
           </div>
+        </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
-            <button
-              onClick={() => {
-                if (activeTab === "footer") fetchFooter();
-                else if (activeTab === "program") fetchProgramMagang();
-                else if (activeTab === "proses") fetchProsesProgramMagang();
-                else if (activeTab === "benefit") fetchBenefitProgramMagang();
-                else if (activeTab === "timeline") fetchTimelineKegiatan();
-              }}
-              disabled={loading}
-              title="Segarkan Data"
-              className="p-2.5 rounded-xl bg-card border border-border text-foreground hover:bg-muted text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${loading ? "animate-spin text-primary" : ""}`}
-              />
-              <span className="hidden sm:inline">Refresh Data</span>
-            </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase font-sans text-muted-foreground">
+                  Program
+                </p>
+
+                <p className="text-[19px] font-sans mt-1">
+                  {programList.length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase font-bold font-sans text-muted-foreground">
+                  Proses
+                </p>
+
+                <p className="text-[19px] font-sans mt-1">
+                  {prosesList.length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase font-bold font-sans text-muted-foreground">
+                  Informasi
+                </p>
+
+                <p className="text-[19px] font-sans mt-1">
+                  {informasiList.length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase font-bold font-sans text-muted-foreground">
+                  Benefit
+                </p>
+
+                <p className="text-[19px] font-sans mt-1">
+                  {benefitList.length}
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold font-sans uppercase text-muted-foreground">
+                  Timeline
+                </p>
+
+                <p className="text-[19px] font-sans mt-1">
+                  {timelineList.length}
+                </p>
+              </div>
+
+            </div>
           </div>
         </div>
 
-        {/* Summary Stat Cards - Aligned with other admin pages, with icons */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div
-            onClick={() => { setActiveTab("program"); setSearchTerm(""); }}
-            className={`bg-card border rounded-2xl p-4 shadow-card transition-all cursor-pointer ${
-              activeTab === "program"
-                ? "border-primary ring-2 ring-primary/20"
-                : "border-border hover:border-primary/40"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
-                Program Magang
-              </span>
-              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                <Briefcase className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-primary">{programList.length}</p>
-            <span className="text-[10px] font-semibold text-muted-foreground">
-              Program dibuka
-            </span>
-          </div>
-
-          <div
-            onClick={() => { setActiveTab("proses"); setSearchTerm(""); }}
-            className={`bg-card border rounded-2xl p-4 shadow-card transition-all cursor-pointer ${
-              activeTab === "proses"
-                ? "border-status-pending ring-2 ring-status-pending/20"
-                : "border-border hover:border-status-pending/40"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-extrabold text-status-pending uppercase tracking-wider">
-                Tahapan Alur
-              </span>
-              <div className="w-8 h-8 rounded-xl bg-status-pending/10 flex items-center justify-center text-status-pending shrink-0">
-                <GitMerge className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-status-pending">{prosesList.length}</p>
-            <span className="text-[10px] font-semibold text-muted-foreground">
-              Langkah seleksi
-            </span>
-          </div>
-
-          <div
-            onClick={() => { setActiveTab("benefit"); setSearchTerm(""); }}
-            className={`bg-card border rounded-2xl p-4 shadow-card transition-all cursor-pointer ${
-              activeTab === "benefit"
-                ? "border-status-lolos ring-2 ring-status-lolos/20"
-                : "border-border hover:border-status-lolos/40"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-extrabold text-status-lolos uppercase tracking-wider">
-                Benefit Magang
-              </span>
-              <div className="w-8 h-8 rounded-xl bg-status-lolos/10 flex items-center justify-center text-status-lolos shrink-0">
-                <Gift className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-status-lolos">{benefitList.length}</p>
-            <span className="text-[10px] font-semibold text-muted-foreground">
-              Keuntungan peserta
-            </span>
-          </div>
-
-          <div
-            onClick={() => { setActiveTab("timeline"); setSearchTerm(""); }}
-            className={`bg-card border rounded-2xl p-4 shadow-card transition-all cursor-pointer ${
-              activeTab === "timeline"
-                ? "border-foreground/50 ring-2 ring-foreground/10"
-                : "border-border hover:border-foreground/30"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-extrabold text-foreground uppercase tracking-wider">
-                Timeline Agenda
-              </span>
-              <div className="w-8 h-8 rounded-xl bg-foreground/10 flex items-center justify-center text-foreground shrink-0">
-                <CalendarDays className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-foreground">{timelineList.length}</p>
-            <span className="text-[10px] font-semibold text-muted-foreground">
-              Jadwal kegiatan
-            </span>
-          </div>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-2 border-b border-border">
-          {[
-            { id: "program", label: "Program Magang", icon: Briefcase, count: programList.length },
-            { id: "proses", label: "Proses / Alur", icon: GitMerge, count: prosesList.length },
-            { id: "benefit", label: "Benefit Magang", icon: Gift, count: benefitList.length },
-            { id: "timeline", label: "Timeline Kegiatan", icon: CalendarDays, count: timelineList.length },
-            { id: "footer", label: "Footer Website", icon: Footprints, count: null },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
+        <div className="bg-card border border-border rounded-lg">
+          <div className="flex overflow-x-auto border-b border-border">
+            {[
+              {
+                id: "program",
+                label: "Program",
+              },
+              {
+                id: "proses",
+                label: "Proses",
+              },
+              {
+                id: "informasi",
+                label: "Informasi",
+              },
+              {
+                id: "benefit",
+                label: "Benefit",
+              },
+              {
+                id: "timeline",
+                label: "Timeline",
+              },
+              {
+                id: "footer",
+                label: "Footer",
+              },
+            ].map((tab) => (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => {
-                  setActiveTab(tab.id as any);
-                  setSearchTerm("");
-                }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                    : "text-muted-foreground hover:text-foreground hover:bg-card border border-transparent"
+                onClick={() =>
+                  setActiveTab(
+                    tab.id as ActiveTab
+                  )
+                }
+                className={`px-5 py-3 text-sm font-medium cursor-pointer font-sans whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-                {tab.count !== null && (
-                  <span
-                    className={`px-1.5 rounded-md text-[10px] font-mono ${
-                      isActive ? "bg-black/20 text-white" : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
+                {tab.label}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
 
-        {/* Tab 1: Program Magang */}
+        {activeTab !== "footer" && (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) =>
+                  setSearchTerm(
+                    e.target.value
+                  )
+                }
+                placeholder="Cari data"
+                className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              />
+            </div>
+          </div>
+        )}
+
         {activeTab === "program" && (
-          <div className="space-y-5">
-            {/* Header bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card p-4 rounded-2xl border border-border">
-              <div className="flex items-center gap-3">
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Cari program magang..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary min-w-[220px]"
-                  />
-                </div>
-                {programList.length > 0 && (
-                  <span className="shrink-0 px-2.5 py-1 bg-primary/10 text-primary text-[11px] font-bold rounded-lg">
-                    {programList.length} Program
-                  </span>
-                )}
-              </div>
+          <div className="space-y-4">
+            <div className="flex justify-end">
               <button
-                onClick={() => {
-                  setModalMode("add");
-                  resetGambar();
-                  setActiveItem({
-                    judul: "",
-                    deskripsi: "",
-                    durasi: "3 Bulan",
-                    kategori: "Fulltime",
-                    kuota: "Tersedia",
-                    status: "Aktif",
-                  });
-                  setModalType("program");
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-opacity shadow-sm"
+                type="button"
+                onClick={() =>
+                  handleAdd("program")
+                }
+                className="inline-flex font-sans cursor-pointer items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
               >
                 <Plus className="w-4 h-4" />
-                <span>Tambah Program</span>
+                Tambah Program
               </button>
             </div>
 
             {loading ? (
-              <div className="p-16 flex flex-col items-center justify-center gap-3 bg-card border border-border rounded-2xl">
-                <Spinner size="md" />
-                <span className="text-xs text-muted-foreground">Memuat data...</span>
+              <div className="flex justify-center py-12">
+                <Spinner size="lg" />
               </div>
-            ) : programList.length === 0 ? (
-              <div className="p-16 text-center bg-card border border-border rounded-2xl space-y-3">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                  <Briefcase className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-bold text-sm text-foreground">Belum Ada Program Magang</h3>
-                <p className="text-xs text-muted-foreground">Mulai tambahkan program magang untuk ditampilkan di halaman publik.</p>
+            ) : filteredProgramList.length ===
+              0 ? (
+              <div className="text-center py-12 border border-dashed border-border rounded-lg">
+                <p className="text-sm font-sans text-muted-foreground">
+                  Belum ada program magang.
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {programList
-                  .filter((item) => {
-                    const title = item.judul || item.nama_program || item.title || "";
-                    const desc = item.deskripsi || item.description || "";
-                    return (
-                      title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      desc.toLowerCase().includes(searchTerm.toLowerCase())
-                    );
-                  })
-                  .map((item, idx) => {
-                    const statusVal = String(item.status || item.kuota || "").toLowerCase();
-                    const isAktif = statusVal.includes("aktif") || statusVal.includes("tersedia") || statusVal.includes("buka");
-                    const isTutup = statusVal.includes("tutup") || statusVal.includes("penuh") || statusVal.includes("habis");
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {filteredProgramList.map(
+                  (item) => {
+                    const title =
+                      item.judul ||
+                      item.nama_program ||
+                      item.title ||
+                      "Program Magang";
+
+                    const description =
+                      item.deskripsi ||
+                      item.description ||
+                      "";
+
+                    const images = [
+                      item.gambar1 ||
+                        item.gambar ||
+                        null,
+                      item.gambar2 || null,
+                      item.gambar3 || null,
+                    ];
+
                     return (
                       <div
-                        key={item.id || idx}
-                        className="group bg-card border border-border rounded-2xl p-4 hover:border-primary/40 hover:shadow-md transition-all duration-200"
+                        key={item.id}
+                        className="bg-card border border-border rounded-lg overflow-hidden"
                       >
-                        <div className="flex items-start gap-4">
-                          {/* Foto */}
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {[item.gambar1 || item.gambar, item.gambar2, item.gambar3]
-                              .filter(Boolean)
-                              .slice(0, 3)
-                              .map((src, gi) => (
+                        <div className="grid grid-cols-3 gap-1 h-48 bg-muted">
+                          {images.map(
+                            (
+                              image,
+                              index
+                            ) =>
+                              image ? (
                                 <img
-                                  key={gi}
-                                  src={src}
-                                  alt={`Foto ${gi + 1}`}
-                                  className="w-14 h-14 object-cover rounded-xl border border-border shadow-sm"
+                                  key={index}
+                                  src={image}
+                                  alt={`${title} ${
+                                    index + 1
+                                  }`}
+                                  className="w-full h-full object-cover"
                                 />
-                              ))}
-                            {![item.gambar1 || item.gambar, item.gambar2, item.gambar3].some(Boolean) && (
-                              <div className="w-14 h-14 rounded-xl border border-border bg-muted flex items-center justify-center">
-                                <ImageIcon className="w-6 h-6 text-muted-foreground" />
-                              </div>
-                            )}
+                              ) : (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-center bg-muted"
+                                >
+                                </div>
+                              )
+                          )}
+                        </div>
+
+                        <div className="p-5 space-y-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h3 className="font-semibold font-sans text-lg">
+                                {title}
+                              </h3>
+
+                              <p className="text-sm font-sans text-muted-foreground mt-1 line-clamp-3">
+                                {description}
+                              </p>
+                            </div>
+
+                            <span className="px-2.5 py-1 font-sans rounded-full text-xs bg-primary/10 text-primary whitespace-nowrap">
+                              {item.status ||
+                                "Aktif"}
+                            </span>
                           </div>
 
-                          {/* Info */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <p className="font-sans text-muted-foreground">
+                                Durasi
+                              </p>
+                              <p className="font-sans mt-1">
+                                {item.durasi ||
+                                  item.duration ||
+                                  "-"}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className=" font-sans text-muted-foreground">
+                                Kategori
+                              </p>
+                              <p className="font-sans mt-1">
+                                {item.kategori ||
+                                  item.tipe ||
+                                  "-"}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="font-sans text-muted-foreground">
+                                Kuota
+                              </p>
+                              <p className="font-sans mt-1">
+                                {item.kuota ||
+                                  "-"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleEdit(
+                                  "program",
+                                  item
+                                )
+                              }
+                              className="p-2
+                              rounded-lg
+                              text-primary
+                              hover:bg-primary/10
+                              active:scale-95
+                              transition-all
+                              cursor-pointer"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDelete(
+                                  "program",
+                                  item.id
+                                )
+                              }
+                              className="p-2
+                              rounded-lg
+                              text-destructive
+                              hover:bg-destructive/10
+                              active:scale-95
+                              transition-all
+                              cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "proses" && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() =>
+                  handleAdd("proses")
+                }
+                className="inline-flex items-center font-sans cursor-pointer gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+              >
+                <Plus className="w-4 h-4" />
+                Tambah Proses
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Spinner size="lg" />
+              </div>
+            ) : filteredProsesList.length ===
+              0 ? (
+              <div className="text-center py-12 border border-dashed border-border rounded-lg">
+                <ListChecks className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+
+                <p className="text-sm text-muted-foreground">
+                  Belum ada data proses program.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredProsesList.map(
+                  (item, index) => {
+                    const step =
+                      item.step ||
+                      item.langkah ||
+                      item.urutan ||
+                      index + 1;
+
+                    const title =
+                      item.judul ||
+                      item.title ||
+                      "";
+
+                    const description =
+                      item.deskripsi ||
+                      item.description ||
+                      "";
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="relative bg-card border border-border rounded-lg p-5"
+                      >
+                        <div className="flex gap-4">
+                          <div className="w-10 h-10 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                            {step}
+                          </div>
+
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <h4 className="font-bold text-sm text-foreground truncate">
-                                  {item.judul || item.nama_program || item.title || "Tanpa Judul"}
-                                </h4>
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                  {item.deskripsi || item.description || "-"}
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <h3 className="font-semibold">
+                                   {title}
+                                </h3>
+
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {description}
                                 </p>
                               </div>
-                              {/* Aksi */}
-                              <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                              <div className="flex gap-2 shrink-0">
                                 <button
-                                  onClick={() => {
-                                    setModalMode("edit");
-                                    setActiveItem({ ...item });
-                                    resetGambar();
-                                    setModalType("program");
-                                  }}
-                                  className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg text-muted-foreground transition-colors"
-                                  title="Edit"
+                                  type="button"
+                                  onClick={() =>
+                                    handleEdit(
+                                      "proses",
+                                      item
+                                    )
+                                  }
+                                  className="p-2 rounded-lg hover:bg-muted"
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </button>
+
                                 <button
+                                  type="button"
                                   onClick={() =>
-                                    handleDeleteItem(
-                                      "program",
-                                      item.id!,
-                                      item.judul || item.nama_program || item.title || "Program"
+                                    handleDelete(
+                                      "proses",
+                                      item.id
                                     )
                                   }
-                                  className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg text-muted-foreground transition-colors"
-                                  title="Hapus"
+                                  className="p-2 rounded-lg text-destructive hover:bg-destructive/10"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
                             </div>
-
-                            {/* Meta badges */}
-                            <div className="flex flex-wrap items-center gap-2 mt-2.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                                <span>⏱</span>
-                                {item.durasi || item.duration || "Fleksibel"}
-                              </span>
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400">
-                                {item.kategori || item.tipe || "Reguler"}
-                              </span>
-                              <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                                  isTutup
-                                    ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                }`}
-                              >
-                                <span className={`w-1.5 h-1.5 rounded-full ${isTutup ? "bg-red-500" : "bg-emerald-500"}`} />
-                                {item.status || item.kuota || "Aktif"}
-                              </span>
-                            </div>
                           </div>
                         </div>
                       </div>
                     );
-                  })}
+                  }
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* Tab 2: Proses Program Magang */}
-        {activeTab === "proses" && (
-          <div className="space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card p-4 rounded-2xl border border-border">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Cari alur/tahapan..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary min-w-[220px]"
-                  />
-                </div>
-                {prosesList.length > 0 && (
-                  <span className="shrink-0 px-2.5 py-1 bg-primary/10 text-primary text-[11px] font-bold rounded-lg">
-                    {prosesList.length} Tahapan
-                  </span>
-                )}
-              </div>
+        {/* =================================================
+            INFORMASI
+            ================================================= */}
+
+        {activeTab === "informasi" && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
               <button
-                onClick={() => {
-                  setModalMode("add");
-                  setActiveItem({
-                    step: prosesList.length + 1,
-                    urutan: prosesList.length + 1,
-                    judul: "",
-                    deskripsi: "",
-                  });
-                  setModalType("proses");
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-opacity shadow-sm"
+                type="button"
+                onClick={() =>
+                  handleAdd("informasi")
+                }
+                className="inline-flex items-center font-sans cursor-pointer gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
               >
                 <Plus className="w-4 h-4" />
-                <span>Tambah Tahapan</span>
+                Tambah Informasi
               </button>
             </div>
 
             {loading ? (
-              <div className="p-16 flex flex-col items-center justify-center gap-3 bg-card border border-border rounded-2xl">
-                <Spinner size="md" />
-                <span className="text-xs text-muted-foreground">Memuat data...</span>
+              <div className="flex justify-center py-12">
+                <Spinner size="lg" />
               </div>
-            ) : prosesList.length === 0 ? (
-              <div className="p-16 text-center bg-card border border-border rounded-2xl space-y-3">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                  <GitMerge className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-bold text-sm text-foreground">Belum Ada Tahapan Alur</h3>
-                <p className="text-xs text-muted-foreground">Tambahkan langkah-langkah proses pendaftaran magang.</p>
+            ) : filteredInformasiList.length ===
+              0 ? (
+              <div className="text-center py-12 border border-dashed border-border rounded-lg">
+                <Info className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+
+                <p className="text-sm text-muted-foreground">
+                  Belum ada data informasi pendaftaran.
+                </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {prosesList
-                  .filter((item) => {
-                    const title = item.judul || item.title || "";
-                    const desc = item.deskripsi || item.description || "";
-                    return (
-                      title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      desc.toLowerCase().includes(searchTerm.toLowerCase())
-                    );
-                  })
-                  .map((item, idx, arr) => (
-                    <div key={item.id || idx} className="flex gap-4">
-                      {/* Step indicator */}
-                      <div className="flex flex-col items-center">
-                        <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center shadow-sm shrink-0">
-                          {item.step || item.langkah || item.urutan || idx + 1}
-                        </div>
-                        {idx < arr.length - 1 && (
-                          <div className="w-0.5 flex-1 bg-border mt-1 mb-0 min-h-[20px]" />
-                        )}
-                      </div>
+              <div className="space-y-4">
+                {filteredInformasiList.map(
+                  (item, index) => {
+                    const number =
+                      item.urutan ||
+                      index + 1;
 
-                      {/* Card */}
-                      <div className="group flex-1 bg-card border border-border rounded-2xl p-4 hover:border-primary/40 hover:shadow-md transition-all duration-200 mb-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h4 className="font-bold text-sm text-foreground">
-                              {item.judul || item.title || "Tahapan"}
-                            </h4>
-                            {(item.deskripsi || item.description) && (
-                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                {item.deskripsi || item.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => {
-                                setModalMode("edit");
-                                setActiveItem({ ...item });
-                                setModalType("proses");
-                              }}
-                              className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg text-muted-foreground transition-colors"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleDeleteItem(
-                                  "proses",
-                                  item.id!,
-                                  item.judul || item.title || "Tahapan"
-                                )
-                              }
-                              className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg text-muted-foreground transition-colors"
-                              title="Hapus"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-        )}
+                    const title =
+                      item.judul ||
+                      item.title ||
+                      "Informasi Pendaftaran";
 
-        {/* Tab 3: Benefit Program Magang */}
-        {activeTab === "benefit" && (
-          <div className="space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card p-4 rounded-2xl border border-border">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Cari benefit magang..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary min-w-[220px]"
-                  />
-                </div>
-                {benefitList.length > 0 && (
-                  <span className="shrink-0 px-2.5 py-1 bg-primary/10 text-primary text-[11px] font-bold rounded-lg">
-                    {benefitList.length} Benefit
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => {
-                  setModalMode("add");
-                  setActiveItem({
-                    judul: "",
-                    deskripsi: "",
-                    icon: "Award",
-                  });
-                  setModalType("benefit");
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-opacity shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Tambah Benefit</span>
-              </button>
-            </div>
+                    const description =
+                      item.deskripsi ||
+                      item.description ||
+                      "";
 
-            {loading ? (
-              <div className="p-16 flex flex-col items-center justify-center gap-3 bg-card border border-border rounded-2xl">
-                <Spinner size="md" />
-                <span className="text-xs text-muted-foreground">Memuat data...</span>
-              </div>
-            ) : benefitList.length === 0 ? (
-              <div className="p-16 text-center bg-card border border-border rounded-2xl space-y-3">
-                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto">
-                  <Gift className="w-8 h-8 text-amber-500" />
-                </div>
-                <h3 className="font-bold text-sm text-foreground">Belum Ada Benefit Magang</h3>
-                <p className="text-xs text-muted-foreground">Tambahkan keuntungan yang didapat peserta program magang.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {benefitList
-                  .filter((item) => {
-                    const title = item.judul || item.title || "";
-                    const desc = item.deskripsi || item.description || "";
-                    return (
-                      title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      desc.toLowerCase().includes(searchTerm.toLowerCase())
-                    );
-                  })
-                  .map((item, idx) => {
-                    const colors = [
-                      { bg: "bg-primary/10", text: "text-primary" },
-                      { bg: "bg-amber-500/10", text: "text-amber-500" },
-                      { bg: "bg-emerald-500/10", text: "text-emerald-500" },
-                      { bg: "bg-rose-500/10", text: "text-rose-500" },
-                      { bg: "bg-violet-500/10", text: "text-violet-500" },
-                      { bg: "bg-cyan-500/10", text: "text-cyan-500" },
-                    ];
-                    const color = colors[idx % colors.length];
+                    const syarat =
+                      item.syarat ||
+                      item.keterangan ||
+                      "";
+
                     return (
                       <div
-                        key={item.id || idx}
-                        className="group bg-card border border-border rounded-2xl p-5 hover:border-primary/40 hover:shadow-md transition-all duration-200 flex flex-col gap-3"
+                        key={item.id}
+                        className="relative bg-card border border-border rounded-lg p-5"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className={`w-11 h-11 rounded-xl ${color.bg} ${color.text} flex items-center justify-center shrink-0`}>
-                            <Gift className="w-5 h-5" />
+                        <div className="flex gap-4">
+                          <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                            {number}
                           </div>
-                          <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => {
-                                setModalMode("edit");
-                                setActiveItem({ ...item });
-                                setModalType("benefit");
-                              }}
-                              className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg text-muted-foreground transition-colors"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleDeleteItem(
-                                  "benefit",
-                                  item.id!,
-                                  item.judul || item.title || "Benefit"
-                                )
-                              }
-                              className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg text-muted-foreground transition-colors"
-                              title="Hapus"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
 
-                        <div>
-                          <h4 className="font-bold text-sm text-foreground">
-                            {item.judul || item.title || "Benefit"}
-                          </h4>
-                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-3">
-                            {item.deskripsi || item.description || "-"}
-                          </p>
-                        </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <h3 className="font-semibold">
+                                  {title}
+                                </h3>
 
-                        {item.icon && (
-                          <div className="pt-2 border-t border-border/50">
-                            <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
-                              {item.icon}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab 4: Timeline Kegiatan */}
-        {activeTab === "timeline" && (
-          <div className="space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card p-4 rounded-2xl border border-border">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Cari timeline kegiatan..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary min-w-[220px]"
-                  />
-                </div>
-                {timelineList.length > 0 && (
-                  <span className="shrink-0 px-2.5 py-1 bg-primary/10 text-primary text-[11px] font-bold rounded-lg">
-                    {timelineList.length} Kegiatan
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => {
-                  setModalMode("add");
-                  setActiveItem({
-                    kegiatan: "",
-                    tanggal: "",
-                    deskripsi: "",
-                    status: "Mendatang",
-                    urutan: timelineList.length + 1,
-                  });
-                  setModalType("timeline");
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-opacity shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Tambah Timeline</span>
-              </button>
-            </div>
-
-            {loading ? (
-              <div className="p-16 flex flex-col items-center justify-center gap-3 bg-card border border-border rounded-2xl">
-                <Spinner size="md" />
-                <span className="text-xs text-muted-foreground">Memuat data...</span>
-              </div>
-            ) : timelineList.length === 0 ? (
-              <div className="p-16 text-center bg-card border border-border rounded-2xl space-y-3">
-                <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center mx-auto">
-                  <CalendarDays className="w-8 h-8 text-cyan-500" />
-                </div>
-                <h3 className="font-bold text-sm text-foreground">Belum Ada Timeline Kegiatan</h3>
-                <p className="text-xs text-muted-foreground">Tambahkan jadwal penting seperti Pendaftaran, Seleksi, Pengumuman.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {timelineList
-                  .filter((item) => {
-                    const name = item.kegiatan || item.judul || item.title || "";
-                    const desc = item.deskripsi || item.description || "";
-                    return (
-                      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      desc.toLowerCase().includes(searchTerm.toLowerCase())
-                    );
-                  })
-                  .map((item, idx) => {
-                    const statusVal = (item.status || "").toLowerCase();
-                    const isSelesai = statusVal.includes("selesai") || statusVal.includes("done") || statusVal.includes("lewat");
-                    const isBerlangsung = statusVal.includes("berlangsung") || statusVal.includes("aktif") || statusVal.includes("berjalan");
-                    const statusClass = isSelesai
-                      ? "bg-muted text-muted-foreground"
-                      : isBerlangsung
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400";
-                    return (
-                      <div
-                        key={item.id || idx}
-                        className="group bg-card border border-border rounded-2xl p-4 hover:border-primary/40 hover:shadow-md transition-all duration-200"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3 flex-1 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-sm">
-                              {idx + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-sm text-foreground">
-                                {item.kegiatan || item.judul || item.title || "Kegiatan"}
-                              </h4>
-                              {(item.deskripsi || item.description) && (
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                  {item.deskripsi || item.description}
-                                </p>
-                              )}
-                              <div className="flex flex-wrap items-center gap-2 mt-2">
-                                {(item.tanggal || item.tanggal_mulai) && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
-                                    <CalendarDays className="w-3 h-3" />
-                                    {item.tanggal || item.tanggal_mulai}
-                                  </span>
+                                {description && (
+                                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">
+                                    {description}
+                                  </p>
                                 )}
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusClass}`}>
-                                  {item.status || "Mendatang"}
-                                </span>
+
+                                {syarat && (
+                                  <div className="mt-3 p-3 bg-muted/40 rounded-md border border-border/50 text-xs text-muted-foreground">
+                                    <span className="font-semibold text-foreground">Syarat/Keterangan:</span> {syarat}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex gap-2 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleEdit(
+                                      "informasi",
+                                      item
+                                    )
+                                  }
+                                  className="p-2 rounded-lg hover:bg-muted"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDelete(
+                                      "informasi",
+                                      item.id
+                                    )
+                                  }
+                                  className="p-2 rounded-lg text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => {
-                                setModalMode("edit");
-                                setActiveItem({ ...item });
-                                setModalType("timeline");
-                              }}
-                              className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg text-muted-foreground transition-colors"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleDeleteItem(
-                                  "timeline",
-                                  item.id!,
-                                  item.kegiatan || item.judul || item.title || "Kegiatan"
-                                )
-                              }
-                              className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg text-muted-foreground transition-colors"
-                              title="Hapus"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
                         </div>
                       </div>
                     );
-                  })}
+                  }
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* Tab 5: Footer Management */}
-        {activeTab === "footer" && (
-          <form onSubmit={handleSaveFooter} className="space-y-6">
-            <div className="bg-card border border-border rounded-2xl p-6 space-y-6 shadow-sm">
-              <div className="flex items-center justify-between border-b border-border pb-4">
-                <div>
-                  <h3 className="font-bold text-sm text-foreground">Pengaturan Footer Website</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Data dikirim langsung ke endpoint Laravel: /api/footer
-                  </p>
-                </div>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-bold rounded-xl text-xs hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {saving ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-                  <span>{saving ? "Menyimpan..." : "Simpan Perubahan Footer"}</span>
-                </button>
-              </div>
+        {/* =================================================
+            BENEFIT
+            ================================================= */}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">Alamat Kantor</label>
-                  <textarea
-                    rows={3}
-                    value={footerData.alamat || ""}
-                    onChange={(e) =>
-                      setFooterData({ ...footerData, alamat: e.target.value })
-                    }
-                    placeholder="Contoh: Jl. Pahlawan No. 123, Surabaya, Jawa Timur"
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">Deskripsi Singkat Footer</label>
-                  <textarea
-                    rows={3}
-                    value={footerData.deskripsi || ""}
-                    onChange={(e) =>
-                      setFooterData({ ...footerData, deskripsi: e.target.value })
-                    }
-                    placeholder="Deskripsi tentang platform presensi dan pendaftaran magang..."
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">Email Kontak</label>
-                  <input
-                    type="email"
-                    value={footerData.email || ""}
-                    onChange={(e) =>
-                      setFooterData({ ...footerData, email: e.target.value })
-                    }
-                    placeholder="kontak@hadir.in"
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">Nomor Telepon / WhatsApp</label>
-                  <input
-                    type="text"
-                    value={footerData.telepon || ""}
-                    onChange={(e) =>
-                      setFooterData({ ...footerData, telepon: e.target.value })
-                    }
-                    placeholder="+62 812-3456-7890"
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">Jam Operasional</label>
-                  <input
-                    type="text"
-                    value={footerData.jam_operasional || ""}
-                    onChange={(e) =>
-                      setFooterData({ ...footerData, jam_operasional: e.target.value })
-                    }
-                    placeholder="Senin - Jumat: 08.00 - 17.00 WIB"
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">Teks Hak Cipta (Copyright)</label>
-                  <input
-                    type="text"
-                    value={footerData.copyright || ""}
-                    onChange={(e) =>
-                      setFooterData({ ...footerData, copyright: e.target.value })
-                    }
-                    placeholder="© 2026 Hadir.in. All Rights Reserved."
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-
-              {/* Social Media Links */}
-              <div className="border-t border-border pt-4 space-y-3">
-                <h4 className="font-bold text-xs text-foreground uppercase tracking-wider">
-                  Tautan Media Sosial
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold">Instagram URL</label>
-                    <input
-                      type="url"
-                      value={footerData.instagram || ""}
-                      onChange={(e) =>
-                        setFooterData({ ...footerData, instagram: e.target.value })
-                      }
-                      placeholder="https://instagram.com/hadir.in"
-                      className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold">LinkedIn URL</label>
-                    <input
-                      type="url"
-                      value={footerData.linkedin || ""}
-                      onChange={(e) =>
-                        setFooterData({ ...footerData, linkedin: e.target.value })
-                      }
-                      placeholder="https://linkedin.com/company/hadirin"
-                      className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold">Facebook URL</label>
-                    <input
-                      type="url"
-                      value={footerData.facebook || ""}
-                      onChange={(e) =>
-                        setFooterData({ ...footerData, facebook: e.target.value })
-                      }
-                      placeholder="https://facebook.com/hadirin"
-                      className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold">Twitter / X URL</label>
-                    <input
-                      type="url"
-                      value={footerData.twitter_x || ""}
-                      onChange={(e) =>
-                        setFooterData({ ...footerData, twitter_x: e.target.value })
-                      }
-                      placeholder="https://x.com/hadirin"
-                      className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-xs hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {saving ? <Spinner size="sm" /> : <Save className="w-4 h-4" />}
-                  <span>{saving ? "Menyimpan ke Laravel..." : "Simpan Perubahan Footer"}</span>
-                </button>
-              </div>
+        {activeTab === "benefit" && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() =>
+                  handleAdd("benefit")
+                }
+                className="inline-flex items-center font-sans cursor-pointer gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+              >
+                <Plus className="w-4 h-4" />
+                Tambah Benefit
+              </button>
             </div>
-          </form>
+
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Spinner size="lg" />
+              </div>
+            ) : filteredBenefitList.length ===
+              0 ? (
+              <div className="text-center py-12 border border-dashed border-border rounded-lg">
+                <Award className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+
+                <p className="text-sm text-muted-foreground">
+                  Belum ada benefit program.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredBenefitList.map(
+                  (item) => {
+                    const title =
+                      item.judul ||
+                      item.title ||
+                      "";
+
+                    const description =
+                      item.deskripsi ||
+                      item.description ||
+                      "";
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="bg-card border border-border rounded-lg p-5"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="w-11 h-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                            {renderBenefitIcon(
+                              item.icon
+                            )}
+                          </div>
+
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleEdit(
+                                  "benefit",
+                                  item
+                                )
+                              }
+                              className="p-2 rounded-lg hover:bg-muted"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDelete(
+                                  "benefit",
+                                  item.id
+                                )
+                              }
+                              className="p-2 rounded-lg text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <h3 className="font-semibold mt-4">
+                          {title}
+                        </h3>
+
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {description}
+                        </p>
+
+                        <p className="text-xs text-muted-foreground mt-4">
+                          Icon:{" "}
+                          <span className="font-medium">
+                            {item.icon ||
+                              "Award"}
+                          </span>
+                        </p>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Generic Modal Portal */}
-        {modalType && (
-          <ModalPortal>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-              <div
-                className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-                onClick={(e) => e.stopPropagation()}
+        {/* =================================================
+            TIMELINE
+            ================================================= */}
+
+        {activeTab === "timeline" && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() =>
+                  handleAdd("timeline")
+                }
+                className="inline-flex items-center font-sans cursor-pointer gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
               >
-                {/* Modal Header */}
-                <div className="p-4 border-b border-border flex items-center justify-between">
-                  <h3 className="font-extrabold text-sm text-foreground">
-                    {modalMode === "add" ? "Tambah" : "Edit"}{" "}
-                    {modalType === "program" && "Program Magang"}
-                    {modalType === "proses" && "Tahapan / Alur Pendaftaran"}
-                    {modalType === "benefit" && "Benefit Magang"}
-                    {modalType === "timeline" && "Timeline Kegiatan"}
+                <Plus className="w-4 h-4" />
+                Tambah Kegiatan
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Spinner size="lg" />
+              </div>
+            ) : filteredTimelineList.length ===
+              0 ? (
+              <div className="text-center py-12 border border-dashed border-border rounded-lg">
+                <CalendarDays className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+
+                <p className="text-sm text-muted-foreground">
+                  Belum ada timeline kegiatan.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredTimelineList.map(
+                  (item, index) => {
+                    const title =
+                      item.kegiatan ||
+                      item.judul ||
+                      item.title ||
+                      "";
+
+                    const description =
+                      item.deskripsi ||
+                      item.description ||
+                      "";
+
+                    const tanggal =
+                      item.tanggal ||
+                      item.tanggal_mulai ||
+                      "";
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="bg-card border border-border rounded-lg p-5"
+                      >
+                        <div className="flex gap-4">
+                          <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                            <CalendarDays className="w-5 h-5" />
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="font-semibold">
+                                    {title}
+                                  </h3>
+
+                                  <span className="px-2.5 py-1 rounded-full text-xs bg-primary/10 text-primary">
+                                    {item.status ||
+                                      "Mendatang"}
+                                  </span>
+                                </div>
+
+                                <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
+                                  <Clock className="w-4 h-4" />
+                                  {tanggal || "-"}
+                                </p>
+
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  {description}
+                                </p>
+                              </div>
+
+                              <div className="flex gap-2 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleEdit(
+                                      "timeline",
+                                      item
+                                    )
+                                  }
+                                  className="p-2 rounded-lg hover:bg-muted"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDelete(
+                                      "timeline",
+                                      item.id
+                                    )
+                                  }
+                                  className="p-2 rounded-lg text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =================================================
+            FOOTER
+            ================================================= */}
+
+        {activeTab === "footer" && (
+          <div className="bg-card border border-border rounded-lg p-6">
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Spinner size="lg" />
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    Pengaturan Footer
+                  </h2>
+
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Kelola informasi footer landing
+                    page.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Alamat
+                    </label>
+
+                    <textarea
+                      value={
+                        footerData.alamat || ""
+                      }
+                      onChange={(e) =>
+                        setFooterData({
+                          ...footerData,
+                          alamat:
+                            e.target.value,
+                        })
+                      }
+                      rows={3}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Deskripsi
+                    </label>
+
+                    <textarea
+                      value={
+                        footerData.deskripsi ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        setFooterData({
+                          ...footerData,
+                          deskripsi:
+                            e.target.value,
+                        })
+                      }
+                      rows={3}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Email
+                    </label>
+
+                    <input
+                      type="email"
+                      value={
+                        footerData.email || ""
+                      }
+                      onChange={(e) =>
+                        setFooterData({
+                          ...footerData,
+                          email:
+                            e.target.value,
+                        })
+                      }
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Telepon
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        footerData.telepon ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        setFooterData({
+                          ...footerData,
+                          telepon:
+                            e.target.value,
+                        })
+                      }
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Jam Operasional
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        footerData.jam_operasional ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        setFooterData({
+                          ...footerData,
+                          jam_operasional:
+                            e.target.value,
+                        })
+                      }
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Copyright
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        footerData.copyright ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        setFooterData({
+                          ...footerData,
+                          copyright:
+                            e.target.value,
+                        })
+                      }
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-4">
+                    Social Media
                   </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Instagram
+                      </label>
+
+                      <input
+                        type="url"
+                        value={
+                          footerData.instagram ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setFooterData({
+                            ...footerData,
+                            instagram:
+                              e.target.value,
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        LinkedIn
+                      </label>
+
+                      <input
+                        type="url"
+                        value={
+                          footerData.linkedin ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setFooterData({
+                            ...footerData,
+                            linkedin:
+                              e.target.value,
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Facebook
+                      </label>
+
+                      <input
+                        type="url"
+                        value={
+                          footerData.facebook ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setFooterData({
+                            ...footerData,
+                            facebook:
+                              e.target.value,
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Twitter / X
+                      </label>
+
+                      <input
+                        type="url"
+                        value={
+                          footerData.twitter_x ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setFooterData({
+                            ...footerData,
+                            twitter_x:
+                              e.target.value,
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-border">
                   <button
                     type="button"
-                    onClick={() => {
-                      setModalType(null);
-                      setActiveItem(null);
-                      resetGambar();
-                    }}
-                    className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                    aria-label="Tutup"
+                    onClick={handleSaveFooter}
+                    disabled={saving}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+
+                    {saving
+                      ? "Menyimpan..."
+                      : "Simpan Footer"}
+                  </button>
+                </div>
+
+                <div className="rounded-lg bg-muted/50 border border-border p-4">
+                  <p className="text-xs text-muted-foreground">
+                    Data dikirim langsung ke API
+                    Laravel:
+                  </p>
+
+                  <p className="text-xs font-mono mt-1 break-all">
+                    {API_ENDPOINTS.footer}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =================================================
+            MODAL
+            ================================================= */}
+
+        {modalType && activeItem && (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+              <div className="bg-card border border-border rounded-lg shadow-elevated w-full max-w-lg p-6 space-y-5 animate-in zoom-in-95 max-h-[calc(100vh-2rem)] overflow-y-auto">
+                {/* HEADER */}
+
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold">
+                      {modalMode === "add"
+                        ? "Tambah"
+                        : "Edit"}{" "}
+                      {modalType ===
+                      "program"
+                        ? "Program Magang"
+                        : modalType ===
+                          "proses"
+                        ? "Proses Program Magang"
+                        : modalType ===
+                          "informasi"
+                        ? "Informasi Pendaftaran"
+                        : modalType ===
+                          "benefit"
+                        ? "Benefit Program"
+                        : "Timeline Kegiatan"}
+                    </h2>
+
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Isi data dengan lengkap.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={
+                      handleCloseModal
+                    }
+                    disabled={saving}
+                    className="p-2 rounded-lg hover:bg-muted"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Modal Body */}
-                <form onSubmit={handleModalSubmit} className="p-5 space-y-4 overflow-y-auto">
-                  {/* Form for Program Magang */}
-                  {modalType === "program" && (
-                    <>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-foreground">Judul Program *</label>
+                {/* =================================================
+                    PROGRAM FORM
+                    ================================================= */}
+
+                {modalType ===
+                  "program" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Judul Program
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          activeItem.judul ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            judul:
+                              e.target
+                                .value,
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Deskripsi Program
+                      </label>
+
+                      <textarea
+                        value={
+                          activeItem.deskripsi ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            deskripsi:
+                              e.target
+                                .value,
+                          })
+                        }
+                        rows={4}
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Durasi
+                        </label>
+
                         <input
                           type="text"
-                          required
-                          value={activeItem?.judul || ""}
-                          onChange={(e) =>
-                            setActiveItem({ ...activeItem, judul: e.target.value })
+                          value={
+                            activeItem.durasi ||
+                            ""
                           }
-                          placeholder="Contoh: Frontend Web Developer"
-                          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                          onChange={(e) =>
+                            setActiveItem({
+                              ...activeItem,
+                              durasi:
+                                e.target
+                                  .value,
+                            })
+                          }
+                          className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-foreground">Deskripsi Program</label>
-                        <textarea
-                          rows={3}
-                          value={activeItem?.deskripsi || ""}
-                          onChange={(e) =>
-                            setActiveItem({ ...activeItem, deskripsi: e.target.value })
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Tipe / Kategori
+                        </label>
+
+                        <input
+                          type="text"
+                          value={
+                            activeItem.kategori ||
+                            ""
                           }
-                          placeholder="Deskripsi tugas, kualifikasi, atau gambaran magang..."
-                          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                          onChange={(e) =>
+                            setActiveItem({
+                              ...activeItem,
+                              kategori:
+                                e.target
+                                  .value,
+                            })
+                          }
+                          className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Kuota / Status
+                        </label>
+
+                        <input
+                          type="text"
+                          value={
+                            activeItem.kuota ||
+                            ""
+                          }
+                          onChange={(e) =>
+                            setActiveItem({
+                              ...activeItem,
+                              kuota:
+                                e.target
+                                  .value,
+                            })
+                          }
+                          className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-foreground">Durasi</label>
-                          <input
-                            type="text"
-                            value={activeItem?.durasi || ""}
-                            onChange={(e) =>
-                              setActiveItem({ ...activeItem, durasi: e.target.value })
-                            }
-                            placeholder="Contoh: 3 Bulan / 6 Bulan"
-                            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Status Aktif
+                        </label>
 
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-foreground">Tipe / Kategori</label>
-                          <select
-                            value={activeItem?.kategori || "Fulltime"}
-                            onChange={(e) =>
-                              setActiveItem({ ...activeItem, kategori: e.target.value })
-                            }
-                            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground focus:outline-none focus:border-primary"
-                          >
-                            <option value="Fulltime">Fulltime (WFO)</option>
-                            <option value="Remote">Remote (WFH)</option>
-                            <option value="Hybrid">Hybrid</option>
-                          </select>
-                        </div>
+                        <select
+                          value={
+                            activeItem.status ||
+                            "Aktif"
+                          }
+                          onChange={(e) =>
+                            setActiveItem({
+                              ...activeItem,
+                              status:
+                                e.target
+                                  .value,
+                            })
+                          }
+                          className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                        >
+                          <option value="Aktif">
+                            Aktif
+                          </option>
+
+                          <option value="Nonaktif">
+                            Nonaktif
+                          </option>
+                        </select>
                       </div>
+                    </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-foreground">Kuota / Status</label>
-                          <input
-                            type="text"
-                            value={activeItem?.kuota || ""}
-                            onChange={(e) =>
-                              setActiveItem({ ...activeItem, kuota: e.target.value })
-                            }
-                            placeholder="Contoh: 5 Kursi / Terbuka"
-                            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                          />
-                        </div>
+                    {/* IMAGE */}
 
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-foreground">Status Aktif</label>
-                          <select
-                            value={activeItem?.status || "Aktif"}
-                            onChange={(e) =>
-                              setActiveItem({ ...activeItem, status: e.target.value })
-                            }
-                            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground focus:outline-none focus:border-primary"
-                          >
-                            <option value="Aktif">Aktif (Tampil)</option>
-                            <option value="Tutup">Pendaftaran Ditutup</option>
-                          </select>
-                        </div>
-                      </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Foto Program
+                      </label>
 
-                      {/* Gambar Upload — 3 Foto */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-foreground">Foto Program (Maks. 3 Foto)</label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {[0, 1, 2].map((i) => {
-                            const preview = gambarPreviews[i];
-                            const existingUrl = activeItem?.[i === 0 ? (activeItem?.gambar1 ? "gambar1" : "gambar") : `gambar${i + 1}`];
-                            const hasImage = preview || existingUrl;
-                            return (
-                              <div key={i} className="space-y-1">
-                                <input
-                                  ref={gambarInputRefs[i]}
-                                  type="file"
-                                  accept="image/jpeg,image/png,image/webp"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    if (file.size > 5 * 1024 * 1024) {
-                                      showNotification({ type: "warning", message: "Ukuran file gambar maksimal 5MB." });
-                                      return;
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Maksimal 3 gambar.
+                        JPG, PNG, WebP.
+                        Maksimal 5 MB per
+                        gambar.
+                      </p>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        {[0, 1, 2].map(
+                          (index) => (
+                            <div
+                              key={index}
+                              className="relative"
+                            >
+                              <input
+                                ref={
+                                  gambarInputRefs[
+                                    index
+                                  ]
+                                }
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="hidden"
+                                onChange={(
+                                  e
+                                ) =>
+                                  handleGambarChange(
+                                    index,
+                                    e.target
+                                      .files?.[0] ||
+                                      null
+                                  )
+                                }
+                              />
+
+                              {gambarPreviews[
+                                index
+                              ] ? (
+                                <div className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                                  <img
+                                    src={
+                                      gambarPreviews[
+                                        index
+                                      ] || ""
                                     }
-                                    const newFiles = [...gambarFiles];
-                                    const newPreviews = [...gambarPreviews];
-                                    newFiles[i] = file;
-                                    newPreviews[i] = URL.createObjectURL(file);
-                                    setGambarFiles(newFiles);
-                                    setGambarPreviews(newPreviews);
-                                    const key = i === 0 ? "gambar1" : `gambar${i + 1}`;
-                                    setActiveItem({ ...activeItem, [key]: undefined });
-                                  }}
-                                />
-                                <div
-                                  onClick={() => gambarInputRefs[i].current?.click()}
-                                  className="relative border-2 border-dashed border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary transition-colors aspect-square flex items-center justify-center bg-muted/30"
-                                >
-                                  {preview ? (
-                                    <>
-                                      <img src={preview} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
-                                      <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity gap-1">
-                                        <Upload className="w-4 h-4 text-white" />
-                                        <span className="text-white text-[10px] font-bold">Ganti</span>
-                                      </div>
-                                    </>
-                                  ) : existingUrl ? (
-                                    <>
-                                      <img src={existingUrl} alt={`Foto ${i + 1} saat ini`} className="w-full h-full object-cover" />
-                                      <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity gap-1">
-                                        <Upload className="w-4 h-4 text-white" />
-                                        <span className="text-white text-[10px] font-bold">Ganti</span>
-                                      </div>
-                                    </>
-                                  ) : (
-                                    <div className="flex flex-col items-center gap-1 text-muted-foreground p-2">
-                                      <ImageIcon className="w-5 h-5" />
-                                      <span className="text-[10px] font-semibold text-center">
-                                        Foto {i + 1}{i === 0 ? " *" : ""}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                                {hasImage && (
+                                    alt={`Preview ${
+                                      index +
+                                      1
+                                    }`}
+                                    className="w-full h-full object-cover"
+                                  />
+
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      const newFiles = [...gambarFiles];
-                                      const newPreviews = [...gambarPreviews];
-                                      newFiles[i] = null;
-                                      newPreviews[i] = null;
-                                      setGambarFiles(newFiles);
-                                      setGambarPreviews(newPreviews);
-                                      const key = i === 0 ? "gambar1" : `gambar${i + 1}`;
-                                      setActiveItem({ ...activeItem, [key]: null, ...(i === 0 ? { gambar: null } : {}) });
-                                      if (gambarInputRefs[i].current) gambarInputRefs[i].current!.value = "";
-                                    }}
-                                    className="w-full text-[10px] text-destructive hover:underline text-center"
+                                    onClick={() =>
+                                      handleRemoveGambar(
+                                        index
+                                      )
+                                    }
+                                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center"
                                   >
-                                    Hapus
+                                    <X className="w-4 h-4" />
                                   </button>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">JPG, PNG, WebP — Maks 5MB per foto</p>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    gambarInputRefs[
+                                      index
+                                    ].current?.click()
+                                  }
+                                  className="w-full aspect-square rounded-lg border border-dashed border-border flex flex-col items-center justify-center gap-2 hover:bg-muted"
+                                >
+                                  <Upload className="w-5 h-5 text-muted-foreground" />
+
+                                  <span className="text-xs text-muted-foreground">
+                                    Gambar{" "}
+                                    {index +
+                                      1}
+                                  </span>
+                                </button>
+                              )}
+                            </div>
+                          )
+                        )}
                       </div>
-                    </>
-                  )}
-
-                  {/* Form for Proses Magang */}
-                  {modalType === "proses" && (
-                    <>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="col-span-1 space-y-1">
-                          <label className="text-xs font-bold text-foreground">Langkah Ke-</label>
-                          <input
-                            type="number"
-                            required
-                            min={1}
-                            value={activeItem?.step || activeItem?.urutan || 1}
-                            onChange={(e) =>
-                              setActiveItem({
-                                ...activeItem,
-                                step: Number(e.target.value),
-                                urutan: Number(e.target.value),
-                              })
-                            }
-                            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground focus:outline-none focus:border-primary"
-                          />
-                        </div>
-                        <div className="col-span-2 space-y-1">
-                          <label className="text-xs font-bold text-foreground">Judul Tahapan *</label>
-                          <input
-                            type="text"
-                            required
-                            value={activeItem?.judul || ""}
-                            onChange={(e) =>
-                              setActiveItem({ ...activeItem, judul: e.target.value })
-                            }
-                            placeholder="Contoh: Pengisian Formulir Online"
-                            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-foreground">Penjelasan / Deskripsi *</label>
-                        <textarea
-                          rows={3}
-                          required
-                          value={activeItem?.deskripsi || ""}
-                          onChange={(e) =>
-                            setActiveItem({ ...activeItem, deskripsi: e.target.value })
-                          }
-                          placeholder="Jelaskan apa yang harus dilakukan pendaftar pada tahap ini..."
-                          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Form for Benefit Magang */}
-                  {modalType === "benefit" && (
-                    <>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-foreground">Judul Keuntungan / Benefit *</label>
-                        <input
-                          type="text"
-                          required
-                          value={activeItem?.judul || ""}
-                          onChange={(e) =>
-                            setActiveItem({ ...activeItem, judul: e.target.value })
-                          }
-                          placeholder="Contoh: Sertifikat Industri Resmi"
-                          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-foreground">Deskripsi Benefit</label>
-                        <textarea
-                          rows={3}
-                          value={activeItem?.deskripsi || ""}
-                          onChange={(e) =>
-                            setActiveItem({ ...activeItem, deskripsi: e.target.value })
-                          }
-                          placeholder="Uraian manfaat yang diperoleh peserta..."
-                          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-foreground">Kode Icon / Simbol</label>
-                        <input
-                          type="text"
-                          value={activeItem?.icon || ""}
-                          onChange={(e) =>
-                            setActiveItem({ ...activeItem, icon: e.target.value })
-                          }
-                          placeholder="Contoh: Award, Users, BookOpen, Clock"
-                          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Form for Timeline Kegiatan */}
-                  {modalType === "timeline" && (
-                    <>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-foreground">Nama Kegiatan / Agenda *</label>
-                        <input
-                          type="text"
-                          required
-                          value={activeItem?.kegiatan || ""}
-                          onChange={(e) =>
-                            setActiveItem({ ...activeItem, kegiatan: e.target.value })
-                          }
-                          placeholder="Contoh: Pembukaan Pendaftaran Magang Batch 1"
-                          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-foreground">Tanggal / Rentang Waktu *</label>
-                          <input
-                            type="text"
-                            required
-                            value={activeItem?.tanggal || ""}
-                            onChange={(e) =>
-                              setActiveItem({ ...activeItem, tanggal: e.target.value })
-                            }
-                            placeholder="Contoh: 1 - 15 Oktober 2026"
-                            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-foreground">Status Kegiatan</label>
-                          <select
-                            value={activeItem?.status || "Mendatang"}
-                            onChange={(e) =>
-                              setActiveItem({ ...activeItem, status: e.target.value })
-                            }
-                            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground focus:outline-none focus:border-primary"
-                          >
-                            <option value="Mendatang">Akan Datang</option>
-                            <option value="Berlangsung">Sedang Berlangsung</option>
-                            <option value="Selesai">Selesai</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-foreground">Keterangan / Deskripsi</label>
-                        <textarea
-                          rows={3}
-                          value={activeItem?.deskripsi || ""}
-                          onChange={(e) =>
-                            setActiveItem({ ...activeItem, deskripsi: e.target.value })
-                          }
-                          placeholder="Detail informasi agenda kegiatan..."
-                          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Modal Footer Buttons */}
-                  <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setModalType(null);
-                        setActiveItem(null);
-                        resetGambar();
-                      }}
-                      className="px-4 py-2 border border-border rounded-xl text-xs font-bold text-foreground hover:bg-muted transition-colors"
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="inline-flex items-center gap-2 px-5 py-2 bg-primary text-primary-foreground font-bold rounded-xl text-xs hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                      {saving && <Spinner size="sm" />}
-                      <span>{saving ? "Menyimpan..." : "Simpan ke Laravel"}</span>
-                    </button>
+                    </div>
                   </div>
-                </form>
+                )}
+
+                {/* =================================================
+                    PROSES FORM
+                    ================================================= */}
+
+                {modalType ===
+                  "proses" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Langkah Ke-
+                      </label>
+
+                      <input
+                        type="number"
+                        value={
+                          activeItem.step ||
+                          activeItem.urutan ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            step: Number(
+                              e.target
+                                .value
+                            ),
+                            urutan: Number(
+                              e.target
+                                .value
+                            ),
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Judul Tahapan
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          activeItem.judul ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            judul:
+                              e.target
+                                .value,
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Penjelasan / Deskripsi
+                      </label>
+
+                      <textarea
+                        value={
+                          activeItem.deskripsi ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            deskripsi:
+                              e.target
+                                .value,
+                          })
+                        }
+                        rows={5}
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* =================================================
+                    INFORMASI FORM
+                    ================================================= */}
+
+                {modalType ===
+                  "informasi" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Nomor Urutan
+                      </label>
+
+                      <input
+                        type="number"
+                        value={
+                          activeItem.urutan ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            urutan: Number(
+                              e.target
+                                .value
+                            ),
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Judul Informasi
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          activeItem.judul ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            judul:
+                              e.target
+                                .value,
+                          })
+                        }
+                        placeholder="Contoh: Persyaratan Berkas Pendaftaran"
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Deskripsi / Informasi Detail
+                      </label>
+
+                      <textarea
+                        value={
+                          activeItem.deskripsi ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            deskripsi:
+                              e.target
+                                .value,
+                          })
+                        }
+                        rows={5}
+                        placeholder="Masukkan detail informasi pendaftaran..."
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Syarat / Keterangan Tambahan (Opsional)
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          activeItem.syarat ||
+                          activeItem.keterangan ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            syarat:
+                              e.target
+                                .value,
+                            keterangan:
+                              e.target
+                                .value,
+                          })
+                        }
+                        placeholder="Contoh: Format PDF maksimal 2 MB"
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* =================================================
+                    BENEFIT FORM
+                    ================================================= */}
+
+                {modalType ===
+                  "benefit" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Judul Keuntungan /
+                        Benefit
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          activeItem.judul ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            judul:
+                              e.target
+                                .value,
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Deskripsi Benefit
+                      </label>
+
+                      <textarea
+                        value={
+                          activeItem.deskripsi ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            deskripsi:
+                              e.target
+                                .value,
+                          })
+                        }
+                        rows={5}
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Kode Icon / Simbol
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          activeItem.icon ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            icon:
+                              e.target
+                                .value,
+                          })
+                        }
+                        placeholder="Contoh: Award"
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Contoh: Award,
+                        Users, Clock,
+                        FileText,
+                        ListChecks
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* =================================================
+                    TIMELINE FORM
+                    ================================================= */}
+
+                {modalType ===
+                  "timeline" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Nama Kegiatan /
+                        Agenda
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          activeItem.kegiatan ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            kegiatan:
+                              e.target
+                                .value,
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Tanggal / Rentang
+                        Waktu
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          activeItem.tanggal ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            tanggal:
+                              e.target
+                                .value,
+                          })
+                        }
+                        placeholder="Contoh: 1 - 5 Oktober 2026"
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Status Kegiatan
+                      </label>
+
+                      <select
+                        value={
+                          activeItem.status ||
+                          "Mendatang"
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            status:
+                              e.target
+                                .value,
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      >
+                        <option value="Mendatang">
+                          Mendatang
+                        </option>
+
+                        <option value="Berlangsung">
+                          Berlangsung
+                        </option>
+
+                        <option value="Selesai">
+                          Selesai
+                        </option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Keterangan /
+                        Deskripsi
+                      </label>
+
+                      <textarea
+                        value={
+                          activeItem.deskripsi ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            deskripsi:
+                              e.target
+                                .value,
+                          })
+                        }
+                        rows={5}
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Urutan
+                      </label>
+
+                      <input
+                        type="number"
+                        value={
+                          activeItem.urutan ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          setActiveItem({
+                            ...activeItem,
+                            urutan: Number(
+                              e.target
+                                .value
+                            ),
+                          })
+                        }
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* =================================================
+                    MODAL FOOTER
+                    ================================================= */}
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={
+                      handleCloseModal
+                    }
+                    disabled={saving}
+                    className="px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-muted disabled:opacity-50"
+                  >
+                    Batal
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={
+                      handleSubmitModal
+                    }
+                    disabled={saving}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+
+                    {saving
+                      ? "Menyimpan..."
+                      : modalMode ===
+                        "edit"
+                      ? "Simpan Perubahan"
+                      : "Tambah Data"}
+                  </button>
+                </div>
               </div>
             </div>
           </ModalPortal>

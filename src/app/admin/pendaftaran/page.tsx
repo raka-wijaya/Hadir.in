@@ -24,10 +24,12 @@ import {
   ExternalLink,
   Filter,
   RefreshCw,
+  Calendar,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 const API_PENDAFTARAN = `${API_URL}/pendaftaran`;
+const API_PENGATURAN = `${API_URL}/pengaturan-sistem`;
 
 // Status sesuai ENUM di tabel pendaftaran DB
 type PendaftaranStatus =
@@ -38,6 +40,13 @@ type PendaftaranStatus =
   | "DITOLAK"
   | "DIBATALKAN"
   | "DRAFT"; // fallback alias lama
+
+// Interface Pengaturan Sistem dari backend Laravel
+interface PengaturanSistem {
+  tanggal_buka: string;
+  tanggal_tutup: string;
+  batch?: number | string | null;
+}
 
 // Interface sesuai kolom aktual tabel pendaftaran
 interface Pendaftaran {
@@ -55,8 +64,11 @@ interface Pendaftaran {
   divisi: string | null;         // kolom: divisi ?? bagian
   bagian?: string | null;
   alamat: string | null;
-  periode_mulai: string | null;
-  periode_selesai: string | null;
+  periode_mulai?: string | null;
+  periode_selesai?: string | null;
+  tanggal_mulai?: string | null;
+  tanggal_selesai?: string | null;
+  batch?: number | string | null;
   file_cv: string | null;
   portfolio_file: string | null;
   portfolio_url: string | null;  // kolom: portfolio_url
@@ -66,6 +78,51 @@ interface Pendaftaran {
   created_at: string | null;
   updated_at: string | null;
 }
+
+const MONTH_NAMES_ID = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+const formatTanggalIndonesia = (value: string | null | undefined): string => {
+  if (!value) return "-";
+  const str = String(value).trim();
+  if (!str) return "-";
+
+  // YYYY-MM-DD
+  const ymd = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymd) {
+    const [, y, m, d] = ymd;
+    const mIndex = parseInt(m, 10) - 1;
+    return `${d} ${MONTH_NAMES_ID[mIndex] || m} ${y}`;
+  }
+
+  // DD-MM-YYYY
+  const dmy = str.match(/^(\d{2})-(\d{2})-(\d{4})/);
+  if (dmy) {
+    const [, d, m, y] = dmy;
+    const mIndex = parseInt(m, 10) - 1;
+    return `${d} ${MONTH_NAMES_ID[mIndex] || m} ${y}`;
+  }
+
+  return str.slice(0, 10);
+};
+
+const getPeriodeText = (item: Pendaftaran, settings?: PengaturanSistem | null): string => {
+  const mulai = item.periode_mulai || item.tanggal_mulai || (item as any).start_date;
+  const selesai = item.periode_selesai || item.tanggal_selesai || (item as any).end_date;
+
+  if (mulai && selesai) {
+    return `${formatTanggalIndonesia(mulai)} - ${formatTanggalIndonesia(selesai)}`;
+  }
+  if (mulai) {
+    return `Mulai ${formatTanggalIndonesia(mulai)}`;
+  }
+  if (settings?.tanggal_buka && settings?.tanggal_tutup) {
+    return `${formatTanggalIndonesia(settings.tanggal_buka)} - ${formatTanggalIndonesia(settings.tanggal_tutup)}`;
+  }
+  return "-";
+};
 
 const showAlert = (
   message: string,
@@ -147,12 +204,53 @@ export default function AdminPendaftaranPage() {
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
+  // Data Pengaturan Sistem Aktif dari Laravel
+  const [settings, setSettings] = useState<PengaturanSistem | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+
   const total = list.length;
   const prosesCount = list.filter(
     (p) => p.status === "PROSES_SELEKSI" || p.status === "TERKIRIM" || p.status === "DRAFT"
   ).length;
   const diterimaCount = list.filter((p) => p.status === "DITERIMA").length;
   const ditolakCount = list.filter((p) => p.status === "DITOLAK").length;
+
+  const loadSettings = useCallback(async () => {
+    try {
+      setSettingsLoading(true);
+      const res = await fetch(API_PENGATURAN, {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const result = await res.json();
+      let rawData = result?.data ?? result?.settings ?? result;
+      if (Array.isArray(rawData)) {
+        rawData = rawData[0] || null;
+      }
+
+      if (rawData?.tanggal_buka && rawData?.tanggal_tutup) {
+        setSettings({
+          tanggal_buka: rawData.tanggal_buka,
+          tanggal_tutup: rawData.tanggal_tutup,
+          batch: rawData.batch ?? null,
+        });
+      }
+    } catch (err: any) {
+      console.error("Gagal mengambil pengaturan sistem:", err);
+      showAlert(
+        "Gagal mengambil pengaturan sistem. Silakan coba lagi.",
+        "Pengaturan Sistem",
+        "red"
+      );
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
 
   const loadPendaftar = useCallback(async () => {
     try {
@@ -191,8 +289,9 @@ export default function AdminPendaftaranPage() {
   }, []);
 
   useEffect(() => {
+    loadSettings();
     loadPendaftar();
-  }, [loadPendaftar]);
+  }, [loadSettings, loadPendaftar]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounceSearch(search), 300);
@@ -426,7 +525,7 @@ export default function AdminPendaftaranPage() {
               Pendaftaran Magang
             </h1>
             <p className="text-xs md:text-sm text-muted-foreground font-sans font-semibold">
-              Input pendaftaran baru, seleksi calon peserta, dan atur status kelulusan.
+              Input pendaftaran magang, seleksi calon peserta, dan atur status kelulusan.
             </p>
           </div>
 
@@ -546,20 +645,22 @@ export default function AdminPendaftaranPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="bg-muted/60 border-b border-border text-muted-foreground font-extrabold text-xs uppercase tracking-wider">
-                  <th className="py-3 px-4">Kode</th>
-                  <th className="py-3 px-4">Nama</th>
-                  <th className="py-3 px-4">Kampus</th>
-                  <th className="py-3 px-4">Semester</th>
-                  <th className="py-3 px-4">Divisi</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Aksi</th>
+                <tr className="bg-muted/60 border-b border-border text-muted-foreground font-extrabold text-xs uppercase tracking-wider whitespace-nowrap">
+                  <th className="py-3 px-4 min-w-[130px]">Kode</th>
+                  <th className="py-3 px-4 min-w-[180px]">Nama</th>
+                  <th className="py-3 px-4 min-w-[150px]">Kampus</th>
+                  <th className="py-3 px-4 text-center min-w-[100px]">Semester</th>
+                  <th className="py-3 px-4 min-w-[110px]">Divisi</th>
+                  <th className="py-3 px-4 min-w-[210px]">Periode</th>
+                  <th className="py-3 px-4 text-center min-w-[85px]">Batch</th>
+                  <th className="py-3 px-4 text-center min-w-[110px]">Status</th>
+                  <th className="py-3 px-4 text-right min-w-[80px]">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-10 text-center">
+                    <td colSpan={9} className="py-10 text-center">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Spinner size="lg" />
                       </div>
@@ -567,7 +668,7 @@ export default function AdminPendaftaranPage() {
                   </tr>
                 ) : fetchError ? (
                   <tr>
-                    <td colSpan={7} className="py-10 text-center">
+                    <td colSpan={9} className="py-10 text-center">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <p className="text-xs font-semibold text-destructive">{fetchError}</p>
                         <button
@@ -581,7 +682,7 @@ export default function AdminPendaftaranPage() {
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-10 text-center">
+                    <td colSpan={9} className="py-10 text-center">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <span className="text-xs text-foreground">
                           {debounceSearch
@@ -598,12 +699,12 @@ export default function AdminPendaftaranPage() {
                       className="hover:bg-accent/40 transition-colors"
                     >
                 
-                      <td className="py-3.5 px-4 font-sans text-primary">
+                      <td className="py-3.5 px-4 font-sans text-primary whitespace-nowrap">
                         {item.kode_pendaftaran}
                       </td>
 
                       <td className="py-3.5 px-4 font-sans text-foreground">
-                        <div>{item.nama}</div>
+                        <div className="font-sans">{item.nama}</div>
                         <div className="text-[11px] text-muted-foreground font-sans">
                           {item.email}
                         </div>
@@ -613,9 +714,9 @@ export default function AdminPendaftaranPage() {
                         {item.institution || "-"}
                       </td>
 
-                      <td className="py-3.5 px-4 font-sans text-foreground">
+                      <td className="py-3.5 px-4 font-sans text-center whitespace-nowrap">
                         {item.semester ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-sans bg-primary/10 text-primary">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-sans bg-primary/10 text-primary">
                             Semester {item.semester}
                           </span>
                         ) : (
@@ -623,11 +724,46 @@ export default function AdminPendaftaranPage() {
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 font-sans text-foreground">
+                      <td className="py-3.5 px-4 font-sans text-foreground whitespace-nowrap">
                         {item.divisi || "-"}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 font-sans text-foreground whitespace-nowrap">
+                        {(() => {
+                          const periodeStr = getPeriodeText(item, settings);
+                          if (periodeStr === "-") {
+                            return <span className="text-muted-foreground">-</span>;
+                          }
+                          return (
+                            <span className="inline-flex items-center gap-1.5 text-xs text-foreground">
+                              <Calendar className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                              <span className="font-sans">{periodeStr}</span>
+                            </span>
+                          );
+                        })()}
+                      </td>
+
+                      <td className="py-3.5 px-4 font-sans text-center whitespace-nowrap">
+                        {(() => {
+                          const batchVal =
+                            item.batch !== null && item.batch !== undefined && item.batch !== ""
+                              ? item.batch
+                              : settings?.batch !== null && settings?.batch !== undefined && settings?.batch !== ""
+                              ? settings.batch
+                              : null;
+
+                          if (batchVal !== null && batchVal !== undefined) {
+                            return (
+                              <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-sans bg-primary/10 text-primary border border-primary/20">
+                                Batch {batchVal}
+                              </span>
+                            );
+                          }
+                          return <span className="text-muted-foreground">-</span>;
+                        })()}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <StatusBadge status={item.status} />
                       </td>
 
@@ -681,23 +817,19 @@ export default function AdminPendaftaranPage() {
 
           {!loading && !fetchError && (
             <div className="p-4 border-t border-border flex items-center justify-between gap-4 bg-muted/20">
-              <div className="text-xs text-muted-foreground font-semibold">
+              <div className="text-xs flex gap-1.5 text-muted-foreground font-sans">
                 Menampilkan{" "}
-                <strong className="text-foreground font-bold">
-                  {Math.min(itemsPerPage, filtered.length)}
-                </strong>{" "}
-                dari{" "}
-                <strong className="text-foreground font-bold">{filtered.length}</strong>{" "}
+                <p className="text-foreground font-sans">{filtered.length}</p>{" "}
                 data pendaftaran
                 {statusFilter !== "ALL" && (
-                  <span className="ml-1 text-primary font-bold">
+                  <span className="ml-1 text-primary font-sans">
                     ({statusLabel(statusFilter)})
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">
+                <span className="text-xs text-muted-foreground font-sans">
                   Number of rows:
                 </span>
                 <select
@@ -729,80 +861,100 @@ export default function AdminPendaftaranPage() {
                   <button
                     type="button"
                     onClick={closeInputModal}
-                    className="p-1 rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
+                </div>
+
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider block">
+                        Periode Pendaftaran Magang (Otomatis)
+                      </span>
+                      <p className="font-sans text-foreground truncate">
+                        {settings?.tanggal_buka && settings?.tanggal_tutup
+                          ? `${formatTanggalIndonesia(settings.tanggal_buka)} - ${formatTanggalIndonesia(settings.tanggal_tutup)}`
+                          : "Mengikuti Pengaturan Sistem Aktif"}
+                      </p>
+                    </div>
+                  </div>
+                  {settings?.batch !== null && settings?.batch !== undefined && (
+                    <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[11px] shrink-0">
+                      Batch {settings.batch}
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
 
                   <div className="space-y-1">
                     <label className="font-sans text-foreground flex gap-1">
-                      Nama Lengkap <span className="text-status-tolak">*</span>
+                      Nama lengkap <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={inputNama}
                       onChange={(e) => setInputNama(e.target.value)}
-                      placeholder="Masukan nama lengkap"
+                      placeholder="Masukkan nama lengkap"
                       className={inputCls}
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label className="font-sans text-foreground flex gap-1">
-                      Email <span className="text-status-tolak">*</span>
+                      Email <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="email"
                       required
                       value={inputEmail}
                       onChange={(e) => setInputEmail(e.target.value)}
-                      placeholder="Masukan email"
+                      placeholder="Masukkan email"
                       className={inputCls}
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label className="font-sans text-foreground flex gap-1">
-                      No. HP / WhatsApp <span className="text-status-tolak">*</span>
+                      No. HP / WhatsApp <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={inputPhone}
                       onChange={(e) => setInputPhone(e.target.value)}
-                      placeholder="Masukan no. hp"
+                      placeholder="Masukkan no. hp"
                       className={inputCls}
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label className="font-sans text-foreground flex gap-1">
-                      Kampus / Sekolah <span className="text-status-tolak">*</span>
+                      Kampus / Sekolah <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={inputInstitution}
                       onChange={(e) => setInputInstitution(e.target.value)}
-                      placeholder="Masukan nama kampus / sekolah"
+                      placeholder="Masukkan nama kampus / sekolah"
                       className={inputCls}
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label className="font-sans text-foreground flex gap-1">
-                      Program Studi <span className="text-status-tolak">*</span>
+                      Program Studi <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={inputStudyProgram}
                       onChange={(e) => setInputStudyProgram(e.target.value)}
-                      placeholder="Masukan program studi"
+                      placeholder="Masukkan program studi"
                       className={inputCls}
                     />
                   </div>
@@ -810,7 +962,7 @@ export default function AdminPendaftaranPage() {
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <label className="font-sans text-foreground flex gap-1">
-                        Semester <span className="text-status-tolak">*</span>
+                        Semester <span className="text-destructive">*</span>
                       </label>
                       {isCustomSemester && (
                         <button
@@ -853,7 +1005,7 @@ export default function AdminPendaftaranPage() {
                             Semester {s}
                           </option>
                         ))}
-                        <option value="custom">Lainnya (Ketik Manual)...</option>
+                        <option value="custom">Lainnya</option>
                       </select>
                     ) : (
                       <input
@@ -872,7 +1024,7 @@ export default function AdminPendaftaranPage() {
 
                   <div className="space-y-1">
                     <label className="font-sans text-foreground flex gap-1">
-                      Divisi / Bagian <span className="text-status-tolak">*</span>
+                      Divisi / Bagian <span className="text-destructive">*</span>
                     </label>
                     <select
                       required
@@ -881,7 +1033,7 @@ export default function AdminPendaftaranPage() {
                       className={`${inputCls} font-bold cursor-pointer`}
                     >
                       <option value="Programmer">Programmer</option>
-                      <option value="Operator">Operator Layanan Adminduk</option>
+                      <option value="Operator Layanan Adminduk">Operator Layanan Adminduk</option>
                       <option value="Branding Development">Branding Development</option>
                     </select>
                   </div>
@@ -896,7 +1048,7 @@ export default function AdminPendaftaranPage() {
                       type={showEditPassword ? "text" : "password"}
                       value={inputPassword}
                       onChange={(e) => setInputPassword(e.target.value)}
-                      placeholder="Masukan password"
+                      placeholder="Masukkan password"
                       className={`${inputCls} pr-10`}
                     />
                     <button
@@ -949,16 +1101,16 @@ export default function AdminPendaftaranPage() {
 
                 <div className="flex items-center justify-between border-b border-border pb-3">
                   <div>
-                    <span className="text-xs font-sans font-bold text-primary">
+                    <span className="text-xs font-bold font-sans text-primary">
                       {selectedDetail.kode_pendaftaran}
                     </span>
-                    <h3 className="text-lg font-black text-foreground">
+                    <h3 className="text-lg font-bold font-sans text-foreground">
                       Detail &amp; Verifikasi Pendaftar
                     </h3>
                   </div>
                   <button
                     onClick={() => setSelectedDetail(null)}
-                    className="p-1 rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -974,7 +1126,7 @@ export default function AdminPendaftaranPage() {
                     ].map((row) => (
                       <div key={row.label}>
                         <span className="text-[10px] font-bold text-muted-foreground">{row.label}</span>
-                        <p className={`font-extrabold ${row.highlight ? "text-primary" : "text-foreground"}`}>
+                        <p className={`font-sans ${row.highlight ? "text-primary" : "text-foreground"}`}>
                           {row.value}
                         </p>
                       </div>
@@ -982,27 +1134,48 @@ export default function AdminPendaftaranPage() {
                   </div>
 
                   <div className="bg-muted/50 p-3 rounded-default border border-border space-y-1">
-                    <span className="text-[10px] font-bold text-muted-foreground">
+                    <span className="text-[10px] font-bold font-sans text-muted-foreground">
                       Kampus, Jurusan &amp; Semester
                     </span>
-                    <p className="font-extrabold text-foreground">
+                    <p className="font-sans text-foreground">
                       {selectedDetail.institution || "-"} —{" "}
                       {selectedDetail.study_program || "-"}{" "}
                       {selectedDetail.semester ? (
-                        <span className="ml-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-primary/15 text-primary">
+                        <span className="ml-1.5 px-2 py-0.5 rounded text-[11px] font-sans bg-primary/15 text-primary">
                           Semester {selectedDetail.semester}
                         </span>
                       ) : null}
                     </p>
                   </div>
 
+                  <div className="flex items-center justify-between gap-2 p-2.5 rounded-default border border-border bg-muted/40">
+                    <div>
+                      <span className="text-[10px] font-bold font-sans text-muted-foreground block">
+                        Periode Pendaftaran
+                      </span>
+                      <p className="font-sans text-foreground">
+                        {selectedDetail.periode_mulai && selectedDetail.periode_selesai
+                          ? `${formatTanggalIndonesia(selectedDetail.periode_mulai)} - ${formatTanggalIndonesia(selectedDetail.periode_selesai)}`
+                          : settings?.tanggal_buka && settings?.tanggal_tutup
+                          ? `${formatTanggalIndonesia(settings.tanggal_buka)} - ${formatTanggalIndonesia(settings.tanggal_tutup)}`
+                          : "-"}
+                      </p>
+                    </div>
+                    {(selectedDetail.batch !== null && selectedDetail.batch !== undefined && selectedDetail.batch !== "") ||
+                    (settings?.batch !== null && settings?.batch !== undefined) ? (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-sans bg-primary/15 text-primary">
+                        Batch {selectedDetail.batch ?? settings?.batch}
+                      </span>
+                    ) : null}
+                  </div>
+
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-muted-foreground">Status Saat Ini:</span>
+                    <span className="text-[10px] font-bold font-sans text-muted-foreground">Status Saat Ini:</span>
                     <StatusBadge status={selectedDetail.status} />
                   </div>
 
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
+                    <span className="text-[10px] font-bold font-sans text-muted-foreground uppercase tracking-wider">
                       Dokumen &amp; Berkas Lampiran
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1013,10 +1186,10 @@ export default function AdminPendaftaranPage() {
                             <FileText className="w-3.5 h-3.5 text-primary" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[11px] font-bold text-foreground truncate">
+                            <p className="text-[11px] font-bold font-sans text-foreground truncate">
                               Curriculum Vitae (CV)
                             </p>
-                            <p className="text-[9px] text-muted-foreground truncate">
+                            <p className="text-[9px] font-sans text-muted-foreground truncate">
                               {selectedDetail.file_cv
                                 ? selectedDetail.file_cv.split("/").pop()
                                 : "Tidak dilampirkan"}
@@ -1028,7 +1201,7 @@ export default function AdminPendaftaranPage() {
                             href={selectedDetail.file_cv}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-2 py-1 rounded-md bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-[10px] font-bold transition-all inline-flex items-center gap-1 shrink-0"
+                            className="px-2 py-1 rounded-md font-sans bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-[10px] font-bold transition-all inline-flex items-center gap-1 shrink-0"
                           >
                             <ExternalLink className="w-3 h-3" />
                             <span>Buka</span>
@@ -1044,10 +1217,10 @@ export default function AdminPendaftaranPage() {
                             <Building2 className="w-3.5 h-3.5 text-amber-500" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[11px] font-bold text-foreground truncate">
+                            <p className="text-[11px] font-bold font-sans text-foreground truncate">
                               Berkas / Link Portofolio
                             </p>
-                            <p className="text-[9px] text-muted-foreground truncate">
+                            <p className="text-[9px] font-sans text-muted-foreground truncate">
                               {selectedDetail.portfolio_file
                                 ? selectedDetail.portfolio_file.split("/").pop()
                                 : selectedDetail.portfolio_url
@@ -1061,7 +1234,7 @@ export default function AdminPendaftaranPage() {
                             href={selectedDetail.portfolio_file || selectedDetail.portfolio_url || "#"}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-2 py-1 rounded-md bg-amber-500/10 hover:bg-amber-500 text-amber-600 dark:text-amber-400 hover:text-white text-[10px] font-bold transition-all inline-flex items-center gap-1 shrink-0"
+                            className="px-2 py-1 font-sans rounded-md bg-amber-500/10 hover:bg-amber-500 text-amber-600 dark:text-amber-400 hover:text-white text-[10px] font-bold transition-all inline-flex items-center gap-1 shrink-0"
                           >
                             <ExternalLink className="w-3 h-3" />
                             <span>Buka</span>
@@ -1074,7 +1247,7 @@ export default function AdminPendaftaranPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-extrabold text-foreground">
+                    <label className="text-xs font-bold font-sans text-muted-foreground">
                       Catatan Admin
                     </label>
                     <textarea
@@ -1087,56 +1260,55 @@ export default function AdminPendaftaranPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch gap-3 pt-2">
-                
-                  <button
-                    disabled={updatingId !== null}
-                    onClick={async () => {
-                      await updateStatus(
-                        selectedDetail.id,
-                        "DITOLAK",
-                        adminNoteInput
-                      );
-                      setSelectedDetail(null);
-                    }}
-                    className="flex-1 py-2.5 px-4 rounded-default bg-destructive/10 border border-destructive/30 text-destructive font-extrabold text-xs hover:bg-destructive/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
-                  >
-                    {updatingId === selectedDetail.id && <Spinner size="sm" />}
-                    <XCircle className="w-4 h-4" />
-                    <span>Ditolak</span>
-                  </button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+  {/* Ditolak */}
+  <button
+    disabled={updatingId !== null}
+    onClick={async () => {
+      await updateStatus(
+        selectedDetail.id,
+        "DITOLAK",
+        adminNoteInput
+      );
+      setSelectedDetail(null);
+    }}
+    className="w-full min-w-0 cursor-pointer h-14 px-4 rounded-default bg-destructive/10 border border-destructive/30 text-destructive font-extrabold text-sm hover:bg-destructive/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 whitespace-nowrap"
+  >
+    {updatingId === selectedDetail.id && <Spinner size="sm" />}
+    <span>Ditolak</span>
+  </button>
 
-                  <button
-                    disabled={updatingId !== null}
-                    onClick={async () => {
-                      await updateStatus(
-                        selectedDetail.id,
-                        "PROSES_SELEKSI",
-                        adminNoteInput
-                      );
-                      setSelectedDetail(null);
-                    }}
-                    className="flex-1 py-2.5 px-4 rounded-default bg-muted border border-border text-muted-foreground font-extrabold text-xs hover:bg-muted/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
-                  >
-                    {updatingId === selectedDetail.id && <Spinner size="sm" />}
-                    <Clock className="w-4 h-4" />
-                    <span>Proses Seleksi</span>
-                  </button>
+  {/* Proses Seleksi */}
+  <button
+    disabled={updatingId !== null}
+    onClick={async () => {
+      await updateStatus(
+        selectedDetail.id,
+        "PROSES_SELEKSI",
+        adminNoteInput
+      );
+      setSelectedDetail(null);
+    }}
+    className="w-full min-w-0 h-14 cursor-pointer px-4 rounded-default bg-muted border border-border text-muted-foreground font-extrabold text-sm hover:bg-muted/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 whitespace-nowrap"
+  >
+    {updatingId === selectedDetail.id && <Spinner size="sm" />}
+    <span>Proses Seleksi</span>
+  </button>
 
-                  <button
-                    disabled={updatingId !== null}
-                    onClick={async () => {
-                      const id = selectedDetail.id;
-                      await updateStatus(id, "DITERIMA", adminNoteInput);
-                      setSelectedDetail(null);
-                    }}
-                    className="flex-1 py-2.5 px-4 rounded-default bg-primary text-primary-foreground font-extrabold text-xs hover:opacity-95 transition-all shadow-card disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
-                  >
-                    {updatingId === selectedDetail.id && <Spinner size="sm" />}
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Terima Pendaftaran</span>
-                  </button>
-                </div>
+  {/* Terima Pendaftaran */}
+  <button
+    disabled={updatingId !== null}
+    onClick={async () => {
+      const id = selectedDetail.id;
+      await updateStatus(id, "DITERIMA", adminNoteInput);
+      setSelectedDetail(null);
+    }}
+    className="w-full min-w-0 h-14 cursor-pointer px-4 rounded-default bg-primary text-primary-foreground font-extrabold text-sm hover:opacity-95 transition-all shadow-card disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 whitespace-nowrap"
+  >
+    {updatingId === selectedDetail.id && <Spinner size="sm" />}
+    <span>Terima Pendaftaran</span>
+  </button>
+</div>
               </div>
             </div>
           </ModalPortal>

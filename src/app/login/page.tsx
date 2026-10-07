@@ -72,7 +72,6 @@ function LoginForm() {
     try {
       const LARAVEL_API = process.env.NEXT_PUBLIC_LARAVEL_API || "http://127.0.0.1:8000/api";
 
-      // Ambil data dari 3 endpoint eksternal
       const [adminRes, magangRes, osRes] = await Promise.all([
         fetch(`${LARAVEL_API}/admin`, { cache: "no-store" }).catch(() => null),
         fetch(`${LARAVEL_API}/peserta-magang`, { cache: "no-store" }).catch(() => null),
@@ -91,7 +90,6 @@ function LoginForm() {
 
       const lowerTarget = cleanTarget.toLowerCase();
 
-      // Helper pencocokan identitas (email, identity_number, phone, nip, nim)
       const matchIdentifier = (u: any) => {
         const uEmail = String(u.email || "").trim().toLowerCase();
         const uIdent = String(u.identity_number || u.identityNumber || u.nip || u.nim || "").trim().toLowerCase();
@@ -246,8 +244,7 @@ function LoginForm() {
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-bold font-sans text-card-foreground flex items-center gap-1">
-              <User className="w-3.5 h-3.5 text-primary" />
+            <label className="text-xs font-sans text-card-foreground flex items-center gap-1">
               Email <span className="text-destructive">*</span>
             </label>
 
@@ -282,8 +279,7 @@ function LoginForm() {
 
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold font-sans text-card-foreground flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-primary" />
+              <label className="text-xs font-sans text-card-foreground flex items-center gap-1.5">
                 Password <span className="text-destructive">*</span>
               </label>
 
@@ -291,7 +287,7 @@ function LoginForm() {
                 href="/lupa-password"
                 className="
                   text-xs
-                  font-bold
+                  font-semibold
                   font-sans
                   text-primary
                   hover:opacity-80

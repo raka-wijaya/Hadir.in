@@ -2,6 +2,27 @@ import { NextResponse } from "next/server";
 import { mysqlPool } from "@/lib/db/prisma";
 
 // ============================================================
+// AUTO-MIGRATION
+// ============================================================
+
+let isSettingsSchemaChecked = false;
+async function ensureSettingsSchema() {
+  if (isSettingsSchemaChecked) return;
+  try {
+    const [cols]: any = await mysqlPool.query(`SHOW COLUMNS FROM pengaturan_sistem`);
+    const existing = new Set((cols as any[]).map((c: any) => c.Field.toLowerCase()));
+    if (!existing.has("batch")) {
+      await mysqlPool.query(
+        `ALTER TABLE pengaturan_sistem ADD COLUMN batch INT UNSIGNED NULL DEFAULT NULL AFTER aktif_manual`
+      );
+    }
+    isSettingsSchemaChecked = true;
+  } catch {
+    // tabel mungkin belum ada, biarkan query berikutnya yang gagal dengan pesan jelas
+  }
+}
+
+// ============================================================
 // INTERFACES
 // ============================================================
 
@@ -144,6 +165,7 @@ function parseJsonArray<T>(value: unknown, fallback: T[]): T[] {
 // ============================================================
 
 export async function GET() {
+  await ensureSettingsSchema();
   try {
     let [rows]: any = await mysqlPool.query(`
       SELECT
@@ -158,6 +180,7 @@ export async function GET() {
         tanggal_buka,
         tanggal_tutup,
         aktif_manual,
+        batch,
         hari_libur,
         created_at,
         updated_at
@@ -183,9 +206,10 @@ export async function GET() {
             tanggal_buka,
             tanggal_tutup,
             aktif_manual,
+            batch,
             hari_libur
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           "07:30:00",
@@ -198,6 +222,7 @@ export async function GET() {
           DEFAULT_TANGGAL_BUKA_DB,   // YYYY-MM-DD
           DEFAULT_TANGGAL_TUTUP_DB,  // YYYY-MM-DD
           1,
+          null,
           JSON.stringify([]),
         ]
       );
@@ -215,6 +240,7 @@ export async function GET() {
           tanggal_buka,
           tanggal_tutup,
           aktif_manual,
+          batch,
           hari_libur,
           created_at,
           updated_at
@@ -266,6 +292,11 @@ export async function GET() {
 
         aktif_manual: Boolean(pengaturan.aktif_manual ?? true),
 
+        batch:
+          pengaturan.batch !== null && pengaturan.batch !== undefined
+            ? Number(pengaturan.batch)
+            : null,
+
         hari_libur: hariLiburDisplay,
       },
     });
@@ -287,6 +318,7 @@ export async function GET() {
 // ============================================================
 
 export async function POST(req: Request) {
+  await ensureSettingsSchema();
   try {
     const body = await req.json();
 
@@ -369,6 +401,19 @@ export async function POST(req: Request) {
     }
 
     // --------------------------------------------------------
+    // BATCH (nomor gelombang magang)
+    // --------------------------------------------------------
+
+    const rawBatch = body.batch;
+    const batch =
+      rawBatch !== undefined &&
+      rawBatch !== null &&
+      rawBatch !== "" &&
+      rawBatch !== "-"
+        ? Number(rawBatch) || null
+        : null;
+
+    // --------------------------------------------------------
     // AKTIF MANUAL
     // --------------------------------------------------------
 
@@ -445,6 +490,7 @@ export async function POST(req: Request) {
             tanggal_buka          = ?,
             tanggal_tutup         = ?,
             aktif_manual          = ?,
+            batch                 = ?,
             hari_libur            = ?,
             updated_at            = CURRENT_TIMESTAMP
           WHERE id = ?
@@ -460,6 +506,7 @@ export async function POST(req: Request) {
           tanggalBuka,
           tanggalTutup,
           aktifManual ? 1 : 0,
+          batch,
           hariLiburJson,
           existingRows[0].id,
         ]
@@ -478,9 +525,10 @@ export async function POST(req: Request) {
             tanggal_buka,
             tanggal_tutup,
             aktif_manual,
+            batch,
             hari_libur
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           jamMasukDB,
@@ -493,6 +541,7 @@ export async function POST(req: Request) {
           tanggalBuka,
           tanggalTutup,
           aktifManual ? 1 : 0,
+          batch,
           hariLiburJson,
         ]
       );
